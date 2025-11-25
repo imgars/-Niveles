@@ -8,13 +8,19 @@
     "start": "node index.js",
     "dev": "node index.js"
   },
-  "keywords": ["discord", "bot", "leveling", "xp"],
+  "keywords": [
+    "discord",
+    "bot",
+    "leveling",
+    "xp"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^14.14.1",
     "@napi-rs/canvas": "^0.1.44",
-    "node-cron": "^3.0.3",
-    "moment-timezone": "^0.5.43"
+    "discord.js": "^14.14.1",
+    "express": "^4.21.2",
+    "moment-timezone": "^0.5.43",
+    "node-cron": "^3.0.3"
   }
 }
