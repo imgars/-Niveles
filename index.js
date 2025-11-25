@@ -5,6 +5,7 @@ import { calculateLevel, getXPProgress, getRandomXP, calculateBoostMultiplier, a
 import { generateRankCard } from './utils/cardGenerator.js';
 import { initializeNightBoost, getNightBoostMultiplier } from './utils/timeBoost.js';
 import { isStaff } from './utils/helpers.js';
+import express from 'express';
 
 import fs from 'fs';
 import path from 'path';
@@ -12,6 +13,32 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Servidor HTTP para Render y Uptime Robot
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.get('/', (req, res) => {
+  res.status(200).send('Bot Discord está corriendo ✅');
+});
+
+// Endpoint para Uptime Robot o servicios similares
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Alias para compatibilidad
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🌐 Servidor web escuchando en puerto ${PORT}`);
+  console.log(`📍 URLs disponibles:`);
+  console.log(`   - http://localhost:${PORT}/     (inicio)`);
+  console.log(`   - http://localhost:${PORT}/health (Uptime Robot)`);
+  console.log(`   - http://localhost:${PORT}/ping   (ping)`);
+});
 
 const client = new Client({
   intents: [
