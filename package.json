@@ -1,0 +1,20 @@
+{
+  "name": "discord-leveling-bot",
+  "version": "1.0.0",
+  "description": "Advanced Discord leveling bot with XP system, minigames, and custom rank cards",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "keywords": ["discord", "bot", "leveling", "xp"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "@napi-rs/canvas": "^0.1.44",
+    "node-cron": "^3.0.3",
+    "moment-timezone": "^0.5.43"
+  }
+}
