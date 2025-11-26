@@ -236,4 +236,4 @@ ISC
 
 ---
 
-Desarrollado con ❤️ para la comunidad de Discord
+Desarrollado con ❤️ por Sirgio Team
