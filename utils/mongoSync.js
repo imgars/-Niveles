@@ -36,6 +36,19 @@ const questionSchema = new mongoose.Schema({
 
 const Question = mongoose.model('Question', questionSchema);
 
+// Esquema de Rachas
+const streakSchema = new mongoose.Schema({
+  guildId: String,
+  user1Id: String,
+  user2Id: String,
+  streakCount: { type: Number, default: 1 },
+  lastMessageDate: { type: Date, default: Date.now },
+  createdAt: { type: Date, default: Date.now },
+  status: { type: String, default: 'active' } // active, broken
+});
+
+const Streak = mongoose.model('Streak', streakSchema);
+
 let isConnected = false;
 
 export async function connectMongoDB() {
@@ -141,6 +154,99 @@ export async function answerQuestionInMongo(questionId, answer) {
   } catch (error) {
     console.error('Error respondiendo pregunta en MongoDB:', error.message);
     return null;
+  }
+}
+
+export async function saveStreakToMongo(streakData) {
+  if (!isConnected) return null;
+  try {
+    const query = { guildId: streakData.guildId };
+    const users = [streakData.user1Id, streakData.user2Id].sort();
+    query.user1Id = users[0];
+    query.user2Id = users[1];
+    
+    const updated = await Streak.findOneAndUpdate(
+      query,
+      streakData,
+      { upsert: true, new: true }
+    );
+    return updated;
+  } catch (error) {
+    console.error('Error guardando racha:', error.message);
+    return null;
+  }
+}
+
+export async function getStreakBetween(guildId, user1Id, user2Id) {
+  if (!isConnected) return null;
+  try {
+    const users = [user1Id, user2Id].sort();
+    const streak = await Streak.findOne({
+      guildId,
+      user1Id: users[0],
+      user2Id: users[1]
+    });
+    return streak;
+  } catch (error) {
+    console.error('Error obteniendo racha:', error.message);
+    return null;
+  }
+}
+
+export async function updateStreakDate(guildId, user1Id, user2Id) {
+  if (!isConnected) return null;
+  try {
+    const users = [user1Id, user2Id].sort();
+    const streak = await Streak.findOne({
+      guildId,
+      user1Id: users[0],
+      user2Id: users[1],
+      status: 'active'
+    });
+    
+    if (!streak) return null;
+    
+    const lastDate = new Date(streak.lastMessageDate);
+    const today = new Date();
+    lastDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    if (lastDate.getTime() === today.getTime()) {
+      return streak;
+    }
+    
+    const daysDiff = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff === 1) {
+      streak.streakCount += 1;
+      streak.lastMessageDate = new Date();
+      await streak.save();
+      return { streak, updated: true, message: `¡Racha extendida! 🔥 Ahora van ${streak.streakCount} días` };
+    } else if (daysDiff > 1) {
+      streak.status = 'broken';
+      await streak.save();
+      return { streak, broken: true, message: `¡Se perdió la racha! 😢 Llevaban ${streak.streakCount} días` };
+    }
+    
+    return streak;
+  } catch (error) {
+    console.error('Error actualizando fecha de racha:', error.message);
+    return null;
+  }
+}
+
+export async function getUserStreaks(guildId, userId) {
+  if (!isConnected) return [];
+  try {
+    const streaks = await Streak.find({
+      guildId,
+      $or: [{ user1Id: userId }, { user2Id: userId }],
+      status: 'active'
+    });
+    return streaks;
+  } catch (error) {
+    console.error('Error obteniendo rachas del usuario:', error.message);
+    return [];
   }
 }
 
