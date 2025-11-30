@@ -79,6 +79,7 @@ Este proyecto está completamente configurado para Replit:
 4. **Puerto**: Servidor web en puerto 5000 con Dashboard ✅
 5. **Deployment**: Configurado para VM (24/7) ✅
 6. **Dashboard Web**: Accesible en la URL del proyecto ✅
+7. **Datos Persistentes**: JSON con almacenamiento persistente en Render ✅
 
 El bot está corriendo y conectado a Discord. Solo presiona "Run" para iniciarlo.
 
@@ -181,7 +182,16 @@ Todos los datos se guardan en archivos JSON:
 - `data/cooldowns.json` - Cooldowns de minijuegos
 - `data/bans.json` - Usuarios y canales baneados
 
-**Importante**: Los datos sobreviven a reinicios del bot.
+**Importante**: 
+- En Replit: Se guardan en `./data/`
+- En Render: Se guardan en `/opt/render/data/` (volumen persistente)
+- Los datos sobreviven a reinicios y deploys
+
+### Configurar Volumen en Render:
+1. Ve a tu servicio en Render.com
+2. Settings → Disks → Add Disk
+3. Name: `data`, Mount Path: `/opt/render/data`, Size: 1GB
+4. ¡Listo! Los datos persisten automáticamente
 
 ## 🌐 Despliegue a Producción
 
