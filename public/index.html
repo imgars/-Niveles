@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot de Niveles - Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="pixel-bg"></div>
+    
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">&#9733;</span>
+                <h1>Bot de Niveles</h1>
+            </div>
+            <nav class="nav">
+                <a href="#inicio" class="nav-link active" data-section="inicio">Inicio</a>
+                <a href="#caracteristicas" class="nav-link" data-section="caracteristicas">Caracteristicas</a>
+                <a href="#comandos" class="nav-link" data-section="comandos">Comandos</a>
+                <a href="#minijuegos" class="nav-link" data-section="minijuegos">Minijuegos</a>
+                <a href="#tarjetas" class="nav-link" data-section="tarjetas">Tarjetas</a>
+                <a href="#leaderboard" class="nav-link" data-section="leaderboard">Leaderboard</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- INICIO -->
+        <section id="inicio" class="section active">
+            <div class="hero">
+                <div class="hero-content">
+                    <div class="pixel-character mario"></div>
+                    <h2 class="hero-title glitch" data-text="Bot de Niveles">Bot de Niveles</h2>
+                    <p class="hero-subtitle">Sistema completo de XP, niveles, minijuegos y tarjetas personalizadas con pixel art</p>
+                    <div class="hero-stats">
+                        <div class="stat-box">
+                            <span class="stat-icon">&#9829;</span>
+                            <span class="stat-value" id="total-users">--</span>
+                            <span class="stat-label">Usuarios</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-icon">&#9733;</span>
+                            <span class="stat-value">100+</span>
+                            <span class="stat-label">Niveles</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-icon">&#9824;</span>
+                            <span class="stat-value">4</span>
+                            <span class="stat-label">Minijuegos</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-icon">&#9830;</span>
+                            <span class="stat-value">7</span>
+                            <span class="stat-label">Temas</span>
+                        </div>
+                    </div>
+                    <div class="pixel-character zelda"></div>
+                </div>
+            </div>
+            
+            <div class="features-preview">
+                <div class="feature-card pokemon-theme">
+                    <div class="card-header">
+                        <span class="pokeball"></span>
+                        <h3>Sistema de XP</h3>
+                    </div>
+                    <p>Gana XP por mensajes, imagenes, videos y reacciones. Formula progresiva que se adapta a tu nivel.</p>
+                </div>
+                <div class="feature-card zelda-theme">
+                    <div class="card-header">
+                        <span class="triforce"></span>
+                        <h3>Boosts</h3>
+                    </div>
+                    <p>Boosts acumulables, boost nocturno automatico y boosts especiales para VIPs y Boosters.</p>
+                </div>
+                <div class="feature-card mario-theme">
+                    <div class="card-header">
+                        <span class="mushroom"></span>
+                        <h3>Recompensas</h3>
+                    </div>
+                    <p>Roles automaticos al alcanzar niveles especificos. 11 roles de recompensa disponibles.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CARACTERISTICAS -->
+        <section id="caracteristicas" class="section">
+            <h2 class="section-title">
+                <span class="title-icon">&#9733;</span>
+                Caracteristicas
+            </h2>
+            
+            <div class="features-grid">
+                <div class="feature-box retro-box">
+                    <div class="feature-icon xp-icon"></div>
+                    <h3>Sistema de Niveles y XP</h3>
+                    <ul class="pixel-list">
+                        <li>Formula de XP progresiva (niveles 1-5 muy rapidos, 90+ muy lentos)</li>
+                        <li>Cooldown de 10 segundos entre mensajes</li>
+                        <li>Ganancia de XP por mensajes, imagenes, videos y reacciones</li>
+                        <li>Recompensas automaticas de roles en niveles especificos</li>
+                        <li>Persistencia de datos (sobrevive reinicios)</li>
+                    </ul>
+                </div>
+
+                <div class="feature-box retro-box">
+                    <div class="feature-icon boost-icon"></div>
+                    <h3>Sistema de Boosts</h3>
+                    <ul class="pixel-list">
+                        <li>Boosts acumulables (se suman entre si)</li>
+                        <li>Boost automatico de 200% para Boosters y VIPs</li>
+                        <li>Boost nocturno de 25% (18:00-06:00 Venezuela)</li>
+                        <li>Boosts personalizados por usuario, canal o globales</li>
+                        <li>Gestion completa via comandos</li>
+                    </ul>
+                </div>
+
+                <div class="feature-box retro-box">
+                    <div class="feature-icon rewards-icon"></div>
+                    <h3>Roles de Recompensa</h3>
+                    <div class="rewards-table">
+                        <div class="reward-row"><span class="lvl">Nivel 1</span><span class="role">Nuevo Miembro</span></div>
+                        <div class="reward-row"><span class="lvl">Nivel 5</span><span class="role">Iniciado</span></div>
+                        <div class="reward-row"><span class="lvl">Nivel 10</span><span class="role">Regular</span></div>
+                        <div class="reward-row"><span class="lvl">Nivel 20</span><span class="role">Conocido</span></div>
+                        <div class="reward-row highlight"><span class="lvl">Nivel 25</span><span class="role">Miembro Activo</span></div>
+                        <div class="reward-row"><span class="lvl">Nivel 30</span><span class="role">Veterano</span></div>
+                        <div class="reward-row highlight"><span class="lvl">Nivel 35</span><span class="role">Super Activo</span></div>
+                        <div class="reward-row"><span class="lvl">Nivel 40</span><span class="role">Elite</span></div>
+                        <div class="reward-row"><span class="lvl">Nivel 50</span><span class="role">Maestro</span></div>
+                        <div class="reward-row"><span class="lvl">Nivel 75</span><span class="role">Leyenda</span></div>
+                        <div class="reward-row legendary"><span class="lvl">Nivel 100</span><span class="role">Inmortal</span></div>
+                    </div>
+                </div>
+
+                <div class="feature-box retro-box">
+                    <div class="feature-icon formula-icon"></div>
+                    <h3>Formula de XP</h3>
+                    <div class="xp-formula">
+                        <div class="formula-row fast"><span>Nivel 1-5</span><span>100 XP</span><span class="speed">MUY RAPIDO</span></div>
+                        <div class="formula-row fast"><span>Nivel 6-10</span><span>150 XP</span><span class="speed">Muy rapido</span></div>
+                        <div class="formula-row medium"><span>Nivel 11-15</span><span>250 XP</span><span class="speed">Rapido</span></div>
+                        <div class="formula-row medium"><span>Nivel 16-20</span><span>400 XP</span><span class="speed">Med. rapido</span></div>
+                        <div class="formula-row normal"><span>Nivel 21-35</span><span>600 XP</span><span class="speed">Normal</span></div>
+                        <div class="formula-row slow"><span>Nivel 36-40</span><span>850 XP</span><span class="speed">Med. lento</span></div>
+                        <div class="formula-row slow"><span>Nivel 41-50</span><span>1200 XP</span><span class="speed">Lento</span></div>
+                        <div class="formula-row slow"><span>Nivel 51-75</span><span>1800 XP</span><span class="speed">Med. lento</span></div>
+                        <div class="formula-row very-slow"><span>Nivel 76-90</span><span>2500 XP</span><span class="speed">Lento</span></div>
+                        <div class="formula-row very-slow"><span>Nivel 90+</span><span>3500 XP</span><span class="speed">MUY LENTO</span></div>
+                    </div>
+                    <p class="formula-note">Multiplicador: baseXP * (1 + nivel * 0.1)</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMANDOS -->
+        <section id="comandos" class="section">
+            <h2 class="section-title">
+                <span class="title-icon">&#9824;</span>
+                Comandos
+            </h2>
+
+            <div class="commands-container">
+                <div class="command-category">
+                    <h3 class="category-title user-title">
+                        <span class="category-icon">&#9829;</span>
+                        Comandos de Usuarios
+                    </h3>
+                    <div class="commands-grid">
+                        <div class="command-card">
+                            <code>/level [usuario]</code>
+                            <p>Muestra el nivel y XP con tarjeta personalizada</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/nivel [usuario]</code>
+                            <p>Alias de /level</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/rank [usuario]</code>
+                            <p>Alias de /level</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/leaderboard</code>
+                            <p>Tabla de clasificacion top 10</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/lb</code>
+                            <p>Alias de /leaderboard</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/rewards list</code>
+                            <p>Muestra las recompensas por nivel</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/boost list</code>
+                            <p>Ver boosts activos</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/boost status</code>
+                            <p>Ver estado de todos los boosts</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/minigame trivia</code>
+                            <p>Jugar trivia</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/minigame rps</code>
+                            <p>Piedra, Papel o Tijeras</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/minigame roulette</code>
+                            <p>Ruleta Rusa</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/ahorcado solo</code>
+                            <p>Jugar ahorcado en solitario</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/ahorcado multi</code>
+                            <p>Ahorcado multijugador</p>
+                        </div>
+                        <div class="command-card">
+                            <code>/help</code>
+                            <p>Muestra todos los comandos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="command-category">
+                    <h3 class="category-title staff-title">
+                        <span class="category-icon">&#9733;</span>
+                        Comandos de Staff
+                    </h3>
+                    <div class="commands-grid">
+                        <div class="command-card staff">
+                            <code>/addlevel &lt;usuario&gt; &lt;cantidad&gt;</code>
+                            <p>Anadir niveles a un usuario</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/removelevel &lt;usuario&gt; &lt;cantidad&gt;</code>
+                            <p>Quitar niveles a un usuario</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/setlevel &lt;usuario&gt; &lt;nivel&gt;</code>
+                            <p>Establecer nivel exacto</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/xp add/remove/reset</code>
+                            <p>Gestionar XP de usuarios</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/boost add</code>
+                            <p>Anadir boost a usuario/canal</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/globalboost</code>
+                            <p>Activar boost global</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/removeglobalboost</code>
+                            <p>Quitar boost global</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/banxp user/channel</code>
+                            <p>Banear de ganar XP</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/unbanxp user/channel</code>
+                            <p>Desbanear de XP</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/resettemporada</code>
+                            <p>Resetear toda la XP del servidor</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/clearlevelroles</code>
+                            <p>Quitar todos los roles de nivel</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/embed</code>
+                            <p>Crear embed personalizado</p>
+                        </div>
+                        <div class="command-card staff">
+                            <code>/mensaje &lt;texto&gt;</code>
+                            <p>Enviar mensaje plano</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MINIJUEGOS -->
+        <section id="minijuegos" class="section">
+            <h2 class="section-title">
+                <span class="title-icon">&#9830;</span>
+                Minijuegos
+            </h2>
+
+            <div class="minigames-grid">
+                <div class="minigame-card trivia-card">
+                    <div class="minigame-header">
+                        <div class="minigame-icon trivia-icon">?</div>
+                        <h3>Trivia</h3>
+                    </div>
+                    <div class="minigame-content">
+                        <p class="minigame-desc">Responde 5 preguntas de conocimiento general</p>
+                        <div class="minigame-details">
+                            <div class="detail"><span class="label">Preguntas:</span><span class="value">5</span></div>
+                            <div class="detail"><span class="label">Recompensa:</span><span class="value">20% boost x12h o 1.5 niveles</span></div>
+                            <div class="detail"><span class="label">Comando:</span><code>/minigame trivia</code></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="minigame-card rps-card">
+                    <div class="minigame-header">
+                        <div class="minigame-icon rps-icon">&#9994;</div>
+                        <h3>Piedra, Papel o Tijeras</h3>
+                    </div>
+                    <div class="minigame-content">
+                        <p class="minigame-desc">Juega contra otro usuario al mejor de 3</p>
+                        <div class="minigame-details">
+                            <div class="detail"><span class="label">Formato:</span><span class="value">Mejor de 3</span></div>
+                            <div class="detail"><span class="label">Recompensa:</span><span class="value">30% boost x2h</span></div>
+                            <div class="detail"><span class="label">Comando:</span><code>/minigame rps @oponente</code></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="minigame-card roulette-card">
+                    <div class="minigame-header">
+                        <div class="minigame-icon roulette-icon">&#9760;</div>
+                        <h3>Ruleta Rusa</h3>
+                    </div>
+                    <div class="minigame-content">
+                        <p class="minigame-desc">Alto riesgo, alta recompensa. Apuesta tus niveles!</p>
+                        <div class="minigame-details">
+                            <div class="detail warning"><span class="label">Ganador:</span><span class="value">+2.5 niveles</span></div>
+                            <div class="detail danger"><span class="label">Perdedor:</span><span class="value">-3 niveles</span></div>
+                            <div class="detail"><span class="label">Comando:</span><code>/minigame roulette @oponente</code></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="minigame-card hangman-card">
+                    <div class="minigame-header">
+                        <div class="minigame-icon hangman-icon">&#9786;</div>
+                        <h3>Ahorcado</h3>
+                    </div>
+                    <div class="minigame-content">
+                        <p class="minigame-desc">Adivina la palabra letra por letra</p>
+                        <div class="hangman-modes">
+                            <div class="mode-box">
+                                <h4>Modo Solitario</h4>
+                                <ul>
+                                    <li>3 rondas consecutivas</li>
+                                    <li>Ganar 2/3: 25% boost x24h o 1 nivel</li>
+                                    <li>Cooldown: 48 horas</li>
+                                    <li>Comando: <code>/ahorcado solo</code></li>
+                                </ul>
+                            </div>
+                            <div class="mode-box">
+                                <h4>Modo Multijugador</h4>
+                                <ul>
+                                    <li>Host crea palabra personalizada</li>
+                                    <li>Recompensa: +0.5 niveles</li>
+                                    <li>Cooldown: 30 minutos</li>
+                                    <li>Comando: <code>/ahorcado multi</code></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TARJETAS -->
+        <section id="tarjetas" class="section">
+            <h2 class="section-title">
+                <span class="title-icon">&#9827;</span>
+                Temas de Tarjetas
+            </h2>
+
+            <p class="section-intro">Las tarjetas de rango se generan dinamicamente con diferentes temas pixel art segun tu nivel y rol.</p>
+
+            <div class="themes-grid">
+                <div class="theme-card normal-theme">
+                    <div class="theme-preview">
+                        <div class="pixel-art-preview normal"></div>
+                    </div>
+                    <div class="theme-info">
+                        <h3>Normal</h3>
+                        <p>Pixel art basico</p>
+                        <span class="theme-requirement">Usuarios normales</span>
+                    </div>
+                </div>
+
+                <div class="theme-card ocean-theme">
+                    <div class="theme-preview">
+                        <div class="pixel-art-preview ocean"></div>
+                    </div>
+                    <div class="theme-info">
+                        <h3>Ocean</h3>
+                        <p>Tema marino</p>
+                        <span class="theme-requirement">Nivel 25+ (Miembro Activo)</span>
+                    </div>
+                </div>
+
+                <div class="theme-card zelda-theme-card">
+                    <div class="theme-preview">
+                        <div class="pixel-art-preview zelda"></div>
+                    </div>
+                    <div class="theme-info">
+                        <h3>Zelda</h3>
+                        <p>Amarillo y verde</p>
+                        <span class="theme-requirement">Nivel 35+ (Super Activo)</span>
+                    </div>
+                </div>
+
+                <div class="theme-card pokemon-theme-card">
+                    <div class="theme-preview">
+                        <div class="pixel-art-preview pokemon"></div>
+                    </div>
+                    <div class="theme-info">
+                        <h3>Pokemon</h3>
+                        <p>Rojo y amarillo</p>
+                        <span class="theme-requirement">Nivel 100+</span>
+                    </div>
+                </div>
+
+                <div class="theme-card gd-theme">
+                    <div class="theme-preview">
+                        <div class="pixel-art-preview geometry"></div>
+                    </div>
+                    <div class="theme-info">
+                        <h3>Geometry Dash</h3>
+                        <p>Colores neon</p>
+                        <span class="theme-requirement">Boosters</span>
+                    </div>
+                </div>
+
+                <div class="theme-card night-theme">
+                    <div class="theme-preview">
+                        <div class="pixel-art-preview night"></div>
+                    </div>
+                    <div class="theme-info">
+                        <h3>Night</h3>
+                        <p>Noche estrellada</p>
+                        <span class="theme-requirement">VIPs</span>
+                    </div>
+                </div>
+
+                <div class="theme-card special-theme">
+                    <div class="theme-preview">
+                        <div class="pixel-art-preview special"></div>
+                    </div>
+                    <div class="theme-info">
+                        <h3>Aleatorio</h3>
+                        <p>Roblox, Minecraft, Zelda, FNAF, GD</p>
+                        <span class="theme-requirement">Usuario Especial</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LEADERBOARD -->
+        <section id="leaderboard" class="section">
+            <h2 class="section-title">
+                <span class="title-icon">&#9813;</span>
+                Leaderboard Completo
+            </h2>
+
+            <div class="leaderboard-container">
+                <div class="leaderboard-header">
+                    <div class="leaderboard-stats">
+                        <span id="lb-total">Cargando...</span>
+                        <span class="lb-note">(Maximo 500 usuarios)</span>
+                    </div>
+                    <div class="leaderboard-search">
+                        <input type="text" id="search-user" placeholder="Buscar usuario..." class="pixel-input">
+                    </div>
+                </div>
+
+                <div class="leaderboard-table-container">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">#</th>
+                                <th class="user-col">Usuario</th>
+                                <th class="level-col">Nivel</th>
+                                <th class="xp-col">XP Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <tr>
+                                <td colspan="4" class="loading-row">
+                                    <div class="loading-spinner"></div>
+                                    <span>Cargando leaderboard...</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="leaderboard-footer">
+                    <div class="pagination">
+                        <button id="prev-page" class="pixel-btn" disabled>&lt; Anterior</button>
+                        <span id="page-info">Pagina 1</span>
+                        <button id="next-page" class="pixel-btn">Siguiente &gt;</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>Desarrollado con &#9829; por Sirgio Team</p>
+            <p class="footer-tech">Node.js | Discord.js v14 | Canvas</p>
+        </div>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

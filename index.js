@@ -14,20 +14,52 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Servidor HTTP para Render y Uptime Robot
+// Servidor HTTP para Render, Uptime Robot y Dashboard Web
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.get('/', (req, res) => {
-  res.status(200).send('Bot Discord está corriendo ✅');
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/leaderboard', (req, res) => {
+  try {
+    const allUsers = Object.values(db.users);
+    
+    const sortedUsers = allUsers
+      .filter(user => user.totalXp > 0)
+      .sort((a, b) => b.totalXp - a.totalXp)
+      .slice(0, 500);
+    
+    res.json({
+      total: allUsers.length,
+      users: sortedUsers
+    });
+  } catch (error) {
+    console.error('Error getting leaderboard:', error);
+    res.status(500).json({ error: 'Error al obtener el leaderboard' });
+  }
 });
 
-// Endpoint para Uptime Robot o servicios similares
+app.get('/api/stats', (req, res) => {
+  try {
+    const allUsers = Object.values(db.users);
+    const totalXp = allUsers.reduce((sum, user) => sum + (user.totalXp || 0), 0);
+    const maxLevel = Math.max(...allUsers.map(u => u.level || 0), 0);
+    
+    res.json({
+      totalUsers: allUsers.length,
+      totalXp: totalXp,
+      highestLevel: maxLevel
+    });
+  } catch (error) {
+    console.error('Error getting stats:', error);
+    res.status(500).json({ error: 'Error al obtener estadisticas' });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Alias para compatibilidad
 app.get('/ping', (req, res) => {
   res.status(200).send('pong');
 });
@@ -35,9 +67,9 @@ app.get('/ping', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 Servidor web escuchando en puerto ${PORT}`);
   console.log(`📍 URLs disponibles:`);
-  console.log(`   - http://localhost:${PORT}/     (inicio)`);
-  console.log(`   - http://localhost:${PORT}/health (Uptime Robot)`);
-  console.log(`   - http://localhost:${PORT}/ping   (ping)`);
+  console.log(`   - http://localhost:${PORT}/         (Dashboard)`);
+  console.log(`   - http://localhost:${PORT}/health   (Uptime Robot)`);
+  console.log(`   - http://localhost:${PORT}/api/leaderboard  (API)`);
 });
 
 const client = new Client({
