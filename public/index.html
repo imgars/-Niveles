@@ -23,6 +23,7 @@
                 <a href="#comandos" class="nav-link" data-section="comandos">Comandos</a>
                 <a href="#minijuegos" class="nav-link" data-section="minijuegos">Minijuegos</a>
                 <a href="#tarjetas" class="nav-link" data-section="tarjetas">Tarjetas</a>
+                <a href="#preguntas" class="nav-link" data-section="preguntas">Preguntas</a>
                 <a href="#leaderboard" class="nav-link" data-section="leaderboard">Leaderboard</a>
             </nav>
         </div>
@@ -492,6 +493,47 @@
                         <h3>Aleatorio</h3>
                         <p>Roblox, Minecraft, Zelda, FNAF, GD</p>
                         <span class="theme-requirement">Usuario Especial</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PREGUNTAS Y RESPUESTAS -->
+        <section id="preguntas" class="section">
+            <h2 class="section-title">
+                <span class="title-icon">❓</span>
+                Preguntas Frecuentes
+            </h2>
+
+            <div class="faq-container">
+                <div class="faq-form-section">
+                    <h3>Haz una Pregunta</h3>
+                    <form id="question-form" class="pixel-form">
+                        <input 
+                            type="text" 
+                            id="asker-name" 
+                            placeholder="Tu nombre" 
+                            maxlength="50"
+                            required
+                            class="pixel-input">
+                        <textarea 
+                            id="question-text" 
+                            placeholder="Tu pregunta sobre el bot..." 
+                            maxlength="500"
+                            required
+                            class="pixel-textarea"></textarea>
+                        <button type="submit" class="pixel-btn">Enviar Pregunta</button>
+                        <div id="form-message" class="form-message"></div>
+                    </form>
+                </div>
+
+                <div class="faq-list-section">
+                    <h3>Preguntas</h3>
+                    <div id="questions-list" class="questions-grid">
+                        <div class="loading-row">
+                            <div class="loading-spinner"></div>
+                            <span>Cargando preguntas...</span>
+                        </div>
                     </div>
                 </div>
             </div>

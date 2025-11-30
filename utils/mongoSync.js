@@ -24,6 +24,18 @@ const boostSchema = new mongoose.Schema({
 
 const Boost = mongoose.model('Boost', boostSchema);
 
+// Esquema de Preguntas
+const questionSchema = new mongoose.Schema({
+  question: String,
+  askerName: String,
+  answer: String,
+  answered: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+  answeredAt: Date
+});
+
+const Question = mongoose.model('Question', questionSchema);
+
 let isConnected = false;
 
 export async function connectMongoDB() {
@@ -91,6 +103,44 @@ export async function getAllBoostsFromMongo() {
   } catch (error) {
     console.error('Error obteniendo boosts de MongoDB:', error.message);
     return { global: [], users: {}, channels: {} };
+  }
+}
+
+export async function saveQuestionToMongo(questionData) {
+  if (!isConnected) return null;
+  try {
+    const newQuestion = new Question(questionData);
+    const saved = await newQuestion.save();
+    return saved;
+  } catch (error) {
+    console.error('Error guardando pregunta en MongoDB:', error.message);
+    return null;
+  }
+}
+
+export async function getQuestionsFromMongo() {
+  if (!isConnected) return [];
+  try {
+    const questions = await Question.find({}).sort({ createdAt: -1 }).lean();
+    return questions;
+  } catch (error) {
+    console.error('Error obteniendo preguntas de MongoDB:', error.message);
+    return [];
+  }
+}
+
+export async function answerQuestionInMongo(questionId, answer) {
+  if (!isConnected) return null;
+  try {
+    const updated = await Question.findByIdAndUpdate(
+      questionId,
+      { answer, answered: true, answeredAt: new Date() },
+      { new: true }
+    );
+    return updated;
+  } catch (error) {
+    console.error('Error respondiendo pregunta en MongoDB:', error.message);
+    return null;
   }
 }
 

@@ -5,7 +5,7 @@ import { calculateLevel, getXPProgress, getRandomXP, calculateBoostMultiplier, a
 import { generateRankCard } from './utils/cardGenerator.js';
 import { initializeNightBoost, getNightBoostMultiplier } from './utils/timeBoost.js';
 import { isStaff } from './utils/helpers.js';
-import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected } from './utils/mongoSync.js';
+import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, saveQuestionToMongo, getQuestionsFromMongo, answerQuestionInMongo } from './utils/mongoSync.js';
 import express from 'express';
 
 import fs from 'fs';
@@ -218,6 +218,65 @@ app.get('/api/stats', (req, res) => {
   } catch (error) {
     console.error('Error getting stats:', error);
     res.status(500).json({ error: 'Error al obtener estadisticas' });
+  }
+});
+
+// API para Preguntas y Respuestas
+app.get('/api/questions', async (req, res) => {
+  try {
+    const questions = await getQuestionsFromMongo();
+    res.json(questions || []);
+  } catch (error) {
+    console.error('Error getting questions:', error);
+    res.status(500).json({ error: 'Error al obtener preguntas' });
+  }
+});
+
+app.post('/api/questions', express.json(), async (req, res) => {
+  try {
+    const { question, askerName } = req.body;
+    
+    if (!question || !askerName) {
+      return res.status(400).json({ error: 'Pregunta y nombre requeridos' });
+    }
+    
+    if (question.length > 500) {
+      return res.status(400).json({ error: 'La pregunta es muy larga (máx 500 caracteres)' });
+    }
+    
+    const savedQuestion = await saveQuestionToMongo({
+      question,
+      askerName,
+      answered: false
+    });
+    
+    res.json(savedQuestion);
+  } catch (error) {
+    console.error('Error saving question:', error);
+    res.status(500).json({ error: 'Error al guardar pregunta' });
+  }
+});
+
+app.post('/api/questions/:id/answer', express.json(), async (req, res) => {
+  try {
+    const { answer, password } = req.body;
+    const { id } = req.params;
+    
+    // Validar contraseña (usa env var o una clave simple)
+    const adminPassword = process.env.ADMIN_PASSWORD || 'cambiar-esto';
+    if (password !== adminPassword) {
+      return res.status(403).json({ error: 'Contraseña incorrecta' });
+    }
+    
+    if (!answer || answer.length > 1000) {
+      return res.status(400).json({ error: 'Respuesta inválida' });
+    }
+    
+    const updatedQuestion = await answerQuestionInMongo(id, answer);
+    res.json(updatedQuestion);
+  } catch (error) {
+    console.error('Error answering question:', error);
+    res.status(500).json({ error: 'Error al responder pregunta' });
   }
 });
 

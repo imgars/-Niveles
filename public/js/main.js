@@ -29,6 +29,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (sectionId === 'leaderboard' && leaderboardData.length === 0) {
             loadLeaderboard();
         }
+        
+        if (sectionId === 'preguntas') {
+            loadQuestions();
+        }
     }
 
     navLinks.forEach(link => {
@@ -39,6 +43,84 @@ document.addEventListener('DOMContentLoaded', function() {
             history.pushState(null, '', `#${sectionId}`);
         });
     });
+
+    // Cargar preguntas
+    async function loadQuestions() {
+        try {
+            const response = await fetch('/api/questions');
+            const questions = await response.json();
+            
+            const questionsList = document.getElementById('questions-list');
+            questionsList.innerHTML = '';
+            
+            if (questions.length === 0) {
+                questionsList.innerHTML = '<div class="no-answered">No hay preguntas aún. ¡Sé el primero!</div>';
+                return;
+            }
+            
+            questions.forEach(q => {
+                const card = document.createElement('div');
+                card.className = `question-card ${q.answered ? 'answered' : ''}`;
+                
+                const date = new Date(q.createdAt).toLocaleDateString('es-ES');
+                
+                card.innerHTML = `
+                    <div class="question-header">
+                        <span class="asker-name">${q.askerName}</span>
+                        <span class="question-date">${date}</span>
+                    </div>
+                    <div class="question-text">${q.question}</div>
+                    ${q.answered ? `
+                        <div class="answer-section">
+                            <span class="answer-label">Respuesta:</span>
+                            <div class="answer-text">${q.answer}</div>
+                        </div>
+                    ` : '<div class="no-answered">Pendiente de respuesta...</div>'}
+                `;
+                
+                questionsList.appendChild(card);
+            });
+        } catch (error) {
+            console.error('Error loading questions:', error);
+        }
+    }
+    
+    // Manejar formulario de preguntas
+    const questionForm = document.getElementById('question-form');
+    if (questionForm) {
+        questionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const askerName = document.getElementById('asker-name').value.trim();
+            const questionText = document.getElementById('question-text').value.trim();
+            const messageDiv = document.getElementById('form-message');
+            
+            if (!askerName || !questionText) return;
+            
+            try {
+                const response = await fetch('/api/questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: questionText, askerName })
+                });
+                
+                if (response.ok) {
+                    messageDiv.textContent = '✅ Pregunta enviada correctamente!';
+                    messageDiv.className = 'form-message success';
+                    questionForm.reset();
+                    setTimeout(() => messageDiv.className = 'form-message', 3000);
+                    loadQuestions();
+                } else {
+                    const error = await response.json();
+                    messageDiv.textContent = '❌ ' + error.error;
+                    messageDiv.className = 'form-message error';
+                }
+            } catch (error) {
+                messageDiv.textContent = '❌ Error al enviar pregunta';
+                messageDiv.className = 'form-message error';
+            }
+        });
+    }
 
     const hash = window.location.hash.slice(1);
     if (hash && document.getElementById(hash)) {
