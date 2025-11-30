@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, AttachmentBuilder } from 'discord.js';
+import { SlashCommandBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import db from '../utils/database.js';
 
 export default {
@@ -47,6 +47,13 @@ export default {
       }
     }
     
+    const viewFullButton = new ButtonBuilder()
+      .setLabel('Ver leaderboard completo')
+      .setStyle(ButtonStyle.Link)
+      .setURL(`https://${process.env.REPLIT_DOMAINS || 'localhost:5000'}/`);
+    
+    const row = new ActionRowBuilder().addComponents(viewFullButton);
+    
     await interaction.editReply({
       embeds: [{
         color: 0x00BFFF,
@@ -55,7 +62,8 @@ export default {
         fields: fields,
         footer: { text: `Total de usuarios activos: ${allUsers.length}` },
         timestamp: new Date()
-      }]
+      }],
+      components: [row]
     });
   }
 };
