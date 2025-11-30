@@ -1,309 +1,182 @@
-import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const DATA_DIR = './data';
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const BOOSTS_FILE = path.join(DATA_DIR, 'boosts.json');
+const COOLDOWNS_FILE = path.join(DATA_DIR, 'cooldowns.json');
+const BANS_FILE = path.join(DATA_DIR, 'bans.json');
 
-// Definir esquemas
-const UserSchema = new mongoose.Schema({
-  userId: String,
-  guildId: String,
-  xp: { type: Number, default: 0 },
-  level: { type: Number, default: 0 },
-  totalXp: { type: Number, default: 0 }
-}, { timestamps: true });
-
-const BoostSchema = new mongoose.Schema({
-  type: String, // 'global', 'user', 'channel'
-  target: String,
-  multiplier: Number,
-  expiresAt: Date,
-  description: String
-}, { timestamps: true });
-
-const CooldownSchema = new mongoose.Schema({
-  type: String, // 'xp', 'minigames'
-  userId: String,
-  expiresAt: Date
-}, { timestamps: true });
-
-const BanSchema = new mongoose.Schema({
-  userId: String,
-  channelId: String,
-  expiresAt: Date
-}, { timestamps: true });
-
-// Crear modelos
-const User = mongoose.model('User', UserSchema);
-const Boost = mongoose.model('Boost', BoostSchema);
-const Cooldown = mongoose.model('Cooldown', CooldownSchema);
-const Ban = mongoose.model('Ban', BanSchema);
-
-// Conectar a MongoDB
-let isConnected = false;
-
-async function connectDB() {
-  if (isConnected) return;
-  
-  try {
-    if (!MONGODB_URI) {
-      throw new Error('MONGODB_URI is not set');
-    }
-    
-    await mongoose.connect(MONGODB_URI);
-    isConnected = true;
-    console.log('✅ MongoDB connected');
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
-  }
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
 class Database {
   constructor() {
-    // Inicializamos sin datos cargados, se cargan de MongoDB
-    this.users = {};
-    this.boosts = { global: [], users: {}, channels: {} };
-    this.cooldowns = { xp: {}, minigames: {} };
-    this.bans = { users: {}, channels: [] };
-    
-    connectDB();
+    this.users = this.loadFile(USERS_FILE, {});
+    this.boosts = this.loadFile(BOOSTS_FILE, { global: [], users: {}, channels: {} });
+    this.cooldowns = this.loadFile(COOLDOWNS_FILE, { xp: {}, minigames: {} });
+    this.bans = this.loadFile(BANS_FILE, { users: {}, channels: [] });
   }
 
-  async getUser(guildId, userId) {
+  loadFile(filePath, defaultData) {
+    try {
+      if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(data);
+      }
+    } catch (error) {
+      console.error(`Error loading ${filePath}:`, error);
+    }
+    return defaultData;
+  }
+
+  saveFile(filePath, data) {
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error(`Error saving ${filePath}:`, error);
+    }
+  }
+
+  getUser(guildId, userId) {
     const key = `${guildId}-${userId}`;
-    
-    // Intentar buscar en MongoDB
-    let user = await User.findOne({ userId, guildId });
-    
-    if (!user) {
-      // Crear nuevo usuario si no existe
-      user = new User({
+    if (!this.users[key]) {
+      this.users[key] = {
         userId,
         guildId,
         xp: 0,
         level: 0,
         totalXp: 0
-      });
-      await user.save();
+      };
     }
-    
-    return {
-      userId: user.userId,
-      guildId: user.guildId,
-      xp: user.xp,
-      level: user.level,
-      totalXp: user.totalXp
+    return this.users[key];
+  }
+
+  saveUser(guildId, userId, data) {
+    const key = `${guildId}-${userId}`;
+    this.users[key] = { ...this.users[key], ...data };
+    this.saveFile(USERS_FILE, this.users);
+  }
+
+  getAllUsers(guildId) {
+    return Object.values(this.users).filter(u => u.guildId === guildId);
+  }
+
+  addBoost(type, target, multiplier, duration, description) {
+    const boost = {
+      type,
+      target,
+      multiplier,
+      expiresAt: duration ? Date.now() + duration : null,
+      description
     };
+
+    if (type === 'global') {
+      this.boosts.global.push(boost);
+    } else if (type === 'user') {
+      if (!this.boosts.users[target]) this.boosts.users[target] = [];
+      this.boosts.users[target].push(boost);
+    } else if (type === 'channel') {
+      if (!this.boosts.channels[target]) this.boosts.channels[target] = [];
+      this.boosts.channels[target].push(boost);
+    }
+
+    this.saveFile(BOOSTS_FILE, this.boosts);
   }
 
-  async saveUser(guildId, userId, data) {
-    try {
-      await User.findOneAndUpdate(
-        { userId, guildId },
-        data,
-        { upsert: true, new: true }
-      );
-      
-      // Actualizar caché local
-      const key = `${guildId}-${userId}`;
-      this.users[key] = { ...this.users[key], ...data, userId, guildId };
-    } catch (error) {
-      console.error('Error saving user:', error);
+  getActiveBoosts(userId = null, channelId = null) {
+    const now = Date.now();
+    const active = [];
+    let boostsChanged = false;
+
+    const oldGlobalLength = this.boosts.global.length;
+    this.boosts.global = this.boosts.global.filter(b => !b.expiresAt || b.expiresAt > now);
+    if (this.boosts.global.length !== oldGlobalLength) boostsChanged = true;
+    active.push(...this.boosts.global);
+
+    if (userId && this.boosts.users[userId]) {
+      const oldUserLength = this.boosts.users[userId].length;
+      this.boosts.users[userId] = this.boosts.users[userId].filter(b => !b.expiresAt || b.expiresAt > now);
+      if (this.boosts.users[userId].length !== oldUserLength) boostsChanged = true;
+      active.push(...this.boosts.users[userId]);
+    }
+
+    if (channelId && this.boosts.channels[channelId]) {
+      const oldChannelLength = this.boosts.channels[channelId].length;
+      this.boosts.channels[channelId] = this.boosts.channels[channelId].filter(b => !b.expiresAt || b.expiresAt > now);
+      if (this.boosts.channels[channelId].length !== oldChannelLength) boostsChanged = true;
+      active.push(...this.boosts.channels[channelId]);
+    }
+
+    if (boostsChanged) {
+      this.saveFile(BOOSTS_FILE, this.boosts);
+    }
+
+    return active;
+  }
+
+  removeGlobalBoost() {
+    this.boosts.global = [];
+    this.saveFile(BOOSTS_FILE, this.boosts);
+  }
+
+  setCooldown(type, userId, duration) {
+    if (!this.cooldowns[type]) this.cooldowns[type] = {};
+    this.cooldowns[type][userId] = Date.now() + duration;
+    this.saveFile(COOLDOWNS_FILE, this.cooldowns);
+  }
+
+  checkCooldown(type, userId) {
+    if (!this.cooldowns[type] || !this.cooldowns[type][userId]) return false;
+    const remaining = this.cooldowns[type][userId] - Date.now();
+    return remaining > 0 ? remaining : false;
+  }
+
+  banUser(userId, duration) {
+    this.bans.users[userId] = duration ? Date.now() + duration : null;
+    this.saveFile(BANS_FILE, this.bans);
+  }
+
+  unbanUser(userId) {
+    delete this.bans.users[userId];
+    this.saveFile(BANS_FILE, this.bans);
+  }
+
+  isUserBanned(userId) {
+    if (!this.bans.users[userId]) return false;
+    if (this.bans.users[userId] === null) return true;
+    if (this.bans.users[userId] > Date.now()) return true;
+    delete this.bans.users[userId];
+    this.saveFile(BANS_FILE, this.bans);
+    return false;
+  }
+
+  banChannel(channelId) {
+    if (!this.bans.channels.includes(channelId)) {
+      this.bans.channels.push(channelId);
+      this.saveFile(BANS_FILE, this.bans);
     }
   }
 
-  async getAllUsers(guildId) {
-    try {
-      return await User.find({ guildId });
-    } catch (error) {
-      console.error('Error getting all users:', error);
-      return [];
-    }
+  unbanChannel(channelId) {
+    this.bans.channels = this.bans.channels.filter(c => c !== channelId);
+    this.saveFile(BANS_FILE, this.bans);
   }
 
-  async addBoost(type, target, multiplier, duration, description) {
-    try {
-      const boost = new Boost({
-        type,
-        target,
-        multiplier,
-        expiresAt: duration ? new Date(Date.now() + duration) : null,
-        description
-      });
-      await boost.save();
-    } catch (error) {
-      console.error('Error adding boost:', error);
-    }
+  isChannelBanned(channelId) {
+    return this.bans.channels.includes(channelId);
   }
 
-  async getActiveBoosts(userId = null, channelId = null) {
-    try {
-      const now = new Date();
-      const active = [];
-      
-      // Boosts globales
-      const globalBoosts = await Boost.find({
-        type: 'global',
-        $or: [
-          { expiresAt: null },
-          { expiresAt: { $gt: now } }
-        ]
-      });
-      active.push(...globalBoosts);
-      
-      // Boosts por usuario
-      if (userId) {
-        const userBoosts = await Boost.find({
-          type: 'user',
-          target: userId,
-          $or: [
-            { expiresAt: null },
-            { expiresAt: { $gt: now } }
-          ]
-        });
-        active.push(...userBoosts);
+  resetAllUsers(guildId) {
+    Object.keys(this.users).forEach(key => {
+      if (this.users[key].guildId === guildId) {
+        this.users[key].xp = 0;
+        this.users[key].level = 0;
+        this.users[key].totalXp = 0;
       }
-      
-      // Boosts por canal
-      if (channelId) {
-        const channelBoosts = await Boost.find({
-          type: 'channel',
-          target: channelId,
-          $or: [
-            { expiresAt: null },
-            { expiresAt: { $gt: now } }
-          ]
-        });
-        active.push(...channelBoosts);
-      }
-      
-      // Limpiar boosts expirados
-      await Boost.deleteMany({ expiresAt: { $lt: now } });
-      
-      return active;
-    } catch (error) {
-      console.error('Error getting active boosts:', error);
-      return [];
-    }
-  }
-
-  async removeGlobalBoost() {
-    try {
-      await Boost.deleteMany({ type: 'global' });
-    } catch (error) {
-      console.error('Error removing global boost:', error);
-    }
-  }
-
-  async setCooldown(type, userId, duration) {
-    try {
-      await Cooldown.findOneAndUpdate(
-        { type, userId },
-        { expiresAt: new Date(Date.now() + duration) },
-        { upsert: true }
-      );
-    } catch (error) {
-      console.error('Error setting cooldown:', error);
-    }
-  }
-
-  async checkCooldown(type, userId) {
-    try {
-      const cooldown = await Cooldown.findOne({ type, userId });
-      
-      if (!cooldown) return false;
-      
-      const remaining = cooldown.expiresAt - Date.now();
-      
-      if (remaining > 0) {
-        return remaining;
-      } else {
-        await Cooldown.deleteOne({ _id: cooldown._id });
-        return false;
-      }
-    } catch (error) {
-      console.error('Error checking cooldown:', error);
-      return false;
-    }
-  }
-
-  async banUser(userId, duration) {
-    try {
-      await Ban.findOneAndUpdate(
-        { userId },
-        { expiresAt: duration ? new Date(Date.now() + duration) : null },
-        { upsert: true }
-      );
-    } catch (error) {
-      console.error('Error banning user:', error);
-    }
-  }
-
-  async unbanUser(userId) {
-    try {
-      await Ban.deleteOne({ userId });
-    } catch (error) {
-      console.error('Error unbanning user:', error);
-    }
-  }
-
-  async isUserBanned(userId) {
-    try {
-      const ban = await Ban.findOne({ userId });
-      
-      if (!ban) return false;
-      if (!ban.expiresAt) return true;
-      
-      if (ban.expiresAt > new Date()) {
-        return true;
-      } else {
-        await Ban.deleteOne({ _id: ban._id });
-        return false;
-      }
-    } catch (error) {
-      console.error('Error checking user ban:', error);
-      return false;
-    }
-  }
-
-  async banChannel(channelId) {
-    try {
-      const exists = await Ban.findOne({ channelId });
-      if (!exists) {
-        const ban = new Ban({ channelId });
-        await ban.save();
-      }
-    } catch (error) {
-      console.error('Error banning channel:', error);
-    }
-  }
-
-  async unbanChannel(channelId) {
-    try {
-      await Ban.deleteOne({ channelId });
-    } catch (error) {
-      console.error('Error unbanning channel:', error);
-    }
-  }
-
-  async isChannelBanned(channelId) {
-    try {
-      const ban = await Ban.findOne({ channelId });
-      return !!ban;
-    } catch (error) {
-      console.error('Error checking channel ban:', error);
-      return false;
-    }
-  }
-
-  async resetAllUsers(guildId) {
-    try {
-      await User.updateMany(
-        { guildId },
-        { xp: 0, level: 0, totalXp: 0 }
-      );
-    } catch (error) {
-      console.error('Error resetting users:', error);
-    }
+    });
+    this.saveFile(USERS_FILE, this.users);
   }
 }
 
