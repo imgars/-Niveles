@@ -38,16 +38,16 @@ export default {
       const targetUser = interaction.options.getUser('usuario');
       
       if (targetUser.id === interaction.user.id) {
-        return interaction.reply({ content: '❌ No puedes crear una racha contigo mismo', ephemeral: true });
+        return interaction.reply({ content: '❌ No puedes crear una racha contigo mismo', flags: 64 });
       }
       
       if (targetUser.bot) {
-        return interaction.reply({ content: '❌ No puedes crear una racha con un bot', ephemeral: true });
+        return interaction.reply({ content: '❌ No puedes crear una racha con un bot', flags: 64 });
       }
       
       const existingStreak = await getStreakBetween(interaction.guildId, interaction.user.id, targetUser.id);
       if (existingStreak && existingStreak.status === 'active') {
-        return interaction.reply({ content: `⚠️ Ya tienen una racha activa de ${existingStreak.streakCount} días`, ephemeral: true });
+        return interaction.reply({ content: `⚠️ Ya tienen una racha activa de ${existingStreak.streakCount} días`, flags: 64 });
       }
       
       const embed = new EmbedBuilder()
@@ -84,7 +84,7 @@ export default {
       const userStreaks = await getUserStreaks(interaction.guildId, interaction.user.id);
       
       if (userStreaks.length === 0) {
-        return interaction.reply({ content: '📊 No tienes rachas activas', ephemeral: true });
+        return interaction.reply({ content: '📊 No tienes rachas activas', flags: 64 });
       }
       
       const streakList = userStreaks.map(s => {
@@ -99,7 +99,7 @@ export default {
         .setDescription(streakList || 'No tienes rachas activas')
         .setFooter({ text: 'Mensajea a tu compañero todos los días para mantener la racha' });
       
-      return interaction.reply({ embeds: [embed], ephemeral: true });
+      return interaction.reply({ embeds: [embed], flags: 64 });
     }
     
     if (subcommand === 'usuario') {
@@ -107,7 +107,7 @@ export default {
       const userStreaks = await getUserStreaks(interaction.guildId, targetUser.id);
       
       if (userStreaks.length === 0) {
-        return interaction.reply({ content: `📊 ${targetUser.username} no tiene rachas activas`, ephemeral: true });
+        return interaction.reply({ content: `📊 ${targetUser.username} no tiene rachas activas`, flags: 64 });
       }
       
       const streakList = userStreaks.map(s => {

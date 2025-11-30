@@ -440,65 +440,64 @@ async function handleLevelUp(message, member, userData, oldLevel) {
 }
 
 
-// Manejador unificado de interacciones
+// Manejador de botones
 client.on('interactionCreate', async (interaction) => {
-  // Manejar botones
-  if (interaction.isButton()) {
-    try {
-      if (interaction.customId.startsWith('accept_streak_')) {
-        const proposerId = interaction.customId.split('_')[2];
-        
-        if (isMongoConnected()) {
-          const { EmbedBuilder } = await import('discord.js');
-          
-          await saveStreakToMongo({
-            guildId: interaction.guildId,
-            user1Id: proposerId,
-            user2Id: interaction.user.id,
-            streakCount: 1,
-            status: 'active'
-          });
-          
-          const embed = new EmbedBuilder()
-            .setColor('#39FF14')
-            .setTitle('🔥 ¡Racha iniciada!')
-            .setDescription(`¡Felicidades! <@${proposerId}> y <@${interaction.user.id}> comenzaron una racha de 1 día`)
-            .addFields({ name: 'Regla', value: 'Mensajeen con menciones todos los días para mantenerla' });
-          
-          await interaction.reply({ embeds: [embed] });
-          console.log(`✅ Racha creada entre ${proposerId} y ${interaction.user.id}`);
-        }
-      }
+  if (!interaction.isButton()) return;
+  
+  try {
+    if (interaction.customId.startsWith('accept_streak_')) {
+      const proposerId = interaction.customId.split('_')[2];
       
-      if (interaction.customId === 'reject_streak') {
-        await interaction.reply({ content: '❌ Se rechazó la propuesta de racha', ephemeral: true });
-        console.log(`❌ Racha rechazada por ${interaction.user.id}`);
-      }
-    } catch (error) {
-      console.error('Error manejando botón:', error);
-      if (!interaction.replied) {
-        await interaction.reply({ content: '❌ Error al procesar tu acción', ephemeral: true });
+      if (isMongoConnected()) {
+        const { EmbedBuilder } = await import('discord.js');
+        
+        await saveStreakToMongo({
+          guildId: interaction.guildId,
+          user1Id: proposerId,
+          user2Id: interaction.user.id,
+          streakCount: 1,
+          status: 'active'
+        });
+        
+        const embed = new EmbedBuilder()
+          .setColor('#39FF14')
+          .setTitle('🔥 ¡Racha iniciada!')
+          .setDescription(`¡Felicidades! <@${proposerId}> y <@${interaction.user.id}> comenzaron una racha de 1 día`)
+          .addFields({ name: 'Regla', value: 'Mensajeen con menciones todos los días para mantenerla' });
+        
+        await interaction.reply({ embeds: [embed] });
+        console.log(`✅ Racha creada entre ${proposerId} y ${interaction.user.id}`);
       }
     }
-    return;
-  }
-  
-  // Manejar comandos
-  if (interaction.isChatInputCommand()) {
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
     
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      console.error(`Error executing ${interaction.commandName}:`, error);
-      const reply = { content: '❌ Hubo un error al ejecutar este comando.', ephemeral: true };
-      
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(reply);
-      } else {
-        await interaction.reply(reply);
-      }
+    if (interaction.customId === 'reject_streak') {
+      await interaction.reply({ content: '❌ Se rechazó la propuesta de racha', flags: 64 });
+      console.log(`❌ Racha rechazada por ${interaction.user.id}`);
+    }
+  } catch (error) {
+    console.error('Error manejando botón:', error);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ content: '❌ Error al procesar tu acción', flags: 64 });
+    }
+  }
+});
+
+// Manejador de comandos
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  
+  const command = client.commands.get(interaction.commandName);
+  if (!command) return;
+  
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(`Error executing ${interaction.commandName}:`, error);
+    
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ content: '❌ Hubo un error al ejecutar este comando.', flags: 64 });
+    } else if (interaction.deferred && !interaction.replied) {
+      await interaction.editReply({ content: '❌ Hubo un error al ejecutar este comando.' });
     }
   }
 });
