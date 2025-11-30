@@ -1037,9 +1037,16 @@ body {
 }
 
 .gd-game-icon {
-    font-size: 24px;
-    color: var(--neon-pink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     animation: pulse 2s infinite;
+}
+
+.gd-game-icon svg {
+    width: 60px;
+    height: 60px;
+    filter: drop-shadow(0 0 5px #FF10F0);
 }
 
 .play-btn {
