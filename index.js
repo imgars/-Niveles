@@ -18,6 +18,9 @@ const __dirname = path.dirname(__filename);
 // Conectar a MongoDB en startup
 await connectMongoDB();
 
+// Pasar funciones de MongoDB a la base de datos
+db.setMongoSync({ saveUserToMongo, saveBoostsToMongo });
+
 // Cliente de Discord (definido antes de los endpoints para poder usarlo en la API)
 const client = new Client({
   intents: [
@@ -31,7 +34,7 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Sincronizar datos a MongoDB cada 1 minuto (backup automático)
+// Sincronizar datos a MongoDB cada 2 minutos (backup adicional)
 setInterval(async () => {
   if (isMongoConnected()) {
     try {
@@ -44,18 +47,7 @@ setInterval(async () => {
       console.error('Error en sincronización:', error.message);
     }
   }
-}, 60 * 1000);
-
-// Función para guardar datos críticos inmediatamente a MongoDB
-global.syncToDB = async (guildId, userId, userData) => {
-  if (isMongoConnected()) {
-    try {
-      await saveUserToMongo(guildId, userId, userData);
-    } catch (error) {
-      console.error('Error guardando a MongoDB:', error.message);
-    }
-  }
-};
+}, 2 * 60 * 1000);
 
 // Servidor HTTP para Render, Uptime Robot y Dashboard Web
 const app = express();

@@ -17,6 +17,11 @@ class Database {
     this.boosts = this.loadFile(BOOSTS_FILE, { global: [], users: {}, channels: {} });
     this.cooldowns = this.loadFile(COOLDOWNS_FILE, { xp: {}, minigames: {} });
     this.bans = this.loadFile(BANS_FILE, { users: {}, channels: [] });
+    this.mongoSync = null;
+  }
+
+  setMongoSync(mongoSync) {
+    this.mongoSync = mongoSync;
   }
 
   loadFile(filePath, defaultData) {
@@ -57,6 +62,13 @@ class Database {
     const key = `${guildId}-${userId}`;
     this.users[key] = { ...this.users[key], ...data };
     this.saveFile(USERS_FILE, this.users);
+    
+    // Guardar inmediatamente a MongoDB (no esperar)
+    if (this.mongoSync) {
+      this.mongoSync.saveUserToMongo(guildId, userId, this.users[key]).catch(err => 
+        console.error('Error guardando a MongoDB:', err.message)
+      );
+    }
   }
 
   getAllUsers(guildId) {
@@ -83,6 +95,13 @@ class Database {
     }
 
     this.saveFile(BOOSTS_FILE, this.boosts);
+    
+    // Guardar boosts a MongoDB
+    if (this.mongoSync) {
+      this.mongoSync.saveBoostsToMongo(this.boosts).catch(err => 
+        console.error('Error guardando boosts en MongoDB:', err.message)
+      );
+    }
   }
 
   getActiveBoosts(userId = null, channelId = null) {
@@ -111,6 +130,11 @@ class Database {
 
     if (boostsChanged) {
       this.saveFile(BOOSTS_FILE, this.boosts);
+      if (this.mongoSync) {
+        this.mongoSync.saveBoostsToMongo(this.boosts).catch(err => 
+          console.error('Error guardando boosts en MongoDB:', err.message)
+        );
+      }
     }
 
     return active;
@@ -119,6 +143,12 @@ class Database {
   removeGlobalBoost() {
     this.boosts.global = [];
     this.saveFile(BOOSTS_FILE, this.boosts);
+    
+    if (this.mongoSync) {
+      this.mongoSync.saveBoostsToMongo(this.boosts).catch(err => 
+        console.error('Error guardando boosts en MongoDB:', err.message)
+      );
+    }
   }
 
   setCooldown(type, userId, duration) {
