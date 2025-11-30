@@ -182,16 +182,12 @@ Todos los datos se guardan en archivos JSON:
 - `data/cooldowns.json` - Cooldowns de minijuegos
 - `data/bans.json` - Usuarios y canales baneados
 
-**Importante**: 
-- En Replit: Se guardan en `./data/`
-- En Render: Se guardan en `/opt/render/data/` (volumen persistente)
-- Los datos sobreviven a reinicios y deploys
+**Importante**: Los datos sobreviven a reinicios del bot.
 
-### Configurar Volumen en Render:
-1. Ve a tu servicio en Render.com
-2. Settings → Disks → Add Disk
-3. Name: `data`, Mount Path: `/opt/render/data`, Size: 1GB
-4. ¡Listo! Los datos persisten automáticamente
+**Para persistencia en Render** (sin pagar):
+- Opción 1: Usar **Supabase PostgreSQL** (gratis, 500MB) - Recomendado
+- Opción 2: Usar **Firebase Realtime Database** (gratis, 1GB)
+- Opción 3: Hacer git push de cambios en `data/` a GitHub
 
 ## 🌐 Despliegue a Producción
 

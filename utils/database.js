@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const DATA_DIR = process.env.RENDER ? '/opt/render/data' : './data';
+const DATA_DIR = './data';
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const BOOSTS_FILE = path.join(DATA_DIR, 'boosts.json');
 const COOLDOWNS_FILE = path.join(DATA_DIR, 'cooldowns.json');
