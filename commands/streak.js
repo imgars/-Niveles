@@ -1,36 +1,37 @@
 import { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import { getStreakBetween, saveStreakToMongo, getUserStreaks } from '../utils/mongoSync.js';
 
-export const data = new SlashCommandBuilder()
-  .setName('racha')
-  .setDescription('Gestiona tus rachas')
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName('crear')
-      .setDescription('Crea una racha con otro usuario')
-      .addUserOption(option =>
-        option.setName('usuario')
-          .setDescription('Usuario con el que crear la racha')
-          .setRequired(true)
-      )
-  )
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName('ver')
-      .setDescription('Ve tus rachas activas')
-  )
-  .addSubcommand(subcommand =>
-    subcommand
-      .setName('usuario')
-      .setDescription('Ve las rachas de un usuario')
-      .addUserOption(option =>
-        option.setName('usuario')
-          .setDescription('Usuario del que ver rachas')
-          .setRequired(true)
-      )
-  );
+export default {
+  data: new SlashCommandBuilder()
+    .setName('racha')
+    .setDescription('Gestiona tus rachas')
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('crear')
+        .setDescription('Crea una racha con otro usuario')
+        .addUserOption(option =>
+          option.setName('usuario')
+            .setDescription('Usuario con el que crear la racha')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('ver')
+        .setDescription('Ve tus rachas activas')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('usuario')
+        .setDescription('Ve las rachas de un usuario')
+        .addUserOption(option =>
+          option.setName('usuario')
+            .setDescription('Usuario del que ver rachas')
+            .setRequired(true)
+        )
+    ),
 
-export async function execute(interaction) {
+  async execute(interaction) {
   const subcommand = interaction.options.getSubcommand();
   
   if (subcommand === 'crear') {
@@ -123,4 +124,4 @@ export async function execute(interaction) {
     
     return interaction.reply({ embeds: [embed] });
   }
-}
+};
