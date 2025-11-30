@@ -301,6 +301,22 @@
             </h2>
 
             <div class="minigames-grid">
+                <div class="minigame-card gd-game-card">
+                    <div class="minigame-header">
+                        <div class="minigame-icon gd-game-icon">▮</div>
+                        <h3>Geometry Dash</h3>
+                    </div>
+                    <div class="minigame-content">
+                        <p class="minigame-desc">Salta y esquiva obstáculos en este juego estilo infinite runner</p>
+                        <button class="play-btn" onclick="document.getElementById('gd-modal').style.display='flex'">Click aquí para Jugar</button>
+                        <div class="minigame-details">
+                            <div class="detail"><span class="label">Tipo:</span><span class="value">Infinite Runner</span></div>
+                            <div class="detail"><span class="label">Dificultad:</span><span class="value">Aumenta progresivamente</span></div>
+                            <div class="detail"><span class="label">Controles:</span><span class="value">Click o Espacio para saltar</span></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="minigame-card trivia-card">
                     <div class="minigame-header">
                         <div class="minigame-icon trivia-icon">?</div>
@@ -524,6 +540,15 @@
         </div>
     </footer>
 
+    <!-- Modal para el juego de Geometry Dash -->
+    <div id="gd-modal" class="gd-modal">
+        <div class="gd-modal-content">
+            <span class="gd-close" onclick="document.getElementById('gd-modal').style.display='none'">&times;</span>
+            <canvas id="geometry-dash-game" width="800" height="400"></canvas>
+        </div>
+    </div>
+
     <script src="/js/main.js"></script>
+    <script src="/js/minigame-gd.js"></script>
 </body>
 </html>
