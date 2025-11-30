@@ -1238,6 +1238,9 @@ body {
     font-size: 8px;
     margin-bottom: 10px;
     line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .answer-section {
@@ -1258,6 +1261,9 @@ body {
     color: #FFD700;
     font-size: 8px;
     line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .no-answered {
@@ -1360,6 +1366,9 @@ body {
     color: var(--text);
     font-size: 8px;
     line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 @media (max-width: 768px) {
