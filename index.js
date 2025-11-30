@@ -5,7 +5,7 @@ import { calculateLevel, getXPProgress, getRandomXP, calculateBoostMultiplier, a
 import { generateRankCard } from './utils/cardGenerator.js';
 import { initializeNightBoost, getNightBoostMultiplier } from './utils/timeBoost.js';
 import { isStaff } from './utils/helpers.js';
-import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, saveQuestionToMongo, getQuestionsFromMongo, answerQuestionInMongo, getStreakBetween, saveStreakToMongo, updateStreakDate } from './utils/mongoSync.js';
+import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, saveQuestionToMongo, getQuestionsFromMongo, answerQuestionInMongo, getStreakBetween, saveStreakToMongo, updateStreakDate, getAllStreaksFromMongo } from './utils/mongoSync.js';
 import express from 'express';
 import cron from 'node-cron';
 
@@ -28,6 +28,7 @@ if (mongoConnected) {
     const { getAllUsersFromMongo, getAllBoostsFromMongo } = await import('./utils/mongoSync.js');
     const mongoUsers = await getAllUsersFromMongo();
     const mongoBoosts = await getAllBoostsFromMongo();
+    const mongoStreaks = await getAllStreaksFromMongo();
     
     // Cargar usuarios desde MongoDB
     if (mongoUsers && mongoUsers.length > 0) {
@@ -42,6 +43,11 @@ if (mongoConnected) {
     if (mongoBoosts) {
       db.boosts = mongoBoosts;
       console.log('✅ Boosts cargados desde MongoDB');
+    }
+    
+    // Cargar rachas desde MongoDB
+    if (mongoStreaks && mongoStreaks.length > 0) {
+      console.log(`✅ Cargadas ${mongoStreaks.length} rachas desde MongoDB`);
     }
   } catch (error) {
     console.error('Error cargando datos desde MongoDB:', error.message);
@@ -446,7 +452,11 @@ client.on('interactionCreate', async (interaction) => {
   
   try {
     if (interaction.customId.startsWith('accept_streak_')) {
-      const proposerId = interaction.customId.split('_')[2];
+      const [, proposerId, targetUserId] = interaction.customId.split('_');
+      
+      if (interaction.user.id !== targetUserId) {
+        return interaction.reply({ content: '❌ Solo el usuario etiquetado puede aceptar esta racha', flags: 64 });
+      }
       
       if (isMongoConnected()) {
         const { EmbedBuilder } = await import('discord.js');
@@ -470,7 +480,13 @@ client.on('interactionCreate', async (interaction) => {
       }
     }
     
-    if (interaction.customId === 'reject_streak') {
+    if (interaction.customId.startsWith('reject_streak_')) {
+      const [, proposerId, targetUserId] = interaction.customId.split('_');
+      
+      if (interaction.user.id !== targetUserId) {
+        return interaction.reply({ content: '❌ Solo el usuario etiquetado puede rechazar esta racha', flags: 64 });
+      }
+      
       await interaction.reply({ content: '❌ Se rechazó la propuesta de racha', flags: 64 });
       console.log(`❌ Racha rechazada por ${interaction.user.id}`);
     }

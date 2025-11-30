@@ -242,10 +242,22 @@ export async function getUserStreaks(guildId, userId) {
       guildId,
       $or: [{ user1Id: userId }, { user2Id: userId }],
       status: 'active'
-    });
-    return streaks;
+    }).lean();
+    return streaks || [];
   } catch (error) {
     console.error('Error obteniendo rachas del usuario:', error.message);
+    return [];
+  }
+}
+
+export async function getAllStreaksFromMongo(guildId = null) {
+  if (!isConnected) return [];
+  try {
+    const query = guildId ? { guildId } : {};
+    const streaks = await Streak.find(query).lean();
+    return streaks || [];
+  } catch (error) {
+    console.error('Error obteniendo todas las rachas de MongoDB:', error.message);
     return [];
   }
 }

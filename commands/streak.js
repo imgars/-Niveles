@@ -61,12 +61,12 @@ export default {
         .setThumbnail(interaction.user.displayAvatarURL());
       
       const acceptBtn = new ButtonBuilder()
-        .setCustomId(`accept_streak_${interaction.user.id}`)
+        .setCustomId(`accept_streak_${interaction.user.id}_${targetUser.id}`)
         .setLabel('Aceptar')
         .setStyle(ButtonStyle.Success);
       
       const rejectBtn = new ButtonBuilder()
-        .setCustomId('reject_streak')
+        .setCustomId(`reject_streak_${interaction.user.id}_${targetUser.id}`)
         .setLabel('Rechazar')
         .setStyle(ButtonStyle.Danger);
       
