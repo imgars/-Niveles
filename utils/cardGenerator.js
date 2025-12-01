@@ -4,7 +4,7 @@ import { CONFIG } from '../config.js';
 const CARD_WIDTH = 800;
 const CARD_HEIGHT = 250;
 
-async function getCardTheme(member, level) {
+export async function getCardTheme(member, level) {
   const userId = member.user.id;
   let roles;
   
@@ -42,6 +42,21 @@ async function getCardTheme(member, level) {
   }
   
   return 'pixel';
+}
+
+export function getThemeButtonStyle(theme) {
+  const themeStyles = {
+    pixel: 1,      // Primary - azul
+    ocean: 1,      // Primary - azul claro
+    zelda: 4,      // Danger - dorado/amarillo
+    pokemon: 3,    // Success - rojo/amarillo
+    geometrydash: 3, // Success - neón
+    night: 4,      // Danger - dorado
+    roblox: 3,     // Success
+    minecraft: 3,  // Success
+    fnaf: 4,       // Danger
+  };
+  return themeStyles[theme] || 1;
 }
 
 function getThemeColors(theme) {
