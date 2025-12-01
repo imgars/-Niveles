@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import db from '../utils/database.js';
-import { getXPProgress } from '../utils/xpSystem.js';
+import { getXPProgress, getActiveBoostsText } from '../utils/xpSystem.js';
 import { generateRankCard, getCardTheme, getThemeButtonStyle } from '../utils/cardGenerator.js';
 
 export default {
@@ -20,6 +20,8 @@ export default {
       
       const userData = db.getUser(interaction.guild.id, targetUser.id);
       const progress = getXPProgress(userData.totalXp, userData.level);
+      const boosts = db.getActiveBoosts(targetUser.id, interaction.channelId);
+      const boostsText = getActiveBoostsText(boosts);
       
       // Obtener el tema de la tarjeta (usar seleccionado o automático)
       const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme);
@@ -45,16 +47,22 @@ export default {
           .setLabel('🎮 Gana Recompensas')
           .setStyle(buttonStyle);
         
+        const embed = {
+          color: 0x7289DA,
+          title: `📊 Nivel de ${targetUser.username}`,
+          fields: [
+            { name: 'Nivel', value: `${userData.level}`, inline: true },
+            { name: 'XP', value: `${Math.floor(progress.current)} / ${Math.floor(progress.needed)}`, inline: true },
+            { name: 'Progreso', value: `${Math.floor(progress.percentage)}%`, inline: true }
+          ]
+        };
+        
+        if (boostsText) {
+          embed.fields.push({ name: '🚀 Boosts Activos', value: boostsText });
+        }
+        
         return await interaction.reply({
-          embeds: [{
-            color: 0x7289DA,
-            title: `📊 Nivel de ${targetUser.username}`,
-            fields: [
-              { name: 'Nivel', value: `${userData.level}`, inline: true },
-              { name: 'XP', value: `${Math.floor(progress.current)} / ${Math.floor(progress.needed)}`, inline: true },
-              { name: 'Progreso', value: `${Math.floor(progress.percentage)}%`, inline: true }
-            ]
-          }],
+          embeds: [embed],
           components: [new ActionRowBuilder().addComponents(rewardBtn)]
         });
       }
