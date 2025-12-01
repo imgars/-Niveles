@@ -52,7 +52,8 @@ class Database {
         guildId,
         xp: 0,
         level: 0,
-        totalXp: 0
+        totalXp: 0,
+        selectedCardTheme: null
       };
     }
     return this.users[key];

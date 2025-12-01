@@ -4,7 +4,47 @@ import { CONFIG } from '../config.js';
 const CARD_WIDTH = 800;
 const CARD_HEIGHT = 250;
 
-export async function getCardTheme(member, level) {
+export async function getAvailableThemes(member, level) {
+  const userId = member.user.id;
+  let roles;
+  const themes = ['pixel'];
+  
+  try {
+    const freshMember = await member.guild.members.fetch(userId);
+    roles = freshMember.roles.cache;
+  } catch (error) {
+    console.error('Error fetching fresh member for card theme:', error);
+    roles = member.roles.cache;
+  }
+  
+  if (userId === CONFIG.SPECIAL_USER_ID) {
+    return ['roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash', 'pixel'];
+  }
+  
+  if (roles && roles.has(CONFIG.VIP_ROLE_ID)) {
+    themes.push('night');
+  }
+  
+  if (roles && roles.has(CONFIG.BOOSTER_ROLE_ID)) {
+    themes.push('geometrydash');
+  }
+  
+  if (level >= 100) {
+    themes.push('pokemon');
+  }
+  
+  if (roles && roles.has(CONFIG.LEVEL_ROLES[35])) {
+    themes.push('zelda');
+  }
+  
+  if (roles && roles.has(CONFIG.LEVEL_ROLES[25])) {
+    themes.push('ocean');
+  }
+  
+  return [...new Set(themes)];
+}
+
+export async function getCardTheme(member, level, selectedTheme = null) {
   const userId = member.user.id;
   let roles;
   
@@ -14,6 +54,13 @@ export async function getCardTheme(member, level) {
   } catch (error) {
     console.error('Error fetching fresh member for card theme:', error);
     roles = member.roles.cache;
+  }
+  
+  if (selectedTheme) {
+    const available = await getAvailableThemes(member, level);
+    if (available.includes(selectedTheme)) {
+      return selectedTheme;
+    }
   }
   
   if (userId === CONFIG.SPECIAL_USER_ID) {

@@ -579,7 +579,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-// Manejador de select menus para minijuegos
+// Manejador de select menus para minijuegos y tarjetas
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isStringSelectMenu()) return;
   
@@ -596,6 +596,22 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: 'Usa `/ahorcado solo` para jugar Ahorcado', flags: 64 });
     } else if (selected === 'ahorcado_multi') {
       return interaction.reply({ content: 'Usa `/ahorcado multi` para jugar Ahorcado Multijugador', flags: 64 });
+    }
+  }
+  
+  if (interaction.customId === 'rankcard_theme_select') {
+    try {
+      const selected = interaction.values[0];
+      const userData = db.getUser(interaction.guildId, interaction.user.id);
+      
+      db.saveUser(interaction.guildId, interaction.user.id, {
+        selectedCardTheme: selected
+      });
+      
+      return interaction.reply({ content: `✅ Tema actualizado a **${selected}**. Usa `/level` para ver tu nueva tarjeta`, flags: 64 });
+    } catch (error) {
+      console.error('Error seleccionando tema de tarjeta:', error);
+      return interaction.reply({ content: '❌ Error al actualizar tema', flags: 64 });
     }
   }
 });

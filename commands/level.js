@@ -21,8 +21,8 @@ export default {
       const userData = db.getUser(interaction.guild.id, targetUser.id);
       const progress = getXPProgress(userData.totalXp, userData.level);
       
-      // Obtener el tema de la tarjeta
-      const theme = await getCardTheme(member, userData.level);
+      // Obtener el tema de la tarjeta (usar seleccionado o automático)
+      const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme);
       const buttonStyle = getThemeButtonStyle(theme);
       
       try {
