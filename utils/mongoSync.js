@@ -51,24 +51,25 @@ const Streak = mongoose.model('Streak', streakSchema);
 
 // Esquema de Misiones Semanales
 const missionSchema = new mongoose.Schema({
-  guildId: String,
-  userId: String,
-  weekNumber: Number,
-  year: Number,
+  guildId: { type: String, required: true },
+  userId: { type: String, required: true },
+  weekNumber: { type: Number, required: true },
+  year: { type: Number, required: true },
   missions: [{
-    id: Number,
-    title: String,
-    description: String,
-    type: String, // 'greeting', 'question', 'help', 'participate'
-    target: Number, // cantidad de veces que debe hacer la acción
+    id: { type: Number, required: true },
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    type: { type: String, required: true },
+    target: { type: Number, required: true },
     progress: { type: Number, default: 0 },
     completed: { type: Boolean, default: false },
-    difficulty: { type: Number, default: 1 }, // 1-3
+    difficulty: { type: Number, default: 1 },
     reward: {
-      xp: Number,
-      multiplier: Number,
-      levels: Number
-    }
+      xp: { type: Number, default: 0 },
+      multiplier: { type: Number, default: 0 },
+      levels: { type: Number, default: 0 }
+    },
+    _id: false
   }],
   completedCount: { type: Number, default: 0 },
   completedAt: Date,
