@@ -23,6 +23,8 @@ export default {
 
   async execute(interaction) {
     try {
+      await interaction.deferReply({ flags: 64 });
+      
       const subcommand = interaction.options.getSubcommand();
       const weekNumber = Math.ceil((new Date().getDate()) / 7);
       const year = new Date().getFullYear();
@@ -32,14 +34,14 @@ export default {
         
         if (missions) {
           if (missions.completedCount === 10) {
-            return interaction.reply({ content: '✅ Ya has hecho todas las misiones semanales esta semana. ¡Vuelve la próxima!', flags: 64 });
+            return interaction.editReply({ content: '✅ Ya has hecho todas las misiones semanales esta semana. ¡Vuelve la próxima!' });
           }
-          return interaction.reply({ content: '⚠️ Ya tienes misiones activas. Usa `/mision listar` para verlas', flags: 64 });
+          return interaction.editReply({ content: '⚠️ Ya tienes misiones activas. Usa `/mision listar` para verlas' });
         }
         
         missions = await createUserMissions(interaction.guildId, interaction.user.id);
         if (!missions) {
-          return interaction.reply({ content: '❌ Error creando tus misiones - MongoDB no está disponible', flags: 64 });
+          return interaction.editReply({ content: '❌ Error creando tus misiones - MongoDB no está disponible' });
         }
         
         const embed = new EmbedBuilder()
@@ -53,14 +55,14 @@ export default {
           )
           .setFooter({ text: 'Usa /mision listar para ver tu lista completa' });
         
-        return interaction.reply({ embeds: [embed] });
+        return interaction.editReply({ embeds: [embed] });
       }
     
       if (subcommand === 'listar') {
         const missions = await getUserMissions(interaction.guildId, interaction.user.id, weekNumber, year);
         
         if (!missions) {
-          return interaction.reply({ content: '❌ No tienes misiones activas. Usa `/mision empezar` para comenzar', flags: 64 });
+          return interaction.editReply({ content: '❌ No tienes misiones activas. Usa `/mision empezar` para comenzar' });
         }
         
         const missionList = missions.missions.map(m => {
@@ -77,14 +79,14 @@ export default {
             { name: 'Completadas', value: `${missions.completedCount}/10` }
           );
         
-        return interaction.reply({ embeds: [embed], flags: 64 });
+        return interaction.editReply({ embeds: [embed] });
       }
       
       if (subcommand === 'progreso') {
         const stats = await getMissionsStats(interaction.guildId, interaction.user.id, weekNumber, year);
         
         if (!stats) {
-          return interaction.reply({ content: '❌ No tienes misiones activas', flags: 64 });
+          return interaction.editReply({ content: '❌ No tienes misiones activas' });
         }
         
         const completed = stats.missions.filter(m => m.completed);
@@ -103,10 +105,13 @@ export default {
             { name: 'Niveles', value: `+${totalLevels} niveles`, inline: true }
           );
         
-        return interaction.reply({ embeds: [embed], flags: 64 });
+        return interaction.editReply({ embeds: [embed] });
       }
     } catch (error) {
       console.error('Error en comando /mision:', error);
+      if (interaction.deferred) {
+        return interaction.editReply({ content: `❌ Error: ${error.message}` });
+      }
       return interaction.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
     }
   }
