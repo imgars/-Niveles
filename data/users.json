@@ -23,8 +23,8 @@
     "userId": "1116944833672642631",
     "guildId": "1212886282645147768",
     "xp": 0,
-    "level": 12,
-    "totalXp": 3612,
+    "level": 13,
+    "totalXp": 3690,
     "$setOnInsert": {
       "__v": 0
     }
@@ -44,7 +44,7 @@
     "guildId": "1212886282645147768",
     "xp": 0,
     "level": 21,
-    "totalXp": 13181,
+    "totalXp": 13208,
     "$setOnInsert": {
       "__v": 0
     }
@@ -104,7 +104,7 @@
     "guildId": "1212886282645147768",
     "xp": 0,
     "level": 15,
-    "totalXp": 5154,
+    "totalXp": 5174,
     "$setOnInsert": {
       "__v": 0
     }
