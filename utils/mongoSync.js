@@ -78,6 +78,26 @@ const missionSchema = new mongoose.Schema({
 
 const Mission = mongoose.model('Mission', missionSchema);
 
+// Esquema de Economía - Lagcoins
+const economySchema = new mongoose.Schema({
+  guildId: String,
+  userId: String,
+  lagcoins: { type: Number, default: 100 },
+  bankBalance: { type: Number, default: 0 },
+  lastWorkTime: Date,
+  lastRobTime: Date,
+  transactions: [{
+    type: String,
+    amount: Number,
+    from: String,
+    to: String,
+    date: { type: Date, default: Date.now }
+  }],
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Economy = mongoose.model('Economy', economySchema);
+
 let isConnected = false;
 
 export async function connectMongoDB() {
@@ -383,6 +403,81 @@ export async function getMissionsStats(guildId, userId, weekNumber, year) {
     return missions;
   } catch (error) {
     console.error('Error obteniendo estadísticas de misiones:', error.message);
+    return null;
+  }
+}
+
+export async function getEconomy(guildId, userId) {
+  if (!isConnected) return null;
+  try {
+    let economy = await Economy.findOne({ guildId, userId });
+    if (!economy) {
+      economy = new Economy({ guildId, userId, lagcoins: 100, bankBalance: 0 });
+      await economy.save();
+    }
+    return economy;
+  } catch (error) {
+    console.error('Error obteniendo economía:', error.message);
+    return null;
+  }
+}
+
+export async function addLagcoins(guildId, userId, amount, reason = 'work') {
+  if (!isConnected) return null;
+  try {
+    const economy = await Economy.findOneAndUpdate(
+      { guildId, userId },
+      { 
+        $inc: { lagcoins: amount },
+        $push: { transactions: { type: reason, amount, date: new Date() } }
+      },
+      { upsert: true, new: true }
+    );
+    return economy;
+  } catch (error) {
+    console.error('Error añadiendo lagcoins:', error.message);
+    return null;
+  }
+}
+
+export async function removeLagcoins(guildId, userId, amount, reason = 'spend') {
+  if (!isConnected) return null;
+  try {
+    const economy = await Economy.findOne({ guildId, userId });
+    if (!economy || economy.lagcoins < amount) return null;
+    
+    economy.lagcoins -= amount;
+    economy.transactions.push({ type: reason, amount: -amount, date: new Date() });
+    await economy.save();
+    return economy;
+  } catch (error) {
+    console.error('Error removiendo lagcoins:', error.message);
+    return null;
+  }
+}
+
+export async function transferLagcoins(guildId, fromUserId, toUserId, amount) {
+  if (!isConnected) return null;
+  try {
+    const from = await Economy.findOne({ guildId, userId: fromUserId });
+    if (!from || from.lagcoins < amount) return null;
+    
+    from.lagcoins -= amount;
+    from.transactions.push({ type: 'transfer', amount: -amount, to: toUserId, date: new Date() });
+    await from.save();
+    
+    const to = await Economy.findOneAndUpdate(
+      { guildId, userId: toUserId },
+      { 
+        $inc: { lagcoins: amount },
+        $push: { transactions: { type: 'transfer', amount, from: fromUserId, date: new Date() } }
+      },
+      { upsert: true, new: true }
+    );
+    
+    return { from, to };
+  } catch (error) {
+    console.error('Error transferindo lagcoins:', error.message);
     return null;
   }
 }
