@@ -249,13 +249,21 @@ export async function generateRankCard(member, userData, progress) {
   return canvas.toBuffer('image/png');
 }
 
-export async function generateLeaderboardImage(topUsers, guild) {
+export async function generateLeaderboardImage(topUsers, guild, theme = 'pixel') {
   const canvas = createCanvas(680, 740);
   const ctx = canvas.getContext('2d');
   
+  // Colores según tema
+  const colors = {
+    pixel: { bg1: '#2C2F33', bg2: '#23272A', accent: '#7289DA' },
+    zelda: { bg1: '#8B7D3A', bg2: '#5C5220', accent: '#FFD700' }
+  };
+  
+  const themeColors = colors[theme] || colors.pixel;
+  
   const gradient = ctx.createLinearGradient(0, 0, 0, 740);
-  gradient.addColorStop(0, '#2C2F33');
-  gradient.addColorStop(1, '#23272A');
+  gradient.addColorStop(0, themeColors.bg1);
+  gradient.addColorStop(1, themeColors.bg2);
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 680, 740);
   
@@ -267,7 +275,7 @@ export async function generateLeaderboardImage(topUsers, guild) {
     if (i === 0) rankColor = '#FFD700';
     else if (i === 1) rankColor = '#C0C0C0';
     else if (i === 2) rankColor = '#CD7F32';
-    else rankColor = '#FFFFFF';
+    else rankColor = themeColors.accent;
     
     ctx.fillStyle = i < 3 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.3)';
     ctx.fillRect(10, y, 660, 68);
@@ -311,7 +319,7 @@ export async function generateLeaderboardImage(topUsers, guild) {
     }
     ctx.fillText(username, 150, y + 38);
     
-    ctx.fillStyle = '#7289DA';
+    ctx.fillStyle = themeColors.accent;
     ctx.font = 'bold 20px Arial';
     ctx.fillText(`LVL: ${user.level}`, 550, y + 38);
   }
