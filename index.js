@@ -404,10 +404,10 @@ client.on('messageCreate', async (message) => {
               }).catch(err => console.error('Error sending streak update to mission channel:', err));
             }
           } else if (streak.broken) {
-            const streakChannel = message.guild.channels.cache.get(CONFIG.LEVEL_UP_CHANNEL_ID);
-            if (streakChannel) {
-              streakChannel.send({
-                content: `😢 ${streak.message}\n<@${message.author.id}> y <@${mentionedUser.id}>`
+            const missionChannel = message.guild.channels.cache.get(CONFIG.MISSION_COMPLETE_CHANNEL_ID);
+            if (missionChannel) {
+              missionChannel.send({
+                content: `💔 ¡Racha Rota!\n<@${message.author.id}> y <@${mentionedUser.id}> rompieron su racha de ${streak.streakCount} días`
               }).catch(err => console.error('Error sending streak broken:', err));
             }
           }
