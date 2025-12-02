@@ -43,8 +43,8 @@
     "userId": "1032482231677108224",
     "guildId": "1212886282645147768",
     "xp": 0,
-    "level": 23,
-    "totalXp": 16424,
+    "level": -1,
+    "totalXp": null,
     "$setOnInsert": {
       "__v": 0
     }
