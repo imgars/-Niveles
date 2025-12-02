@@ -272,10 +272,17 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'pixel')
     const y = 10 + (i * 72);
     
     let rankColor;
-    if (i === 0) rankColor = '#FFD700';
-    else if (i === 1) rankColor = '#C0C0C0';
-    else if (i === 2) rankColor = '#CD7F32';
-    else rankColor = themeColors.accent;
+    if (theme === 'zelda') {
+      if (i === 0) rankColor = '#FFD700';
+      else if (i === 1) rankColor = '#FFD700';
+      else if (i === 2) rankColor = '#FFD700';
+      else rankColor = '#D4AF37';
+    } else {
+      if (i === 0) rankColor = '#FFD700';
+      else if (i === 1) rankColor = '#C0C0C0';
+      else if (i === 2) rankColor = '#CD7F32';
+      else rankColor = themeColors.accent;
+    }
     
     ctx.fillStyle = i < 3 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.3)';
     ctx.fillRect(10, y, 660, 68);

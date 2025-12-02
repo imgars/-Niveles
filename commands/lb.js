@@ -32,51 +32,67 @@ export default {
       
       const viewFullButton = new ButtonBuilder()
         .setLabel('Ver leaderboard completo')
-        .setStyle(ButtonStyle.Link)
+        .setStyle(isSuperActive ? ButtonStyle.Danger : ButtonStyle.Link)
         .setURL('https://niveles-bbe6.onrender.com/#leaderboard');
       
       const row = new ActionRowBuilder().addComponents(viewFullButton);
       
-      const fields = [];
-      
-      for (let i = 0; i < sortedUsers.length; i++) {
-        const user = sortedUsers[i];
-        let rankEmoji = '';
+      if (isSuperActive) {
+        // Solo imagen para Super Activos
+        await interaction.editReply({
+          embeds: [{
+            color: 0xFFD700,
+            title: '🏆 Tabla de Clasificación',
+            image: { url: 'attachment://leaderboard.png' },
+            footer: { text: `Total de usuarios activos: ${allUsers.length}` },
+            timestamp: new Date()
+          }],
+          files: [attachment],
+          components: [row]
+        });
+      } else {
+        // Imagen + fields para usuarios normales
+        const fields = [];
         
-        if (i === 0) rankEmoji = '🥇';
-        else if (i === 1) rankEmoji = '🥈';
-        else if (i === 2) rankEmoji = '🥉';
-        
-        try {
-          const targetMember = await interaction.guild.members.fetch(user.userId);
-          const username = targetMember.user.username;
+        for (let i = 0; i < sortedUsers.length; i++) {
+          const user = sortedUsers[i];
+          let rankEmoji = '';
           
-          fields.push({
-            name: `${rankEmoji} #${i + 1} - ${username}`,
-            value: `**Nivel:** ${user.level} | **XP Total:** ${Math.floor(user.totalXp)}`,
-            inline: false
-          });
-        } catch (error) {
-          fields.push({
-            name: `${rankEmoji} #${i + 1} - Usuario Desconocido`,
-            value: `**Nivel:** ${user.level} | **XP Total:** ${Math.floor(user.totalXp)}`,
-            inline: false
-          });
+          if (i === 0) rankEmoji = '🥇';
+          else if (i === 1) rankEmoji = '🥈';
+          else if (i === 2) rankEmoji = '🥉';
+          
+          try {
+            const targetMember = await interaction.guild.members.fetch(user.userId);
+            const username = targetMember.user.username;
+            
+            fields.push({
+              name: `${rankEmoji} #${i + 1} - ${username}`,
+              value: `**Nivel:** ${user.level} | **XP Total:** ${Math.floor(user.totalXp)}`,
+              inline: false
+            });
+          } catch (error) {
+            fields.push({
+              name: `${rankEmoji} #${i + 1} - Usuario Desconocido`,
+              value: `**Nivel:** ${user.level} | **XP Total:** ${Math.floor(user.totalXp)}`,
+              inline: false
+            });
+          }
         }
+        
+        await interaction.editReply({
+          embeds: [{
+            color: 0x00BFFF,
+            title: '🏆 Tabla de Clasificación',
+            description: `Top ${sortedUsers.length} usuarios del servidor`,
+            fields: fields,
+            footer: { text: `Total de usuarios activos: ${allUsers.length}` },
+            timestamp: new Date()
+          }],
+          files: [attachment],
+          components: [row]
+        });
       }
-      
-      await interaction.editReply({
-        embeds: [{
-          color: isSuperActive ? 0xFFD700 : 0x00BFFF,
-          title: '🏆 Tabla de Clasificación',
-          description: `Top ${sortedUsers.length} usuarios del servidor`,
-          fields: fields,
-          footer: { text: `Total de usuarios activos: ${allUsers.length}` },
-          timestamp: new Date()
-        }],
-        files: [attachment],
-        components: [row]
-      });
     } catch (error) {
       console.error('Error in lb command:', error);
       await interaction.editReply('❌ Error al generar la tabla de clasificación.');
