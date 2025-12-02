@@ -249,53 +249,32 @@ export async function generateRankCard(member, userData, progress) {
   return canvas.toBuffer('image/png');
 }
 
-export async function generateLeaderboardImage(topUsers, guild, theme = 'pixel') {
+export async function generateLeaderboardImage(topUsers, guild) {
   const canvas = createCanvas(680, 740);
   const ctx = canvas.getContext('2d');
   
-  // Obtener colores según el tema
-  const themeColors = {
-    pixel: { bg1: '#2C2F33', bg2: '#23272A', accent: '#7289DA' },
-    ocean: { bg1: '#006994', bg2: '#003D5C', accent: '#00A8E8' },
-    zelda: { bg1: '#8B7D3A', bg2: '#5C5220', accent: '#FFD700' },
-    pokemon: { bg1: '#EE1515', bg2: '#CC0000', accent: '#FFCB05' },
-    geometrydash: { bg1: '#00E5FF', bg2: '#FF00E5', accent: '#FFFF00' },
-    night: { bg1: '#0F0F23', bg2: '#1A1A2E', accent: '#FFD700' },
-    roblox: { bg1: '#E3242B', bg2: '#A91E24', accent: '#00A2FF' },
-    minecraft: { bg1: '#3C3C3C', bg2: '#1C1C1C', accent: '#8B5A3C' },
-    fnaf: { bg1: '#1A1410', bg2: '#0D0A08', accent: '#FF6B35' }
-  };
-  
-  const colors = themeColors[theme] || themeColors['pixel'];
-  
   const gradient = ctx.createLinearGradient(0, 0, 0, 740);
-  gradient.addColorStop(0, colors.bg1);
-  gradient.addColorStop(1, colors.bg2);
+  gradient.addColorStop(0, '#2C2F33');
+  gradient.addColorStop(1, '#23272A');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 680, 740);
   
-  // Título con tema
-  ctx.fillStyle = colors.accent;
-  ctx.font = 'bold 28px Arial';
-  const themeTitle = { pixel: '🏆', ocean: '🌊', zelda: '⚔️', pokemon: '🔴', geometrydash: '⚡', night: '🌙', roblox: '🟥', minecraft: '⛏️', fnaf: '🐻' };
-  ctx.fillText(`${themeTitle[theme] || '🏆'} Leaderboard`, 20, 40);
-  
   for (let i = 0; i < Math.min(10, topUsers.length); i++) {
     const user = topUsers[i];
-    const y = 60 + (i * 68);
+    const y = 10 + (i * 72);
     
     let rankColor;
     if (i === 0) rankColor = '#FFD700';
     else if (i === 1) rankColor = '#C0C0C0';
     else if (i === 2) rankColor = '#CD7F32';
-    else rankColor = colors.accent;
+    else rankColor = '#FFFFFF';
     
     ctx.fillStyle = i < 3 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.3)';
-    ctx.fillRect(10, y, 660, 64);
+    ctx.fillRect(10, y, 660, 68);
     
     ctx.strokeStyle = rankColor;
     ctx.lineWidth = 2;
-    ctx.strokeRect(10, y, 660, 64);
+    ctx.strokeRect(10, y, 660, 68);
     
     try {
       const member = await guild.members.fetch(user.userId).catch(() => null);
@@ -305,10 +284,10 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'pixel')
         
         ctx.save();
         ctx.beginPath();
-        ctx.arc(50, y + 32, 26, 0, Math.PI * 2);
+        ctx.arc(50, y + 34, 28, 0, Math.PI * 2);
         ctx.closePath();
         ctx.clip();
-        ctx.drawImage(avatar, 24, y + 6, 52, 52);
+        ctx.drawImage(avatar, 22, y + 6, 56, 56);
         ctx.restore();
       }
     } catch (error) {
@@ -317,7 +296,7 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'pixel')
     
     ctx.fillStyle = rankColor;
     ctx.font = 'bold 24px Arial';
-    ctx.fillText(`#${i + 1}`, 90, y + 35);
+    ctx.fillText(`#${i + 1}`, 90, y + 38);
     
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '20px Arial';
@@ -330,11 +309,11 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'pixel')
     } catch (e) {
       console.error('Error fetching username:', e);
     }
-    ctx.fillText(username, 150, y + 35);
+    ctx.fillText(username, 150, y + 38);
     
-    ctx.fillStyle = colors.accent;
+    ctx.fillStyle = '#7289DA';
     ctx.font = 'bold 20px Arial';
-    ctx.fillText(`LVL: ${user.level}`, 550, y + 35);
+    ctx.fillText(`LVL: ${user.level}`, 550, y + 38);
   }
   
   return canvas.toBuffer('image/png');
