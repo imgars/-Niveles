@@ -390,10 +390,18 @@ client.on('messageCreate', async (message) => {
         if (streak) {
           if (streak.updated) {
             const streakChannel = message.guild.channels.cache.get(CONFIG.LEVEL_UP_CHANNEL_ID);
+            const missionChannel = message.guild.channels.cache.get(CONFIG.MISSION_COMPLETE_CHANNEL_ID);
+            
             if (streakChannel) {
               streakChannel.send({
                 content: `🔥 ${streak.message}\n<@${message.author.id}> y <@${mentionedUser.id}>`
               }).catch(err => console.error('Error sending streak update:', err));
+            }
+            
+            if (missionChannel) {
+              missionChannel.send({
+                content: `🔥 ¡Racha Mantenida!\n<@${message.author.id}> y <@${mentionedUser.id}> ${streak.message}`
+              }).catch(err => console.error('Error sending streak update to mission channel:', err));
             }
           } else if (streak.broken) {
             const streakChannel = message.guild.channels.cache.get(CONFIG.LEVEL_UP_CHANNEL_ID);
