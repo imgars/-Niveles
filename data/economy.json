@@ -2,22 +2,45 @@
   "1212886282645147768-1032482231677108224": {
     "guildId": "1212886282645147768",
     "userId": "1032482231677108224",
-    "lagcoins": 505,
-    "bankBalance": 0,
-    "lastWorkTime": "2025-12-02T06:33:28.202Z",
+    "lagcoins": 496,
+    "bankBalance": 500,
+    "lastWorkTime": "2025-12-02T06:40:38.412Z",
     "lastRobTime": null,
     "transactions": [
       {
         "type": "work_basico",
         "amount": 93,
         "date": "2025-12-02T06:33:28.202Z"
+      },
+      {
+        "type": "work_basico",
+        "amount": 70,
+        "date": "2025-12-02T06:38:01.762Z"
+      },
+      {
+        "type": "work_pescar",
+        "amount": 171,
+        "date": "2025-12-02T06:40:38.412Z"
+      },
+      {
+        "type": "shop",
+        "amount": -800,
+        "date": "2025-12-02T06:42:32.906Z"
+      },
+      {
+        "type": "trivia_levels",
+        "amount": 400,
+        "date": "2025-12-02T06:43:59.225Z"
       }
     ],
     "createdAt": "2025-12-02T06:32:20.604Z",
     "casinoStats": {
-      "plays": 3,
-      "wins": 2
+      "plays": 10,
+      "wins": 7
     },
-    "lastDailyReward": "Tue Dec 02 2025"
+    "lastDailyReward": "Tue Dec 02 2025",
+    "items": [
+      "cana_pesca"
+    ]
   }
 }

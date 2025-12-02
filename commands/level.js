@@ -38,7 +38,21 @@ export default {
         
         const row = new ActionRowBuilder().addComponents(rewardBtn);
         
-        return await interaction.reply({ files: [attachment], components: [row] });
+        const embeds = [];
+        
+        if (boostsText) {
+          embeds.push({
+            color: 0xFFD700,
+            title: '🚀 Boosts Activos',
+            description: boostsText
+          });
+        }
+        
+        return await interaction.reply({ 
+          files: [attachment], 
+          embeds: embeds,
+          components: [row] 
+        });
       } catch (error) {
         console.error('Error generating rank card:', error);
         

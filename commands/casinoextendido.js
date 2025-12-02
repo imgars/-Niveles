@@ -1,0 +1,175 @@
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { playCasino, getUserEconomy } from '../utils/economyDB.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('casino_juegos')
+    .setDescription('🎰 Casino con múltiples juegos')
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('elegir')
+        .setDescription('Elige qué juego jugar')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('tragaperras')
+        .setDescription('Juega a las tragaperras')
+        .addIntegerOption(option =>
+          option.setName('apuesta')
+            .setDescription('Cantidad a apostar')
+            .setMinValue(10)
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('dados')
+        .setDescription('Lanza los dados y adivina')
+        .addIntegerOption(option =>
+          option.setName('apuesta')
+            .setDescription('Cantidad a apostar')
+            .setMinValue(10)
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('ruleta')
+        .setDescription('Ruleta americana (rojo/negro/verde)')
+        .addIntegerOption(option =>
+          option.setName('apuesta')
+            .setDescription('Cantidad a apostar')
+            .setMinValue(10)
+            .setRequired(true)
+        )
+    ),
+  
+  async execute(interaction) {
+    const subcommand = interaction.options.getSubcommand();
+    
+    if (subcommand === 'elegir') {
+      const select = new StringSelectMenuBuilder()
+        .setCustomId('casino_select')
+        .setPlaceholder('Elige un juego...')
+        .addOptions(
+          { label: '🎰 Tragaperras', value: 'tragaperras', emoji: '🎰' },
+          { label: '🎲 Dados', value: 'dados', emoji: '🎲' },
+          { label: '🎡 Ruleta', value: 'ruleta', emoji: '🎡' },
+          { label: '🃏 Póker', value: 'poker', emoji: '🃏' }
+        );
+      
+      const row = new ActionRowBuilder().addComponents(select);
+      
+      const embed = new EmbedBuilder()
+        .setColor('#FF00FF')
+        .setTitle('🎰 CASINO PRINCIPAL 🎰')
+        .setDescription('Elige un juego para jugar')
+        .addFields(
+          { name: '🎰 Tragaperras', value: 'Alinea 3 símbolos iguales\nPremio: x1.5 a x5 tu apuesta' },
+          { name: '🎲 Dados', value: 'Adivina la suma de 2 dados\nPremio: x2 tu apuesta si aciertas' },
+          { name: '🎡 Ruleta', value: 'Elige color: Rojo (1.9x) Negro (1.9x) Verde (35x!)\nPremio: Depende del color' },
+          { name: '🃏 Póker', value: 'Juega póker simple contra la máquina\nPremio: x3 tu apuesta si ganas' }
+        );
+      
+      return interaction.reply({ embeds: [embed], components: [row], flags: 64 });
+    }
+    
+    if (subcommand === 'tragaperras') {
+      const bet = interaction.options.getInteger('apuesta');
+      const economy = await getUserEconomy(interaction.guildId, interaction.user.id);
+      if (economy.lagcoins < bet) {
+        return interaction.reply({ content: '❌ No tienes suficientes Lagcoins', flags: 64 });
+      }
+      
+      const symbols = ['🍎', '🍊', '🍇', '🎯', '💎'];
+      const roll = [symbols[Math.floor(Math.random() * symbols.length)], 
+                    symbols[Math.floor(Math.random() * symbols.length)],
+                    symbols[Math.floor(Math.random() * symbols.length)]];
+      
+      let multiplier = 0;
+      if (roll[0] === roll[1] && roll[1] === roll[2]) {
+        multiplier = 5;
+      } else if (roll[0] === roll[1] || roll[1] === roll[2]) {
+        multiplier = 1.5;
+      }
+      
+      const winnings = multiplier > 0 ? Math.floor(bet * multiplier) - bet : -bet;
+      economy.lagcoins += winnings;
+      
+      const embed = new EmbedBuilder()
+        .setColor(multiplier > 0 ? '#00FF00' : '#FF0000')
+        .setTitle('🎰 TRAGAPERRAS 🎰')
+        .setDescription(`${roll.join(' ')}\n\n${multiplier > 0 ? '✨ ¡GANASTE!' : '❌ Perdiste'}`)
+        .addFields(
+          { name: 'Apuesta', value: `${bet} Lagcoins`, inline: true },
+          { name: 'Multiplicador', value: `x${multiplier || '0'}`, inline: true },
+          { name: 'Ganancia/Pérdida', value: `${winnings > 0 ? '+' : ''}${winnings} Lagcoins`, inline: true },
+          { name: 'Nuevo Saldo', value: `💰 ${economy.lagcoins} Lagcoins`, inline: false }
+        );
+      
+      return interaction.reply({ embeds: [embed] });
+    }
+    
+    if (subcommand === 'dados') {
+      const bet = interaction.options.getInteger('apuesta');
+      const economy = await getUserEconomy(interaction.guildId, interaction.user.id);
+      if (economy.lagcoins < bet) {
+        return interaction.reply({ content: '❌ No tienes suficientes Lagcoins', flags: 64 });
+      }
+      
+      const dado1 = Math.floor(Math.random() * 6) + 1;
+      const dado2 = Math.floor(Math.random() * 6) + 1;
+      const suma = dado1 + dado2;
+      
+      // Probabilidades: 7 es más probable (ganador)
+      const gana = suma === 7 || suma === 11;
+      const winnings = gana ? bet * 2 : -bet;
+      economy.lagcoins += winnings;
+      
+      const embed = new EmbedBuilder()
+        .setColor(gana ? '#00FF00' : '#FF0000')
+        .setTitle('🎲 DADOS 🎲')
+        .setDescription(`🎲 ${dado1} + 🎲 ${dado2} = **${suma}**\n\n${gana ? '✨ ¡GANASTE!' : '❌ Perdiste'}`)
+        .addFields(
+          { name: 'Apuesta', value: `${bet} Lagcoins`, inline: true },
+          { name: 'Resultado', value: gana ? 'SUMA GANADORA 🎉' : 'Suma perdedora', inline: true },
+          { name: 'Ganancia', value: `${gana ? '+' : ''}${winnings} Lagcoins`, inline: true },
+          { name: 'Nuevo Saldo', value: `💰 ${economy.lagcoins} Lagcoins`, inline: false }
+        );
+      
+      return interaction.reply({ embeds: [embed] });
+    }
+    
+    if (subcommand === 'ruleta') {
+      const bet = interaction.options.getInteger('apuesta');
+      const economy = await getUserEconomy(interaction.guildId, interaction.user.id);
+      if (economy.lagcoins < bet) {
+        return interaction.reply({ content: '❌ No tienes suficientes Lagcoins', flags: 64 });
+      }
+      
+      const colors = ['Rojo', 'Negro', 'Verde'];
+      const colorRandom = colors[Math.floor(Math.random() * colors.length)];
+      const colorEmoji = { 'Rojo': '🔴', 'Negro': '⚫', 'Verde': '🟢' };
+      
+      let multiplier = 0;
+      if (colorRandom === 'Rojo' || colorRandom === 'Negro') multiplier = 1.9;
+      if (colorRandom === 'Verde') multiplier = 35;
+      
+      const winnings = Math.floor(bet * multiplier) - bet;
+      economy.lagcoins += winnings;
+      
+      const embed = new EmbedBuilder()
+        .setColor(colorRandom === 'Rojo' ? '#FF0000' : colorRandom === 'Negro' ? '#000000' : '#00FF00')
+        .setTitle('🎡 RULETA 🎡')
+        .setDescription(`${colorEmoji[colorRandom]} ${colorRandom} ${colorEmoji[colorRandom]}\n\n✨ ¡${multiplier > 2 ? 'JACKPOT' : 'GANASTE'}!`)
+        .addFields(
+          { name: 'Apuesta', value: `${bet} Lagcoins`, inline: true },
+          { name: 'Multiplicador', value: `x${multiplier}`, inline: true },
+          { name: 'Ganancia', value: `+${winnings} Lagcoins`, inline: true },
+          { name: 'Nuevo Saldo', value: `💰 ${economy.lagcoins} Lagcoins`, inline: false }
+        );
+      
+      return interaction.reply({ embeds: [embed] });
+    }
+  }
+};
