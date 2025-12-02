@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, AttachmentBuilder } from 'discord.js';
+import { SlashCommandBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { CONFIG } from '../config.js';
 import db from '../utils/database.js';
 import { generateLeaderboardImage } from '../utils/cardGenerator.js';
@@ -30,6 +30,13 @@ export default {
       const imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, theme);
       const attachment = new AttachmentBuilder(imageBuffer, { name: 'leaderboard.png' });
       
+      const viewFullButton = new ButtonBuilder()
+        .setLabel('Ver leaderboard completo')
+        .setStyle(ButtonStyle.Link)
+        .setURL('https://niveles-bbe6.onrender.com/#leaderboard');
+      
+      const row = new ActionRowBuilder().addComponents(viewFullButton);
+      
       // Solo imagen para todos
       await interaction.editReply({
         embeds: [{
@@ -39,7 +46,8 @@ export default {
           footer: { text: `Total de usuarios activos: ${allUsers.length}` },
           timestamp: new Date()
         }],
-        files: [attachment]
+        files: [attachment],
+        components: [row]
       });
     } catch (error) {
       console.error('Error in lb command:', error);
