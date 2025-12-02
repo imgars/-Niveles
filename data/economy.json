@@ -42,5 +42,21 @@
     "items": [
       "cana_pesca"
     ]
+  },
+  "1212886282645147768-1234592789430272030": {
+    "guildId": "1212886282645147768",
+    "userId": "1234592789430272030",
+    "lagcoins": 191,
+    "bankBalance": 0,
+    "lastWorkTime": "2025-12-02T06:55:44.299Z",
+    "lastRobTime": null,
+    "transactions": [
+      {
+        "type": "work_basico",
+        "amount": 91,
+        "date": "2025-12-02T06:55:44.299Z"
+      }
+    ],
+    "createdAt": "2025-12-02T06:55:44.298Z"
   }
 }

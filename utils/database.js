@@ -28,7 +28,23 @@ class Database {
     try {
       if (fs.existsSync(filePath)) {
         const data = fs.readFileSync(filePath, 'utf8');
-        return JSON.parse(data);
+        let parsed = JSON.parse(data);
+        
+        // Limpiar datos corruptos de MongoDB en JSON
+        if (filePath === USERS_FILE) {
+          Object.keys(parsed).forEach(key => {
+            const user = parsed[key];
+            // Remover metadata de MongoDB
+            delete user.$setOnInsert;
+            delete user.__v;
+            // Arreglar valores nulos o inválidos
+            if (user.totalXp === null || user.totalXp === undefined) user.totalXp = 0;
+            if (user.level === null || user.level === undefined || user.level < 0) user.level = 0;
+            if (user.xp === null || user.xp === undefined) user.xp = 0;
+          });
+        }
+        
+        return parsed;
       }
     } catch (error) {
       console.error(`Error loading ${filePath}:`, error);
