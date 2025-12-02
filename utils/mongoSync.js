@@ -364,7 +364,7 @@ export async function updateMissionProgress(guildId, userId, weekNumber, year, m
     }
     
     await missions.save();
-    return { mission, completed: mission.completed, reward: mission.reward };
+    return { mission, completed: mission.completed, reward: mission.reward, title: mission.title };
   } catch (error) {
     console.error('Error actualizando progreso de misión:', error.message);
     return null;
