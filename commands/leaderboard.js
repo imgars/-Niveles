@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { SlashCommandBuilder, AttachmentBuilder } from 'discord.js';
 import { CONFIG } from '../config.js';
 import db from '../utils/database.js';
 import { generateLeaderboardImage } from '../utils/cardGenerator.js';
@@ -30,13 +30,6 @@ export default {
       const imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, theme);
       const attachment = new AttachmentBuilder(imageBuffer, { name: 'leaderboard.png' });
       
-      const viewFullButton = new ButtonBuilder()
-        .setLabel('Ver leaderboard completo')
-        .setStyle(ButtonStyle.Link)
-        .setURL('https://niveles-bbe6.onrender.com/#leaderboard');
-      
-      const row = new ActionRowBuilder().addComponents(viewFullButton);
-      
       if (isSuperActive) {
         // Solo imagen para Super Activos
         await interaction.editReply({
@@ -46,8 +39,7 @@ export default {
             image: { url: 'attachment://leaderboard.png' },
             footer: { text: `Total de usuarios activos: ${allUsers.length}` }
           }],
-          files: [attachment],
-          components: [row]
+          files: [attachment]
         });
       } else {
         // Imagen para usuarios normales
@@ -58,8 +50,7 @@ export default {
             image: { url: 'attachment://leaderboard.png' },
             footer: { text: '⭐ ¡Sigue chateando para subir en el ranking!' }
           }],
-          files: [attachment],
-          components: [row]
+          files: [attachment]
         });
       }
     } catch (error) {
