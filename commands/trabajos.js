@@ -44,8 +44,12 @@ export default {
 
     const earnings = Math.floor(Math.random() * (job.maxEarnings - job.minEarnings + 1)) + job.minEarnings;
     
-    await addUserLagcoins(interaction.guildId, interaction.user.id, earnings, `work_${jobType}`);
-    await saveUserEconomy(interaction.guildId, interaction.user.id, { lastWorkTime: new Date() });
+    try {
+      await addUserLagcoins(interaction.guildId, interaction.user.id, earnings, `work_${jobType}`);
+      await saveUserEconomy(interaction.guildId, interaction.user.id, { lastWorkTime: new Date() });
+    } catch (error) {
+      console.error('Error en trabajo:', error);
+    }
 
     const embed = new EmbedBuilder()
       .setColor('#00FF00')

@@ -14,7 +14,13 @@ export default {
   
   async execute(interaction) {
     const bet = interaction.options.getInteger('apuesta');
-    const result = await playCasino(interaction.guildId, interaction.user.id, bet);
+    let result;
+    try {
+      result = await playCasino(interaction.guildId, interaction.user.id, bet);
+    } catch (error) {
+      console.error('Error en casino:', error);
+      return interaction.reply({ content: '❌ Error en el casino', flags: 64 });
+    }
 
     if (!result) {
       return interaction.reply({ content: '❌ No tienes suficientes Lagcoins para esa apuesta', flags: 64 });

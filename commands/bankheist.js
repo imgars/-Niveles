@@ -9,9 +9,15 @@ export default {
   async execute(interaction) {
     await interaction.deferReply();
     
-    const result = await robBank(interaction.guildId, interaction.user.id);
+    let result;
+    try {
+      result = await robBank(interaction.guildId, interaction.user.id);
+    } catch (error) {
+      console.error('Error en robBank:', error);
+      return interaction.editReply('❌ Error en la operación');
+    }
 
-    if (result.success) {
+    if (result && result.success) {
       const embed = new EmbedBuilder()
         .setColor('#00FF00')
         .setTitle('🏦 ¡ROBO EXITOSO!')
