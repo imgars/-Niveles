@@ -53,7 +53,7 @@ export default {
         return interaction.editReply('📊 No hay usuarios en la tabla de clasificación todavía.');
       }
       
-      const imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild);
+      const imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, roleSpecial || 'pixel');
       const attachment = new AttachmentBuilder(imageBuffer, { name: 'leaderboard.png' });
       
       const viewFullButton = new ButtonBuilder()
