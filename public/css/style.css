@@ -646,6 +646,138 @@ body {
     font-size: 6px;
 }
 
+/* Mission Styles */
+.mission-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #FF10F0, #00FFFF);
+    margin: 0 auto 15px;
+}
+
+.missions-table {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.mission-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 10px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.3);
+    font-size: 8px;
+    border-left: 3px solid;
+}
+
+.mission-row.easy {
+    border-left-color: var(--neon-green);
+}
+
+.mission-row.medium {
+    border-left-color: var(--primary);
+}
+
+.mission-row.hard {
+    border-left-color: var(--secondary);
+}
+
+.mission-row.legendary {
+    border-left-color: var(--neon-pink);
+    background: linear-gradient(90deg, rgba(255, 16, 240, 0.2), transparent);
+    animation: missionPulse 2s infinite;
+}
+
+@keyframes missionPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.mission-name {
+    color: var(--text);
+    font-weight: bold;
+}
+
+.mission-desc {
+    color: var(--text-dim);
+}
+
+.missions-rewards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.reward-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.3);
+    font-size: 8px;
+    color: var(--text-dim);
+}
+
+.reward-item .icon {
+    font-size: 16px;
+}
+
+.reward-item.special {
+    border: 2px solid var(--neon-pink);
+    background: rgba(255, 16, 240, 0.1);
+    color: var(--text);
+}
+
+/* Economy Styles */
+.shop-categories {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.category-item {
+    padding: 8px;
+    background: rgba(0,0,0,0.3);
+    font-size: 8px;
+    color: var(--text-dim);
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.economy-stats {
+    margin-top: 40px;
+}
+
+.jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.job-card {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid var(--accent);
+    font-size: 8px;
+    transition: all 0.3s;
+}
+
+.job-card:hover {
+    border-color: var(--primary);
+    transform: translateX(3px);
+}
+
+.job-name {
+    color: var(--text);
+}
+
+.job-pay {
+    color: var(--primary);
+    font-weight: bold;
+}
+
 .section-intro {
     text-align: center;
     font-size: 10px;
