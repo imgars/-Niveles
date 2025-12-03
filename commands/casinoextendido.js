@@ -43,10 +43,15 @@ export default {
             .setRequired(true)
         )
     ),
-  
+
   async execute(interaction) {
     const subcommand = interaction.options.getSubcommand();
-    
+
+    // Defer reply para evitar timeout en operaciones largas
+    if (subcommand !== 'elegir') { // Changed from 'juegos' to 'elegir' as per structure
+      await interaction.deferReply();
+    }
+
     if (subcommand === 'elegir') {
       const select = new StringSelectMenuBuilder()
         .setCustomId('casino_select')
@@ -57,9 +62,9 @@ export default {
           { label: '🎡 Ruleta', value: 'ruleta', emoji: '🎡' },
           { label: '🃏 Póker', value: 'poker', emoji: '🃏' }
         );
-      
+
       const row = new ActionRowBuilder().addComponents(select);
-      
+
       const embed = new EmbedBuilder()
         .setColor('#FF00FF')
         .setTitle('🎰 CASINO PRINCIPAL 🎰')
@@ -70,34 +75,34 @@ export default {
           { name: '🎡 Ruleta', value: 'Elige color: Rojo (1.9x) Negro (1.9x) Verde (35x!)\nPremio: Depende del color' },
           { name: '🃏 Póker', value: 'Juega póker simple contra la máquina\nPremio: x3 tu apuesta si ganas' }
         );
-      
+
       return interaction.reply({ embeds: [embed], components: [row], flags: 64 });
     }
-    
+
     if (subcommand === 'tragaperras') {
       try {
         const bet = interaction.options.getInteger('apuesta');
         const economy = await getUserEconomy(interaction.guildId, interaction.user.id);
         if (!economy || economy.lagcoins < bet) {
-          return interaction.reply({ content: '❌ No tienes suficientes Lagcoins', flags: 64 });
+          return interaction.editReply({ content: '❌ No tienes suficientes Lagcoins', flags: 64 });
         }
-        
+
         const symbols = ['🍎', '🍊', '🍇', '🎯', '💎'];
-        const roll = [symbols[Math.floor(Math.random() * symbols.length)], 
+        const roll = [symbols[Math.floor(Math.random() * symbols.length)],
                       symbols[Math.floor(Math.random() * symbols.length)],
                       symbols[Math.floor(Math.random() * symbols.length)]];
-        
+
         let multiplier = 0;
         if (roll[0] === roll[1] && roll[1] === roll[2]) {
           multiplier = 5;
         } else if (roll[0] === roll[1] || roll[1] === roll[2]) {
           multiplier = 1.5;
         }
-        
+
         const won = multiplier > 0;
         const winnings = won ? Math.floor(bet * multiplier) - bet : -bet;
         economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
-        
+
         if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
         economy.casinoStats.plays++;
         if (won) {
@@ -106,17 +111,13 @@ export default {
         } else {
           economy.casinoStats.totalLost = (economy.casinoStats.totalLost || 0) + bet;
         }
-        
-        if (!economy.transactions) economy.transactions = [];
-        economy.transactions.push({ 
-          type: won ? 'tragaperras_win' : 'tragaperras_loss', 
-          amount: winnings, 
-          description: `Tragaperras: ${won ? 'Ganaste' : 'Perdiste'} ${Math.abs(winnings)} Lagcoins`,
-          date: new Date().toISOString() 
+
+        // Guardar economía sin push manual de transacciones
+        const savedEconomy = await saveUserEconomy(interaction.guildId, interaction.user.id, {
+          ...economy,
+          lagcoins: economy.lagcoins
         });
-        
-        const savedEconomy = await saveUserEconomy(interaction.guildId, interaction.user.id, economy);
-      
+
         const embed = new EmbedBuilder()
           .setColor(won ? '#00FF00' : '#FF0000')
           .setTitle('🎰 TRAGAPERRAS 🎰')
@@ -127,30 +128,30 @@ export default {
             { name: 'Ganancia/Pérdida', value: `${winnings > 0 ? '+' : ''}${winnings} Lagcoins`, inline: true },
             { name: 'Nuevo Saldo', value: `💰 ${savedEconomy.lagcoins} Lagcoins`, inline: false }
           );
-        
-        return interaction.reply({ embeds: [embed] });
+
+        return interaction.editReply({ embeds: [embed] });
       } catch (error) {
         console.error('Error en tragaperras:', error);
-        return interaction.reply({ content: '❌ Error en el juego', flags: 64 });
+        return interaction.editReply({ content: '❌ Error en el juego', flags: 64 });
       }
     }
-    
+
     if (subcommand === 'dados') {
       try {
         const bet = interaction.options.getInteger('apuesta');
         const economy = await getUserEconomy(interaction.guildId, interaction.user.id);
         if (!economy || economy.lagcoins < bet) {
-          return interaction.reply({ content: '❌ No tienes suficientes Lagcoins', flags: 64 });
+          return interaction.editReply({ content: '❌ No tienes suficientes Lagcoins', flags: 64 });
         }
-        
+
         const dado1 = Math.floor(Math.random() * 6) + 1;
         const dado2 = Math.floor(Math.random() * 6) + 1;
         const suma = dado1 + dado2;
-        
+
         const gana = suma === 7 || suma === 11;
         const winnings = gana ? bet * 2 : -bet;
         economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
-        
+
         if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
         economy.casinoStats.plays++;
         if (gana) {
@@ -159,17 +160,13 @@ export default {
         } else {
           economy.casinoStats.totalLost = (economy.casinoStats.totalLost || 0) + bet;
         }
-        
-        if (!economy.transactions) economy.transactions = [];
-        economy.transactions.push({ 
-          type: gana ? 'dados_ext_win' : 'dados_ext_loss', 
-          amount: winnings, 
-          description: `Dados: ${gana ? 'Ganaste' : 'Perdiste'} ${Math.abs(winnings)} Lagcoins`,
-          date: new Date().toISOString() 
+
+        // Guardar economía sin push manual de transacciones
+        const savedEconomy = await saveUserEconomy(interaction.guildId, interaction.user.id, {
+          ...economy,
+          lagcoins: economy.lagcoins
         });
-        
-        const savedEconomy = await saveUserEconomy(interaction.guildId, interaction.user.id, economy);
-      
+
         const embed = new EmbedBuilder()
           .setColor(gana ? '#00FF00' : '#FF0000')
           .setTitle('🎲 DADOS 🎲')
@@ -180,51 +177,47 @@ export default {
             { name: 'Ganancia', value: `${gana ? '+' : ''}${winnings} Lagcoins`, inline: true },
             { name: 'Nuevo Saldo', value: `💰 ${savedEconomy.lagcoins} Lagcoins`, inline: false }
           );
-        
-        return interaction.reply({ embeds: [embed] });
+
+        return interaction.editReply({ embeds: [embed] });
       } catch (error) {
         console.error('Error en dados:', error);
-        return interaction.reply({ content: '❌ Error en el juego', flags: 64 });
+        return interaction.editReply({ content: '❌ Error en el juego', flags: 64 });
       }
     }
-    
+
     if (subcommand === 'ruleta') {
       try {
         const bet = interaction.options.getInteger('apuesta');
         const economy = await getUserEconomy(interaction.guildId, interaction.user.id);
         if (!economy || economy.lagcoins < bet) {
-          return interaction.reply({ content: '❌ No tienes suficientes Lagcoins', flags: 64 });
+          return interaction.editReply({ content: '❌ No tienes suficientes Lagcoins', flags: 64 });
         }
-        
+
         const colors = ['Rojo', 'Negro', 'Verde'];
         const colorRandom = colors[Math.floor(Math.random() * colors.length)];
         const colorEmoji = { 'Rojo': '🔴', 'Negro': '⚫', 'Verde': '🟢' };
-        
+
         let multiplier = 0;
         if (colorRandom === 'Rojo' || colorRandom === 'Negro') multiplier = 1.9;
         if (colorRandom === 'Verde') multiplier = 35;
-        
+
         const won = multiplier > 0;
         const winnings = Math.floor(bet * multiplier) - bet;
         economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
-        
+
         if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
         economy.casinoStats.plays++;
         if (won) {
           economy.casinoStats.wins++;
           economy.casinoStats.totalWon = (economy.casinoStats.totalWon || 0) + winnings;
         }
-        
-        if (!economy.transactions) economy.transactions = [];
-        economy.transactions.push({ 
-          type: 'ruleta_win', 
-          amount: winnings, 
-          description: `Ruleta: Ganaste ${winnings} Lagcoins (${colorRandom})`,
-          date: new Date().toISOString() 
+
+        // Guardar economía sin push manual de transacciones
+        const savedEconomy = await saveUserEconomy(interaction.guildId, interaction.user.id, {
+          ...economy,
+          lagcoins: economy.lagcoins
         });
-        
-        const savedEconomy = await saveUserEconomy(interaction.guildId, interaction.user.id, economy);
-      
+
         const embed = new EmbedBuilder()
           .setColor(colorRandom === 'Rojo' ? '#FF0000' : colorRandom === 'Negro' ? '#000000' : '#00FF00')
           .setTitle('🎡 RULETA 🎡')
@@ -235,11 +228,11 @@ export default {
             { name: 'Ganancia', value: `+${winnings} Lagcoins`, inline: true },
             { name: 'Nuevo Saldo', value: `💰 ${savedEconomy.lagcoins} Lagcoins`, inline: false }
           );
-        
-        return interaction.reply({ embeds: [embed] });
+
+        return interaction.editReply({ embeds: [embed] });
       } catch (error) {
         console.error('Error en ruleta:', error);
-        return interaction.reply({ content: '❌ Error en el juego', flags: 64 });
+        return interaction.editReply({ content: '❌ Error en el juego', flags: 64 });
       }
     }
   }
