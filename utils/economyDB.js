@@ -187,13 +187,35 @@ export async function transferUserLagcoins(guildId, fromUserId, toUserId, amount
 export async function saveUserEconomy(guildId, userId, data) {
   const mongoConnected = isMongoConnected();
   
-  // Primero guardar en JSON local
+  // Guardar en JSON local con todos los campos
   const economyData = loadEconomyFile();
   const key = `${guildId}-${userId}`;
-  economyData[key] = { ...economyData[key], ...data, guildId, userId };
-  saveEconomyFile(economyData);
   
-  // Luego sincronizar completamente con MongoDB
+  // Merge completo de datos
+  const existingData = economyData[key] || {};
+  economyData[key] = {
+    ...existingData,
+    ...data,
+    guildId,
+    userId,
+    lagcoins: data.lagcoins !== undefined ? data.lagcoins : (existingData.lagcoins || 100),
+    bankBalance: data.bankBalance !== undefined ? data.bankBalance : (existingData.bankBalance || 0),
+    items: data.items || existingData.items || [],
+    inventory: data.inventory || existingData.inventory || [],
+    transactions: data.transactions || existingData.transactions || [],
+    casinoStats: data.casinoStats || existingData.casinoStats || { plays: 0, wins: 0, totalWon: 0, totalLost: 0 },
+    jobStats: data.jobStats || existingData.jobStats || { totalJobs: 0, favoriteJob: null },
+    totalEarned: data.totalEarned !== undefined ? data.totalEarned : (existingData.totalEarned || 0),
+    totalSpent: data.totalSpent !== undefined ? data.totalSpent : (existingData.totalSpent || 0)
+  };
+  
+  // Guardar inmediatamente
+  const saved = saveEconomyFile(economyData);
+  if (!saved) {
+    console.error('Error guardando economía en archivo JSON');
+  }
+  
+  // Sincronizar con MongoDB si está conectado
   if (mongoConnected) {
     try {
       await saveEconomyToMongo(guildId, userId, economyData[key]);
@@ -340,14 +362,14 @@ export async function getDailyReward(guildId, userId) {
 // Casino - Ruleta básica
 export async function playCasino(guildId, userId, bet) {
   const economy = await getUserEconomy(guildId, userId);
-  if (economy.lagcoins < bet) return null;
+  if (!economy || economy.lagcoins < bet) return null;
   
   const roll = Math.floor(Math.random() * 100);
   const won = roll > 45;
   const multiplier = won ? (roll > 90 ? 3 : roll > 75 ? 2 : 1.5) : 0;
   const winnings = won ? Math.floor(bet * multiplier) - bet : -bet;
   
-  economy.lagcoins += winnings;
+  economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
   if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
   economy.casinoStats.plays++;
   if (won) {
@@ -358,14 +380,22 @@ export async function playCasino(guildId, userId, bet) {
     economy.casinoStats.totalLost = (economy.casinoStats.totalLost || 0) + bet;
   }
   
-  await saveUserEconomy(guildId, userId, economy);
-  return { won, winnings, newBalance: economy.lagcoins, multiplier, roll };
+  if (!economy.transactions) economy.transactions = [];
+  economy.transactions.push({ 
+    type: won ? 'casino_win' : 'casino_loss', 
+    amount: winnings, 
+    description: `Casino: ${won ? 'Ganaste' : 'Perdiste'} ${Math.abs(winnings)} Lagcoins`,
+    date: new Date().toISOString() 
+  });
+  
+  const savedEconomy = await saveUserEconomy(guildId, userId, economy);
+  return { won, winnings, newBalance: savedEconomy.lagcoins, multiplier, roll };
 }
 
 // Casino - Tragamonedas
 export async function playSlots(guildId, userId, bet) {
   const economy = await getUserEconomy(guildId, userId);
-  if (economy.lagcoins < bet) return null;
+  if (!economy || economy.lagcoins < bet) return null;
   
   const symbols = ['🍒', '🍋', '🍊', '🍇', '🔔', '💎', '7️⃣', '🍀'];
   const reels = [
@@ -395,7 +425,7 @@ export async function playSlots(guildId, userId, bet) {
   const won = multiplier > 0;
   const winnings = won ? Math.floor(bet * multiplier) - bet : -bet;
   
-  economy.lagcoins += winnings;
+  economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
   if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
   economy.casinoStats.plays++;
   if (won) {
@@ -406,20 +436,28 @@ export async function playSlots(guildId, userId, bet) {
     economy.casinoStats.totalLost = (economy.casinoStats.totalLost || 0) + bet;
   }
   
-  await saveUserEconomy(guildId, userId, economy);
-  return { won, winnings, newBalance: economy.lagcoins, reels, multiplier, jackpot };
+  if (!economy.transactions) economy.transactions = [];
+  economy.transactions.push({ 
+    type: won ? 'slots_win' : 'slots_loss', 
+    amount: winnings, 
+    description: `Slots: ${won ? 'Ganaste' : 'Perdiste'} ${Math.abs(winnings)} Lagcoins`,
+    date: new Date().toISOString() 
+  });
+  
+  const savedEconomy = await saveUserEconomy(guildId, userId, economy);
+  return { won, winnings, newBalance: savedEconomy.lagcoins, reels, multiplier, jackpot };
 }
 
 // Casino - Coinflip
 export async function playCoinflip(guildId, userId, bet, choice) {
   const economy = await getUserEconomy(guildId, userId);
-  if (economy.lagcoins < bet) return null;
+  if (!economy || economy.lagcoins < bet) return null;
   
   const result = Math.random() > 0.5 ? 'cara' : 'cruz';
   const won = choice.toLowerCase() === result;
   const winnings = won ? bet : -bet;
   
-  economy.lagcoins += winnings;
+  economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
   if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
   economy.casinoStats.plays++;
   if (won) {
@@ -430,14 +468,22 @@ export async function playCoinflip(guildId, userId, bet, choice) {
     economy.casinoStats.totalLost = (economy.casinoStats.totalLost || 0) + bet;
   }
   
-  await saveUserEconomy(guildId, userId, economy);
-  return { won, result, choice, winnings, newBalance: economy.lagcoins };
+  if (!economy.transactions) economy.transactions = [];
+  economy.transactions.push({ 
+    type: won ? 'coinflip_win' : 'coinflip_loss', 
+    amount: winnings, 
+    description: `Coinflip: ${won ? 'Ganaste' : 'Perdiste'} ${Math.abs(winnings)} Lagcoins`,
+    date: new Date().toISOString() 
+  });
+  
+  const savedEconomy = await saveUserEconomy(guildId, userId, economy);
+  return { won, result, choice, winnings, newBalance: savedEconomy.lagcoins };
 }
 
 // Casino - Dados
 export async function playDice(guildId, userId, bet, guess) {
   const economy = await getUserEconomy(guildId, userId);
-  if (economy.lagcoins < bet) return null;
+  if (!economy || economy.lagcoins < bet) return null;
   
   const dice1 = Math.floor(Math.random() * 6) + 1;
   const dice2 = Math.floor(Math.random() * 6) + 1;
@@ -462,7 +508,7 @@ export async function playDice(guildId, userId, bet, guess) {
   
   const winnings = won ? Math.floor(bet * multiplier) - bet : -bet;
   
-  economy.lagcoins += winnings;
+  economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
   if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
   economy.casinoStats.plays++;
   if (won) {
@@ -473,14 +519,22 @@ export async function playDice(guildId, userId, bet, guess) {
     economy.casinoStats.totalLost = (economy.casinoStats.totalLost || 0) + bet;
   }
   
-  await saveUserEconomy(guildId, userId, economy);
-  return { won, dice1, dice2, total, guess, winnings, newBalance: economy.lagcoins, multiplier };
+  if (!economy.transactions) economy.transactions = [];
+  economy.transactions.push({ 
+    type: won ? 'dice_win' : 'dice_loss', 
+    amount: winnings, 
+    description: `Dados: ${won ? 'Ganaste' : 'Perdiste'} ${Math.abs(winnings)} Lagcoins`,
+    date: new Date().toISOString() 
+  });
+  
+  const savedEconomy = await saveUserEconomy(guildId, userId, economy);
+  return { won, dice1, dice2, total, guess, winnings, newBalance: savedEconomy.lagcoins, multiplier };
 }
 
 // Casino - Blackjack simplificado
 export async function playBlackjack(guildId, userId, bet) {
   const economy = await getUserEconomy(guildId, userId);
-  if (economy.lagcoins < bet) return null;
+  if (!economy || economy.lagcoins < bet) return null;
   
   const getCard = () => Math.min(Math.floor(Math.random() * 13) + 1, 10);
   const playerCards = [getCard(), getCard()];
@@ -506,7 +560,7 @@ export async function playBlackjack(guildId, userId, bet) {
   const won = result === 'win' || result === 'blackjack';
   const winnings = multiplier > 0 ? Math.floor(bet * multiplier) - bet : -bet;
   
-  economy.lagcoins += winnings;
+  economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
   if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
   economy.casinoStats.plays++;
   if (won) {
@@ -517,8 +571,16 @@ export async function playBlackjack(guildId, userId, bet) {
     economy.casinoStats.totalLost = (economy.casinoStats.totalLost || 0) + bet;
   }
   
-  await saveUserEconomy(guildId, userId, economy);
-  return { result, playerCards, dealerCards, playerTotal, dealerTotal, winnings, newBalance: economy.lagcoins };
+  if (!economy.transactions) economy.transactions = [];
+  economy.transactions.push({ 
+    type: won ? 'blackjack_win' : (result === 'tie' ? 'blackjack_tie' : 'blackjack_loss'), 
+    amount: winnings, 
+    description: `Blackjack: ${result === 'win' ? 'Ganaste' : result === 'tie' ? 'Empate' : 'Perdiste'} ${Math.abs(winnings)} Lagcoins`,
+    date: new Date().toISOString() 
+  });
+  
+  const savedEconomy = await saveUserEconomy(guildId, userId, economy);
+  return { result, playerCards, dealerCards, playerTotal, dealerTotal, winnings, newBalance: savedEconomy.lagcoins };
 }
 
 // Robar a usuario

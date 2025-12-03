@@ -639,11 +639,23 @@ client.on('interactionCreate', async (interaction) => {
       const selected = interaction.values[0];
       const userData = db.getUser(interaction.guildId, interaction.user.id);
       
-      db.saveUser(interaction.guildId, interaction.user.id, {
-        selectedCardTheme: selected
-      });
+      const THEME_NAMES = {
+        pixel: '🎮 Pixel Art',
+        ocean: '🌊 Océano',
+        zelda: '⚔️ Zelda',
+        pokemon: '🔴 Pokémon',
+        geometrydash: '⚡ Geometry Dash',
+        night: '🌙 Noche Estrellada',
+        roblox: '🟥 Roblox',
+        minecraft: '⛏️ Minecraft',
+        fnaf: '🐻 FNAF'
+      };
       
-      return interaction.reply({ content: `✅ Tema actualizado a **${selected}**. Usa `/level` para ver tu nueva tarjeta`, flags: 64 });
+      userData.selectedCardTheme = selected;
+      db.saveUser(interaction.guildId, interaction.user.id, userData);
+      
+      const themeName = THEME_NAMES[selected] || selected;
+      return interaction.reply({ content: `✅ Tema actualizado a **${themeName}**. Usa \`/level\` para ver tu nueva tarjeta`, flags: 64 });
     } catch (error) {
       console.error('Error seleccionando tema de tarjeta:', error);
       return interaction.reply({ content: '❌ Error al actualizar tema', flags: 64 });

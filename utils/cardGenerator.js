@@ -93,15 +93,15 @@ export async function getCardTheme(member, level, selectedTheme = null) {
 
 export function getThemeButtonStyle(theme) {
   const themeStyles = {
-    pixel: 1,      // Primary - azul
-    ocean: 1,      // Primary - azul claro
-    zelda: 4,      // Danger - dorado/amarillo
-    pokemon: 3,    // Success - rojo/amarillo
-    geometrydash: 3, // Success - neón
-    night: 4,      // Danger - dorado
-    roblox: 3,     // Success
-    minecraft: 3,  // Success
-    fnaf: 4,       // Danger
+    pixel: 1,           // Primary (azul) - combina con #7289DA
+    ocean: 1,           // Primary (azul) - combina con tonos azules océano
+    zelda: 2,           // Secondary (gris) - combina con tonos dorados/tierra
+    pokemon: 4,         // Danger (rojo) - combina con el rojo de Pokémon
+    geometrydash: 3,    // Success (verde) - combina con los colores neón
+    night: 2,           // Secondary (gris) - combina con tonos oscuros nocturnos
+    roblox: 4,          // Danger (rojo) - combina con el rojo de Roblox
+    minecraft: 3,       // Success (verde) - combina con el verde esmeralda
+    fnaf: 4,            // Danger (rojo) - combina con tonos oscuros/rojos
   };
   return themeStyles[theme] || 1;
 }
