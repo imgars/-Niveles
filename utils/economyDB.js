@@ -103,7 +103,7 @@ export async function addUserLagcoins(guildId, userId, amount, reason = 'work') 
     economyData[key].transactions.push({
       type: reason,
       amount,
-      date: new Date().toISOString()
+      date: new Date()
     });
     
     saveEconomyFile(economyData);
@@ -656,7 +656,7 @@ export async function staffAddCoins(guildId, userId, amount, reason = 'staff_add
     type: reason, 
     amount, 
     description: `Staff añadió ${amount} Lagcoins`, 
-    date: new Date().toISOString() 
+    date: new Date()
   });
   
   await saveUserEconomy(guildId, userId, economy);
@@ -694,7 +694,7 @@ export async function staffRemoveCoins(guildId, userId, amount, reason = 'staff_
     type: reason, 
     amount: -amount, 
     description: `Staff removió ${amount} Lagcoins`, 
-    date: new Date().toISOString() 
+    date: new Date()
   });
   
   await saveUserEconomy(guildId, userId, economy);
@@ -734,7 +734,7 @@ export async function staffSetCoins(guildId, userId, amount) {
     type: 'staff_set', 
     amount: amount - oldAmount, 
     description: `Staff estableció balance a ${amount} Lagcoins`, 
-    date: new Date().toISOString() 
+    date: new Date()
   });
   
   await saveUserEconomy(guildId, userId, economy);
@@ -843,7 +843,13 @@ export async function doWork(guildId, userId, jobId = 'basico') {
   economy.jobStats.favoriteJob = jobId;
   
   if (!economy.transactions) economy.transactions = [];
-  economy.transactions.push({ type: 'work', amount: total, description: `Trabajo: ${job.name}`, date: new Date().toISOString() });
+  const transaction = {
+    type: 'work',
+    amount: total,
+    description: `Trabajo: ${job.name}`,
+    date: new Date()
+  };
+  economy.transactions.push(transaction);
   
   await saveUserEconomy(guildId, userId, economy);
   return { job, earnings, bonus, total, newBalance: economy.lagcoins };
