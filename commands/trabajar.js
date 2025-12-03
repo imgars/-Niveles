@@ -51,7 +51,7 @@ export default {
 
       embed.addFields(
         { name: '💰 Total Ganado', value: `${result.total} Lagcoins`, inline: true },
-        { name: '🏦 Saldo Actual', value: `${result.newBalance} Lagcoins`, inline: false }
+        { name: '🏦 Saldo Actual', value: `${result.newBalance || 0} Lagcoins`, inline: false }
       );
 
       embed.setFooter({ text: `Cooldown: ${Math.round((result.job.cooldown || 60000) / 1000)}s` });
@@ -59,7 +59,11 @@ export default {
       return interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error('Error en trabajar:', error);
-      return interaction.editReply('❌ Error al trabajar');
+      if (!interaction.replied && !interaction.deferred) {
+        return interaction.reply({ content: '❌ Error al trabajar', flags: 64 });
+      } else {
+        return interaction.editReply('❌ Error al trabajar');
+      }
     }
   }
 };

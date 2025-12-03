@@ -32,7 +32,13 @@ export default {
     const reason = interaction.options.getString('razon') || 'Sanción del Staff';
 
     try {
+      await interaction.deferReply();
+      
       const result = await staffRemoveCoins(interaction.guildId, targetUser.id, amount, reason);
+
+      if (!result) {
+        return interaction.editReply({ content: '❌ Error al quitar Lagcoins' });
+      }
 
       const embed = new EmbedBuilder()
         .setColor('#FF0000')
@@ -41,16 +47,20 @@ export default {
         .addFields(
           { name: 'Usuario', value: `${targetUser.tag}`, inline: true },
           { name: 'Cantidad', value: `-${amount} Lagcoins`, inline: true },
-          { name: 'Nuevo Saldo', value: `${result.lagcoins} Lagcoins`, inline: true },
+          { name: 'Nuevo Saldo', value: `${result.lagcoins || 0} Lagcoins`, inline: true },
           { name: 'Razón', value: reason }
         )
         .setFooter({ text: `Por: ${interaction.user.tag}` })
         .setTimestamp();
 
-      return interaction.reply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error('Error en removecoins:', error);
-      return interaction.reply({ content: '❌ Error al quitar Lagcoins', flags: 64 });
+      if (!interaction.replied && !interaction.deferred) {
+        return interaction.reply({ content: '❌ Error al quitar Lagcoins', flags: 64 });
+      } else {
+        return interaction.editReply({ content: '❌ Error al quitar Lagcoins' });
+      }
     }
   }
 };

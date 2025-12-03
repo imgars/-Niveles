@@ -27,7 +27,13 @@ export default {
     const amount = interaction.options.getInteger('cantidad');
 
     try {
+      await interaction.deferReply();
+      
       const result = await staffSetCoins(interaction.guildId, targetUser.id, amount);
+
+      if (!result) {
+        return interaction.editReply({ content: '❌ Error al establecer Lagcoins' });
+      }
 
       const embed = new EmbedBuilder()
         .setColor('#FFD700')
@@ -35,15 +41,19 @@ export default {
         .setDescription(`Se han establecido los Lagcoins de ${targetUser} a **${amount}**`)
         .addFields(
           { name: 'Usuario', value: `${targetUser.tag}`, inline: true },
-          { name: 'Nuevo Saldo', value: `${result.lagcoins} Lagcoins`, inline: true }
+          { name: 'Nuevo Saldo', value: `${result.lagcoins || 0} Lagcoins`, inline: true }
         )
         .setFooter({ text: `Por: ${interaction.user.tag}` })
         .setTimestamp();
 
-      return interaction.reply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error('Error en setcoins:', error);
-      return interaction.reply({ content: '❌ Error al establecer Lagcoins', flags: 64 });
+      if (!interaction.replied && !interaction.deferred) {
+        return interaction.reply({ content: '❌ Error al establecer Lagcoins', flags: 64 });
+      } else {
+        return interaction.editReply({ content: '❌ Error al establecer Lagcoins' });
+      }
     }
   }
 };
