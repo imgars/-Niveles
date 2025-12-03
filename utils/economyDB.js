@@ -624,35 +624,118 @@ export async function robUser(guildId, robberUserId, victimUserId) {
 
 // Funciones de staff para manejar economía
 export async function staffAddCoins(guildId, userId, amount, reason = 'staff_add') {
+  const mongoConnected = isMongoConnected();
+  
+  if (mongoConnected) {
+    try {
+      const economy = await getEconomy(guildId, userId);
+      economy.lagcoins = (economy.lagcoins || 0) + amount;
+      economy.totalEarned = (economy.totalEarned || 0) + amount;
+      
+      if (!Array.isArray(economy.transactions)) economy.transactions = [];
+      economy.transactions.push({ 
+        type: reason, 
+        amount, 
+        description: `Staff añadió ${amount} Lagcoins`, 
+        date: new Date() 
+      });
+      
+      await economy.save();
+      return economy;
+    } catch (error) {
+      console.error('Error en staffAddCoins:', error);
+    }
+  }
+  
   const economy = await getUserEconomy(guildId, userId);
   economy.lagcoins = (economy.lagcoins || 0) + amount;
   economy.totalEarned = (economy.totalEarned || 0) + amount;
   
-  if (!economy.transactions) economy.transactions = [];
-  economy.transactions.push({ type: reason, amount, description: `Staff añadió ${amount} Lagcoins`, date: new Date().toISOString() });
+  if (!Array.isArray(economy.transactions)) economy.transactions = [];
+  economy.transactions.push({ 
+    type: reason, 
+    amount, 
+    description: `Staff añadió ${amount} Lagcoins`, 
+    date: new Date().toISOString() 
+  });
   
   await saveUserEconomy(guildId, userId, economy);
   return economy;
 }
 
 export async function staffRemoveCoins(guildId, userId, amount, reason = 'staff_remove') {
+  const mongoConnected = isMongoConnected();
+  
+  if (mongoConnected) {
+    try {
+      const economy = await getEconomy(guildId, userId);
+      economy.lagcoins = Math.max(0, (economy.lagcoins || 0) - amount);
+      
+      if (!Array.isArray(economy.transactions)) economy.transactions = [];
+      economy.transactions.push({ 
+        type: reason, 
+        amount: -amount, 
+        description: `Staff removió ${amount} Lagcoins`, 
+        date: new Date() 
+      });
+      
+      await economy.save();
+      return economy;
+    } catch (error) {
+      console.error('Error en staffRemoveCoins:', error);
+    }
+  }
+  
   const economy = await getUserEconomy(guildId, userId);
   economy.lagcoins = Math.max(0, (economy.lagcoins || 0) - amount);
   
-  if (!economy.transactions) economy.transactions = [];
-  economy.transactions.push({ type: reason, amount: -amount, description: `Staff removió ${amount} Lagcoins`, date: new Date().toISOString() });
+  if (!Array.isArray(economy.transactions)) economy.transactions = [];
+  economy.transactions.push({ 
+    type: reason, 
+    amount: -amount, 
+    description: `Staff removió ${amount} Lagcoins`, 
+    date: new Date().toISOString() 
+  });
   
   await saveUserEconomy(guildId, userId, economy);
   return economy;
 }
 
 export async function staffSetCoins(guildId, userId, amount) {
+  const mongoConnected = isMongoConnected();
+  
+  if (mongoConnected) {
+    try {
+      const economy = await getEconomy(guildId, userId);
+      const oldAmount = economy.lagcoins || 0;
+      economy.lagcoins = amount;
+      
+      if (!Array.isArray(economy.transactions)) economy.transactions = [];
+      economy.transactions.push({ 
+        type: 'staff_set', 
+        amount: amount - oldAmount, 
+        description: `Staff estableció balance a ${amount} Lagcoins`, 
+        date: new Date() 
+      });
+      
+      await economy.save();
+      return economy;
+    } catch (error) {
+      console.error('Error en staffSetCoins:', error);
+    }
+  }
+  
   const economy = await getUserEconomy(guildId, userId);
   const oldAmount = economy.lagcoins || 0;
   economy.lagcoins = amount;
   
-  if (!economy.transactions) economy.transactions = [];
-  economy.transactions.push({ type: 'staff_set', amount: amount - oldAmount, description: `Staff estableció balance a ${amount} Lagcoins`, date: new Date().toISOString() });
+  if (!Array.isArray(economy.transactions)) economy.transactions = [];
+  economy.transactions.push({ 
+    type: 'staff_set', 
+    amount: amount - oldAmount, 
+    description: `Staff estableció balance a ${amount} Lagcoins`, 
+    date: new Date().toISOString() 
+  });
   
   await saveUserEconomy(guildId, userId, economy);
   return economy;
