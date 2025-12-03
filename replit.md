@@ -1,319 +1,290 @@
 # Discord Leveling Bot - Proyecto
 
-## 📋 Descripción General
+## Descripcion General
 
-Bot de Discord completo con sistema de niveles, XP, minijuegos y tarjetas de rango personalizadas. Este proyecto está listo para ejecutarse en Replit y ser desplegado a Render u otras plataformas de hosting.
+Bot de Discord completo con sistema de niveles, XP, economia (Lagcoins), casino, minijuegos y tarjetas de rango personalizadas. Este proyecto esta listo para ejecutarse en Replit y ser desplegado a Render u otras plataformas de hosting.
 
-## 🎯 Funcionalidades Principales
+## Funcionalidades Principales
 
 ### Sistema de Niveles y XP
-- Fórmula de XP progresiva (niveles 1-5 muy rápidos, hasta nivel 90+ muy lentos)
+- Formula de XP progresiva (niveles 1-5 muy rapidos, hasta nivel 90+ muy lentos)
 - Cooldown de 10 segundos entre mensajes
-- Ganancia de XP por mensajes, imágenes, videos y reacciones
-- Recompensas automáticas de roles en niveles específicos
-- Persistencia de datos en JSON (sobrevive reinicios)
+- Ganancia de XP por mensajes, imagenes, videos y reacciones
+- Recompensas automaticas de roles en niveles especificos
+- Persistencia de datos en JSON y MongoDB
+
+### Sistema de Economia (Lagcoins) - NUEVO
+- Moneda virtual: Lagcoins
+- Banco para depositar y proteger dinero
+- 13 trabajos diferentes con herramientas requeridas
+- Tienda con 19+ items en 10 categorias
+- Sistema de robos entre usuarios
+- Estadisticas detalladas de economia
+- Rachas de recompensas diarias
+
+### Sistema de Casino - NUEVO
+- /casino - Ruleta clasica (hasta x3)
+- /slots - Tragamonedas con jackpot (x10)
+- /blackjack - Juega al 21 contra el dealer
+- /coinflip - Lanza moneda 50/50
+- /dice - Dados con predicciones (alto/bajo/exacto/dobles)
+- Estadisticas de casino por usuario
+
+### Comandos de Staff para Economia - NUEVO
+- /addcoins - Anadir Lagcoins a usuarios
+- /removecoins - Quitar Lagcoins a usuarios
+- /setcoins - Establecer Lagcoins exactos
+- /giveitem - Dar items a usuarios
+- /removeitem - Quitar items a usuarios
 
 ### Sistema de Boosts
-- Boosts acumulables (se suman entre sí)
-- Boost automático de 200% para Boosters y VIPs
+- Boosts acumulables (se suman entre si)
+- Boost automatico de 200% para Boosters y VIPs
 - Boost nocturno de 25% (18:00-06:00 Venezuela)
 - Boosts personalizados por usuario, canal o globales
-- Gestión completa vía comandos
+- Gestion completa via comandos
 
 ### Minijuegos
 - **Trivia**: 5 preguntas, recompensas de boost o niveles
 - **Piedra, Papel o Tijeras**: Mejor de 3, con recompensas
-- **Ruleta Rusa**: ¡Riesgoso! Ganador +2.5 niveles, perdedor -3 niveles
+- **Ruleta Rusa**: Riesgoso! Ganador +2.5 niveles, perdedor -3 niveles
 - **Ahorcado Solo**: 3 rondas, 25% boost o 1 nivel, cooldown 48h
 - **Ahorcado Multi**: Host vs Adivinador, +0.5 niveles, cooldown 30min
 - Sistema de cooldowns para cada minijuego
 
 ### Tarjetas Personalizadas
-- Generación dinámica con Canvas
-- Temas pixel art según rango del usuario
+- Generacion dinamica con Canvas
+- Temas pixel art segun rango del usuario
 - Temas especiales para boosters, VIPs y usuario especial
 
-### Dashboard Web (NUEVO)
-- Página web con tema retro pixel art (Pokemon, Zelda, Mario)
-- Secciones: Inicio, Características, Comandos, Minijuegos, Tarjetas, Leaderboard
-- Leaderboard completo con hasta 500 usuarios (más que los 10 de Discord)
-- Avatares y nombres de usuario de Discord en el leaderboard
-- Sistema de caché de 10 minutos para datos de Discord
-- API REST para obtener datos del leaderboard
-- Diseño responsive para móviles
-- Efectos visuales: scanlines, glitch, animaciones retro
+### Dashboard Web
+- Pagina web con tema retro pixel art (Pokemon, Zelda, Mario)
+- Secciones: Inicio, Caracteristicas, Comandos, Minijuegos, Tarjetas, Leaderboard
+- Leaderboard completo con hasta 500 usuarios
+- API REST para obtener datos
 
-## 🔧 Configuración Actual
+## Configuracion Actual
 
-### IDs Configurados en `config.js`
+### IDs Configurados en config.js
 ```javascript
 STAFF_ROLE_ID: '1230949715127042098'
-BOOSTER_ROLE_ID: '1423037247606882399'
-VIP_ROLE_ID: '1423037247606882399'
+BOOSTER_ROLE_ID: '1229938887955189843'
+VIP_ROLE_ID: '1230595787717611686'
 SPECIAL_USER_ID: '956700088103747625'
-LEVEL_UP_CHANNEL_ID: '1243975130908983356'
+LEVEL_UP_CHANNEL_ID: '1420907355956318239'
+MISSION_COMPLETE_CHANNEL_ID: '1441276918916710501'
 NO_XP_CHANNELS: ['1313723272290111559', '1258524941289263254']
 ```
 
 ### Roles de Nivel
-- Nivel 1: 1313715879816597514
-- Nivel 5: 1313716079998140536
-- Nivel 10: 1313716235573264437
-- Nivel 20: 1313716306599481436
-- Nivel 25: 1239330751334584421 (Miembro Activo)
-- Nivel 30: 1438675114911596624
-- Nivel 35: 1313716401021911102 (Miembro Super Activo)
-- Nivel 40: 1313716612452581437
-- Nivel 50: 1313716715934453761
-- Nivel 75: 1313716864790302730
-- Nivel 100: 1313716964383920269
+- Nivel 1: Nuevo Miembro
+- Nivel 5: Iniciado
+- Nivel 10: Regular
+- Nivel 20: Conocido
+- Nivel 25: Miembro Activo
+- Nivel 30: Veterano
+- Nivel 35: Super Activo
+- Nivel 40: Elite
+- Nivel 50: Maestro
+- Nivel 75: Leyenda
+- Nivel 100: Inmortal
 
-## 🚀 Cómo Ejecutar
+## Como Ejecutar
 
-### En Replit (Configurado ✅)
-Este proyecto está completamente configurado para Replit:
+### En Replit (Configurado)
+Este proyecto esta completamente configurado para Replit:
 
-1. **Variables de entorno**: `DISCORD_BOT_TOKEN` configurado en Secrets ✅
-2. **Workflow**: Configurado para ejecutar `node index.js` automáticamente ✅
-3. **Dependencias**: Instaladas automáticamente con npm ✅
-4. **Puerto**: Servidor web en puerto 5000 con Dashboard ✅
-5. **Deployment**: Configurado para VM (24/7) ✅
-6. **Dashboard Web**: Accesible en la URL del proyecto ✅
-7. **Datos Persistentes**: JSON con almacenamiento persistente en Render ✅
-
-El bot está corriendo y conectado a Discord. Solo presiona "Run" para iniciarlo.
+1. **Variables de entorno**: DISCORD_BOT_TOKEN y MONGODB_URI configurados en Secrets
+2. **Workflow**: Configurado para ejecutar npm start automaticamente
+3. **Dependencias**: Instaladas automaticamente con npm
+4. **Puerto**: Servidor web en puerto 5000 con Dashboard
+5. **MongoDB**: Sincronizacion automatica de datos
 
 ### URLs del Dashboard
-- `/` - Página principal con todas las secciones
+- `/` - Pagina principal con todas las secciones
 - `/api/leaderboard` - API JSON con hasta 500 usuarios
-- `/api/stats` - Estadísticas generales
+- `/api/stats` - Estadisticas generales
 - `/health` - Health check para Uptime Robot
 
-### Localmente
-```bash
-npm install
-DISCORD_BOT_TOKEN=tu_token node index.js
-```
-
-## 📦 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 ├── index.js              # Bot principal
-├── config.js             # Configuración
-├── commands/             # Comandos slash (22 archivos)
+├── config.js             # Configuracion
+├── commands/             # Comandos slash (35+ archivos)
+│   ├── level.js          # Comandos de niveles
+│   ├── balance.js        # Comandos de economia
+│   ├── casino.js         # Juegos de casino
+│   ├── slots.js          # Tragamonedas
+│   ├── blackjack.js      # Blackjack
+│   ├── coinflip.js       # Lanzar moneda
+│   ├── dice.js           # Dados
+│   ├── tienda.js         # Tienda de items
+│   ├── trabajar.js       # Sistema de trabajos
+│   ├── addcoins.js       # Staff: dar Lagcoins
+│   ├── removecoins.js    # Staff: quitar Lagcoins
+│   ├── giveitem.js       # Staff: dar items
+│   └── ...               # Mas comandos
 ├── utils/                # Utilidades
 │   ├── database.js       # Persistencia JSON
+│   ├── mongoSync.js      # Sincronizacion MongoDB
+│   ├── economyDB.js      # Sistema de economia
 │   ├── xpSystem.js       # Sistema de XP
-│   ├── cardGenerator.js  # Generación de imágenes
+│   ├── cardGenerator.js  # Generacion de imagenes
 │   ├── timeBoost.js      # Boost nocturno
 │   └── helpers.js        # Funciones auxiliares
+├── public/               # Dashboard web
+│   ├── index.html        # Pagina principal
+│   ├── css/style.css     # Estilos
+│   └── js/main.js        # JavaScript
 └── data/                 # Datos persistentes
+    ├── users.json        # Datos de usuarios
+    ├── economy.json      # Datos de economia
+    └── boosts.json       # Datos de boosts
 ```
 
-## 📝 Comandos Disponibles
+## Comandos Disponibles
 
-### Usuarios (19 comandos)
-- `/level`, `/nivel`, `/rank` - Ver nivel con tarjeta
-- `/leaderboard`, `/lb` - Tabla de clasificación
-- `/rewards list` - Ver recompensas
-- `/boost list`, `/boost status` - Ver boosts
-- `/minigame trivia/rps/roulette` - Jugar minijuegos
-- `/ahorcado solo/multi` - Jugar Ahorcado
-- `/help` - Ayuda
+### Comandos de Niveles (8)
+- /level, /nivel, /rank - Ver nivel con tarjeta
+- /leaderboard, /lb - Tabla de clasificacion
+- /rewards list - Ver recompensas
+- /boost list, /boost status - Ver boosts
+- /help - Ayuda
 
-### Staff (13 comandos)
-- `/addlevel`, `/removelevel`, `/setlevel` - Gestión de niveles
-- `/xp add/remove/reset` - Gestión de XP
-- `/boost add`, `/globalboost`, `/removeglobalboost` - Gestión de boosts
-- `/banxp`, `/unbanxp` - Sistema de bans
-- `/resettemporada` - Resetear temporada
-- `/clearlevelroles` - Limpiar roles
-- `/embed`, `/mensaje` - Mensajes personalizados
-- `/help staff` - Ayuda de staff
+### Comandos de Economia (12)
+- /balance - Ver saldo
+- /perfil - Ver perfil completo
+- /estadisticas - Estadisticas detalladas
+- /daily - Recompensa diaria
+- /trabajar - Trabajar para ganar Lagcoins
+- /work - Trabajo rapido
+- /tienda - Comprar items
+- /inventario - Ver items
+- /depositar - Depositar en banco
+- /retirar - Retirar del banco
+- /robar - Robar a usuarios
+- /trade - Intercambiar Lagcoins
 
-## 🎨 Temas de Tarjetas
+### Comandos de Casino (5)
+- /casino - Ruleta clasica
+- /slots - Tragamonedas
+- /blackjack - 21
+- /coinflip - Lanzar moneda
+- /dice - Dados
 
-- **Normal**: Pixel art básico (usuarios normales)
-- **Ocean**: Tema marino (Nivel 25+, Miembro Activo)
-- **Zelda**: Amarillo/verde (Nivel 35+, Super Activo)
-- **Pokemon**: Rojo/amarillo (Nivel 100+)
-- **Geometry Dash**: Colores neón (Boosters)
-- **Night**: Noche estrellada (VIPs)
-- **Aleatorio**: Roblox/Minecraft/Zelda/FNAF/GD (Usuario especial)
+### Minijuegos de XP (5)
+- /minigame trivia - Trivia
+- /minigame rps - Piedra, Papel, Tijeras
+- /minigame roulette - Ruleta Rusa
+- /ahorcado solo - Ahorcado solitario
+- /ahorcado multi - Ahorcado multijugador
 
-## 🔄 Mejoras Futuras Planeadas
+### Staff - Niveles (11)
+- /addlevel, /removelevel, /setlevel - Gestion de niveles
+- /xp add/remove/reset - Gestion de XP
+- /boost add, /globalboost, /removeglobalboost - Gestion de boosts
+- /banxp, /unbanxp - Sistema de bans
+- /resettemporada - Resetear temporada
+- /clearlevelroles - Limpiar roles
 
-### Completado ✅
-- [x] Hangman (Ahorcado) modo solitario - 3 rondas con select menus
-- [x] Hangman (Ahorcado) multijugador - Host vs Adivinador
-- [x] Sistema de cooldowns para Ahorcado (48h solo, 30min multi)
-- [x] Recompensas de niveles fraccionarios
+### Staff - Economia (5)
+- /addcoins - Dar Lagcoins
+- /removecoins - Quitar Lagcoins
+- /setcoins - Establecer Lagcoins
+- /giveitem - Dar items
+- /removeitem - Quitar items
 
-### Pendientes
-- [ ] Más preguntas de trivia
-- [ ] Sistema de achievements/logros
-- [ ] Dashboard web
-- [ ] Estadísticas detalladas
-- [ ] Sistema de economía opcional
-- [ ] Más minijuegos
+## Items de la Tienda
 
-## 📊 Fórmula de XP Actual
+### Herramientas (Desbloquean trabajos)
+- Cana de Pesca (500) - Pescador
+- Hacha (600) - Lenador
+- Pico (800) - Minero
+- Pala (700) - Albanil
 
-```
-Nivel 1-5:   100 XP base (MUY rápido)
-Nivel 6-10:  150 XP base (Muy rápido)
-Nivel 11-15: 250 XP base (Rápido)
-Nivel 16-20: 400 XP base (Med. rápido)
-Nivel 21-35: 600 XP base (Normal)
-Nivel 36-40: 850 XP base (Med. lento)
-Nivel 41-50: 1200 XP base (Lento)
-Nivel 51-75: 1800 XP base (Med. lento)
-Nivel 76-90: 2500 XP base (Lento)
-Nivel 90+:   3500 XP base (MUY lento)
-```
+### Tecnologia
+- Laptop Gaming (2000) - Programador
+- Camara HD (1500) - Streaming
 
-Multiplicador por nivel: `baseXP * (1 + nivel * 0.1)`
+### Vehiculos
+- Moto de Reparto (1200) - Repartidor
+- Bicicleta (300)
 
-## 💾 Datos Persistentes - MongoDB (RECOMENDADO)
+### Instrumentos
+- Guitarra Electrica (1800) - Musico
 
-Datos persistentes con MongoDB Atlas (gratis):
-- Sincronización automática cada 5 minutos
-- Backup automático en la nube
-- Datos no se pierden en deploys
+### Consumibles
+- Bebida Energetica (150) - Reduce cooldown
+- Trebol de la Suerte (500) - +20% casino
+- Escudo Anti-Robo (800) - Proteccion
 
-**Configuración:**
-1. Ve a https://www.mongodb.com/cloud/atlas
-2. Crea cuenta gratis
-3. Crea un cluster gratis
-4. Copia la connection string
-5. En Render/Replit: Agrégala como variable `MONGODB_URI` en Secrets
-6. ¡Listo! Los datos se sincronizan automáticamente
+### Coleccionables
+- Corona Dorada (10000)
+- Diamante Brillante (5000)
+- Trofeo de Oro (3000)
 
-**Si no quieres MongoDB:**
-- Los datos se guardan localmente en JSON (`data/`)
-- Se pierden en deploys de Render
-- Opción: Hacer git push de `data/` a GitHub
+## Trabajos Disponibles (13)
 
-## 🌐 Despliegue a Producción
+| Trabajo | Ganancia | Herramienta | Cooldown |
+|---------|----------|-------------|----------|
+| Basico | 50-120 | Ninguna | 60s |
+| Pescador | 100-250 | Cana Pesca | 45s |
+| Lenador | 120-300 | Hacha | 45s |
+| Minero | 150-400 | Pico | 45s |
+| Albanil | 180-450 | Pala | 45s |
+| Programador | 200-500 | Laptop | 40s |
+| Chef | 150-350 | Utensilios | 50s |
+| Repartidor | 80-200 | Moto | 30s |
+| Streamer | 100-600 | Camara+Laptop | 120s |
+| Musico | 120-400 | Guitarra | 60s |
+| Artista | 100-450 | Kit Arte | 90s |
+| Cazador | 180-500 | Arco | 60s |
+| Granjero | 130-350 | Semillas | 45s |
 
-### Opción 1: Render (24/7 Recomendado)
-**Pasos para desplegar a Render:**
-
-1. **Crear cuenta en Render:**
-   - Ve a https://render.com y crea una cuenta
-   - Conecta tu cuenta de GitHub
-
-2. **Conectar el repositorio:**
-   - En Render, haz clic en "New +"
-   - Selecciona "Web Service"
-   - Conecta tu repositorio de GitHub
-   - Autoriza acceso a tus repositorios
-
-3. **Configurar el servicio:**
-   - **Name:** Ponle un nombre (ej: discord-bot)
-   - **Region:** Selecciona la más cercana
-   - **Branch:** main (o la rama que uses)
-   - **Build Command:** `npm install`
-   - **Start Command:** `node index.js`
-
-4. **Configurar variables de entorno:**
-   - En la sección "Environment"
-   - Añade: `DISCORD_BOT_TOKEN` = tu token de Discord
-
-5. **Tipo de servicio:**
-   - Selecciona "Worker" (no Web Service, ya que es un bot)
-   - Los workers cumplen 24/7
-
-6. **Desplegar:**
-   - Haz clic en "Create Web Service"
-   - Render descargará, instalará y ejecutará el bot automáticamente
-
-**Notas:**
-- El bot estará corriendo 24/7
-- Se reiniciará automáticamente si falla
-- Los datos se guardan en archivos JSON (asegúrate de hacer backup)
-
-### Opción 2: Otros servicios
-Compatible con cualquier plataforma que soporte Node.js:
-- Railway (similar a Render)
-- Fly.io
-- DigitalOcean App Platform
-- Heroku (requiere tarjeta de crédito ahora)
-- AWS/GCP/Azure
-
-## ⚙️ Variables de Entorno Requeridas
+## Variables de Entorno Requeridas
 
 ```
 DISCORD_BOT_TOKEN=tu_token_de_discord
+MONGODB_URI=tu_connection_string_mongodb
 ```
 
-## 🔐 Seguridad
+## Despliegue
 
-- Token del bot nunca incluido en el código
-- Datos persistentes en archivos locales
-- Sistema de permisos basado en roles de Discord
-- Comandos peligrosos requieren confirmación
+### Render (Recomendado)
+El bot esta configurado para desplegarse en Render:
+- Repository: https://github.com/imgars/-Niveles.git
+- Dashboard URL: https://niveles-wul5.onrender.com
+- Build Command: npm install
+- Start Command: node index.js
 
-## 📞 Intents Requeridos
+### Subir cambios a GitHub
+```bash
+git add .
+git commit -m "Descripcion de cambios"
+git push origin main
+```
 
-En Discord Developer Portal, activa:
-- Server Members Intent
-- Message Content Intent
-- Guilds Intent
-- Guild Messages Intent
-- Guild Message Reactions Intent
+## Cambios Recientes
 
-## 🆘 Troubleshooting
-
-### Bot no responde
-- Verifica token en Secrets
-- Revisa intents en Discord Developer Portal
-- Chequea permisos del bot en el servidor
-
-### Tarjetas no se generan
-- Verifica instalación de `@napi-rs/canvas`
-- Revisa logs de consola
-
-### Boost nocturno no funciona
-- Verifica zona horaria en `config.js`
-- Chequea logs de cron
-
-## 📄 Licencia
-
-ISC - Libre para uso y modificación
+### 3 de Diciembre 2025 - v2.0.0
+- NUEVO: Sistema de economia completo con Lagcoins
+- NUEVO: 5 juegos de casino (ruleta, slots, blackjack, coinflip, dados)
+- NUEVO: Tienda con 19+ items en 10 categorias
+- NUEVO: 13 trabajos diferentes con herramientas
+- NUEVO: Sistema de banco (depositar/retirar)
+- NUEVO: Sistema de robos entre usuarios
+- NUEVO: Comandos de staff para economia
+- NUEVO: Estadisticas detalladas de casino y trabajos
+- FIX: Lagcoins y items ahora se guardan correctamente en MongoDB
+- FIX: Sincronizacion completa de economia con MongoDB
+- UPDATE: Dashboard web actualizado con nuevos comandos
+- UPDATE: Link del leaderboard actualizado a nueva URL
 
 ---
 
-**Última actualización**: 30 de Noviembre de 2025
-**Estado**: ✅ 100% COMPLETO - MongoDB configurado y sincronizando datos
-**Versión**: 1.1.0 - Todos los minijuegos + MongoDB Atlas
-**Entorno**: Replit + MongoDB Atlas - Datos persistentes en producción
-**MongoDB**: ✅ Conectado - Sincronización automática cada 5 minutos
-
-## 🎮 Detalles del Minijuego de Ahorcado
-
-### Diseño Técnico
-- **Interfaz**: StringSelectMenu (menú desplegable) con 25 opciones
-- **Alfabeto**: ABCDEFGHIJKLMNÑOPQRSTUVYZ (sin W ni X por límites de componentes)
-- **Ventaja**: Solo usa 1 ActionRow (en lugar de 5 filas de botones)
-- **Arquitectura**: `createLetterSelector()` genera menús dinámicos
-
-### Modo Solitario (`/ahorcado solo`)
-- 3 rondas consecutivas
-- Palabras aleatorias de un pool de 20 palabras
-- Ganar 2/3 rondas: 25% boost x24h o 1 nivel
-- Cooldown: 48 horas (aplicado siempre, ganar o perder)
-- 6 intentos fallidos máximo por ronda
-
-### Modo Multijugador (`/ahorcado multi`)
-- Host crea palabra personalizada
-- Adivinador intenta resolver
-- Recompensa: +0.5 niveles al ganar
-- Cooldown: 30 minutos
-- Timeout: 5 minutos
-
-### Pool de Palabras (20 palabras)
-DISCORD, MINECRAFT, POKEMON, ROBOTICA, ASTRONAUTA, COMPUTADORA,
-PROGRAMACION, VIDEOJUEGO, TECNOLOGIA, AVENTURA, DESARROLLO,
-SERVIDOR, MODERADOR, COMUNIDAD, RECOMPENSA, DESAFIO,
-VICTORIA, JUGADOR, MENSAJE, RANKING
+**Ultima actualizacion**: 3 de Diciembre de 2025
+**Estado**: COMPLETO - Economia y Casino implementados
+**Version**: 2.0.0 - Sistema de economia completo
+**Entorno**: Replit + MongoDB Atlas
+**MongoDB**: Conectado - Sincronizacion automatica

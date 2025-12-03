@@ -86,11 +86,34 @@ const economySchema = new mongoose.Schema({
   bankBalance: { type: Number, default: 0 },
   lastWorkTime: Date,
   lastRobTime: Date,
+  lastDailyReward: String,
+  lastRobAttempt: Date,
+  lastBankRob: Date,
+  dailyStreak: { type: Number, default: 0 },
+  totalEarned: { type: Number, default: 0 },
+  totalSpent: { type: Number, default: 0 },
+  casinoStats: {
+    plays: { type: Number, default: 0 },
+    wins: { type: Number, default: 0 },
+    totalWon: { type: Number, default: 0 },
+    totalLost: { type: Number, default: 0 }
+  },
+  items: [{ type: String }],
+  inventory: [{
+    itemId: String,
+    quantity: { type: Number, default: 1 },
+    acquiredAt: { type: Date, default: Date.now }
+  }],
+  jobStats: {
+    totalJobs: { type: Number, default: 0 },
+    favoriteJob: String
+  },
   transactions: [{
     type: String,
     amount: Number,
     from: String,
     to: String,
+    description: String,
     date: { type: Date, default: Date.now }
   }],
   createdAt: { type: Date, default: Date.now }
@@ -425,12 +448,18 @@ export async function getEconomy(guildId, userId) {
 export async function addLagcoins(guildId, userId, amount, reason = 'work') {
   if (!isConnected) return null;
   try {
+    const updateData = { 
+      $inc: { lagcoins: amount },
+      $push: { transactions: { type: reason, amount, date: new Date() } }
+    };
+    
+    if (amount > 0) {
+      updateData.$inc.totalEarned = amount;
+    }
+    
     const economy = await Economy.findOneAndUpdate(
       { guildId, userId },
-      { 
-        $inc: { lagcoins: amount },
-        $push: { transactions: { type: reason, amount, date: new Date() } }
-      },
+      updateData,
       { upsert: true, new: true }
     );
     return economy;
@@ -447,6 +476,7 @@ export async function removeLagcoins(guildId, userId, amount, reason = 'spend') 
     if (!economy || economy.lagcoins < amount) return null;
     
     economy.lagcoins -= amount;
+    economy.totalSpent = (economy.totalSpent || 0) + amount;
     economy.transactions.push({ type: reason, amount: -amount, date: new Date() });
     await economy.save();
     return economy;
@@ -484,4 +514,175 @@ export async function transferLagcoins(guildId, fromUserId, toUserId, amount) {
 
 export function isMongoConnected() {
   return isConnected;
+}
+
+// Función para guardar completamente la economía de un usuario
+export async function saveEconomyToMongo(guildId, userId, economyData) {
+  if (!isConnected) return null;
+  try {
+    const updateData = {
+      guildId,
+      userId,
+      lagcoins: economyData.lagcoins || 100,
+      bankBalance: economyData.bankBalance || 0,
+      lastWorkTime: economyData.lastWorkTime,
+      lastRobTime: economyData.lastRobTime,
+      lastDailyReward: economyData.lastDailyReward,
+      lastRobAttempt: economyData.lastRobAttempt,
+      lastBankRob: economyData.lastBankRob,
+      dailyStreak: economyData.dailyStreak || 0,
+      totalEarned: economyData.totalEarned || 0,
+      totalSpent: economyData.totalSpent || 0,
+      items: economyData.items || [],
+      inventory: economyData.inventory || []
+    };
+    
+    if (economyData.casinoStats) {
+      updateData.casinoStats = economyData.casinoStats;
+    }
+    
+    if (economyData.jobStats) {
+      updateData.jobStats = economyData.jobStats;
+    }
+    
+    const economy = await Economy.findOneAndUpdate(
+      { guildId, userId },
+      { $set: updateData },
+      { upsert: true, new: true }
+    );
+    return economy;
+  } catch (error) {
+    console.error('Error guardando economía completa:', error.message);
+    return null;
+  }
+}
+
+// Función para añadir un item al inventario
+export async function addItemToInventory(guildId, userId, itemId) {
+  if (!isConnected) return null;
+  try {
+    const economy = await Economy.findOneAndUpdate(
+      { guildId, userId },
+      { 
+        $addToSet: { items: itemId },
+        $push: { 
+          inventory: { itemId, quantity: 1, acquiredAt: new Date() },
+          transactions: { type: 'item_purchase', amount: 0, description: `Compró ${itemId}`, date: new Date() }
+        }
+      },
+      { upsert: true, new: true }
+    );
+    return economy;
+  } catch (error) {
+    console.error('Error añadiendo item:', error.message);
+    return null;
+  }
+}
+
+// Función para dar item a un usuario (staff)
+export async function giveItemToUser(guildId, userId, itemId, quantity = 1) {
+  if (!isConnected) return null;
+  try {
+    const economy = await Economy.findOne({ guildId, userId });
+    if (!economy) {
+      const newEconomy = new Economy({ guildId, userId, items: [itemId] });
+      await newEconomy.save();
+      return newEconomy;
+    }
+    
+    if (!economy.items.includes(itemId)) {
+      economy.items.push(itemId);
+    }
+    economy.inventory.push({ itemId, quantity, acquiredAt: new Date() });
+    economy.transactions.push({ type: 'gift', amount: 0, description: `Recibió ${itemId} x${quantity}`, date: new Date() });
+    await economy.save();
+    return economy;
+  } catch (error) {
+    console.error('Error dando item:', error.message);
+    return null;
+  }
+}
+
+// Función para actualizar estadísticas del casino
+export async function updateCasinoStats(guildId, userId, won, amount) {
+  if (!isConnected) return null;
+  try {
+    const updateData = {
+      $inc: {
+        'casinoStats.plays': 1
+      }
+    };
+    
+    if (won) {
+      updateData.$inc['casinoStats.wins'] = 1;
+      updateData.$inc['casinoStats.totalWon'] = amount;
+    } else {
+      updateData.$inc['casinoStats.totalLost'] = Math.abs(amount);
+    }
+    
+    const economy = await Economy.findOneAndUpdate(
+      { guildId, userId },
+      updateData,
+      { upsert: true, new: true }
+    );
+    return economy;
+  } catch (error) {
+    console.error('Error actualizando stats casino:', error.message);
+    return null;
+  }
+}
+
+// Función para depositar en el banco
+export async function depositToBank(guildId, userId, amount) {
+  if (!isConnected) return null;
+  try {
+    const economy = await Economy.findOne({ guildId, userId });
+    if (!economy || economy.lagcoins < amount) return null;
+    
+    economy.lagcoins -= amount;
+    economy.bankBalance = (economy.bankBalance || 0) + amount;
+    economy.transactions.push({ type: 'deposit', amount: -amount, description: 'Depósito al banco', date: new Date() });
+    await economy.save();
+    return economy;
+  } catch (error) {
+    console.error('Error depositando:', error.message);
+    return null;
+  }
+}
+
+// Función para retirar del banco
+export async function withdrawFromBank(guildId, userId, amount) {
+  if (!isConnected) return null;
+  try {
+    const economy = await Economy.findOne({ guildId, userId });
+    if (!economy || (economy.bankBalance || 0) < amount) return null;
+    
+    economy.bankBalance -= amount;
+    economy.lagcoins = (economy.lagcoins || 0) + amount;
+    economy.transactions.push({ type: 'withdraw', amount: amount, description: 'Retiro del banco', date: new Date() });
+    await economy.save();
+    return economy;
+  } catch (error) {
+    console.error('Error retirando:', error.message);
+    return null;
+  }
+}
+
+// Función para actualizar estadísticas de trabajo
+export async function updateJobStats(guildId, userId, jobName) {
+  if (!isConnected) return null;
+  try {
+    const economy = await Economy.findOneAndUpdate(
+      { guildId, userId },
+      {
+        $inc: { 'jobStats.totalJobs': 1 },
+        $set: { 'jobStats.favoriteJob': jobName, lastWorkTime: new Date() }
+      },
+      { upsert: true, new: true }
+    );
+    return economy;
+  } catch (error) {
+    console.error('Error actualizando stats trabajo:', error.message);
+    return null;
+  }
 }

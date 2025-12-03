@@ -1,0 +1,49 @@
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { staffSetCoins } from '../utils/economyDB.js';
+import { isStaff } from '../utils/helpers.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('setcoins')
+    .setDescription('(Staff) Establecer los Lagcoins de un usuario')
+    .addUserOption(option =>
+      option.setName('usuario')
+        .setDescription('Usuario al que establecer Lagcoins')
+        .setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option.setName('cantidad')
+        .setDescription('Nueva cantidad de Lagcoins')
+        .setMinValue(0)
+        .setRequired(true)
+    ),
+  
+  async execute(interaction) {
+    if (!isStaff(interaction.member)) {
+      return interaction.reply({ content: '❌ Solo el staff puede usar este comando', flags: 64 });
+    }
+
+    const targetUser = interaction.options.getUser('usuario');
+    const amount = interaction.options.getInteger('cantidad');
+
+    try {
+      const result = await staffSetCoins(interaction.guildId, targetUser.id, amount);
+
+      const embed = new EmbedBuilder()
+        .setColor('#FFD700')
+        .setTitle('💰 Lagcoins Establecidos')
+        .setDescription(`Se han establecido los Lagcoins de ${targetUser} a **${amount}**`)
+        .addFields(
+          { name: 'Usuario', value: `${targetUser.tag}`, inline: true },
+          { name: 'Nuevo Saldo', value: `${result.lagcoins} Lagcoins`, inline: true }
+        )
+        .setFooter({ text: `Por: ${interaction.user.tag}` })
+        .setTimestamp();
+
+      return interaction.reply({ embeds: [embed] });
+    } catch (error) {
+      console.error('Error en setcoins:', error);
+      return interaction.reply({ content: '❌ Error al establecer Lagcoins', flags: 64 });
+    }
+  }
+};
