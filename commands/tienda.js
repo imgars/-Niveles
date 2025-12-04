@@ -22,39 +22,14 @@ export default {
           { name: '⚡ Power-Ups', value: 'powerup' },
           { name: '🔒 Seguros Anti-Robo', value: 'seguro' }
         )
-    )
-    .addStringOption(option =>
-      option.setName('comprar')
-        .setDescription('Item a comprar (usa el ID del item)')
     ),
   
   async execute(interaction) {
     const category = interaction.options.getString('categoria');
-    const itemIdInput = interaction.options.getString('comprar');
+    const itemIdInput = null; // Removido la opción manual
     
     try {
       const economy = await getUserEconomy(interaction.guildId, interaction.user.id);
-
-      if (itemIdInput) {
-        const itemId = itemIdInput.toLowerCase().replace(/ /g, '_');
-        const item = ITEMS[itemId];
-        
-        if (!item) {
-          // Buscar por nombre
-          const foundEntry = Object.entries(ITEMS).find(([_, i]) => 
-            i.name.toLowerCase().includes(itemIdInput.toLowerCase())
-          );
-          
-          if (!foundEntry) {
-            return interaction.reply({ content: '❌ Item no encontrado. Usa `/tienda` para ver los items disponibles.', flags: 64 });
-          }
-          
-          const [foundId, foundItem] = foundEntry;
-          return handlePurchase(interaction, economy, foundId, foundItem);
-        }
-        
-        return handlePurchase(interaction, economy, itemId, item);
-      }
 
       if (category === 'catalogo' || !category) {
         const embed = new EmbedBuilder()
@@ -100,13 +75,12 @@ export default {
       const embed = new EmbedBuilder()
         .setColor('#FFD700')
         .setTitle(`${categoryInfo.emoji} ${categoryInfo.name}`)
-        .setDescription(`Tu saldo: **${economy.lagcoins || 0} Lagcoins**\n\nUsa \`/tienda comprar:<id>\` para comprar`);
+        .setDescription(`Tu saldo: **${economy.lagcoins || 0} Lagcoins**\n\nSelecciona un item del menú para comprarlo:`);
 
       categoryItems.forEach(([id, item]) => {
         const owned = economy.items?.includes(id) ? ' ✅ (Ya tienes)' : '';
         const canAfford = (economy.lagcoins || 0) >= item.price ? '💰' : '❌';
         let value = `${item.description}\n${canAfford} **${item.price}** Lagcoins${owned}`;
-        value += `\nID: \`${id}\``;
         
         if (item.unlocks) {
           value += `\n🔓 Desbloquea: ${item.unlocks}`;
@@ -134,9 +108,27 @@ export default {
         });
       });
 
-      embed.setFooter({ text: 'Usa /tienda comprar:<id> para comprar' });
+      // Crear menú desplegable con los items (máx 25 opciones por Discord)
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId(`tienda_buy_${category}`)
+        .setPlaceholder('Selecciona un item para comprar')
+        .addOptions(
+          categoryItems.slice(0, 25).map(([id, item]) => {
+            const owned = economy.items?.includes(id);
+            const canAfford = (economy.lagcoins || 0) >= item.price;
+            
+            return {
+              label: `${item.name} - ${item.price} LC`,
+              description: owned ? 'Ya tienes este item' : (canAfford ? 'Puedes comprarlo' : 'No tienes suficientes Lagcoins'),
+              value: id,
+              emoji: item.emoji
+            };
+          })
+        );
 
-      return interaction.reply({ embeds: [embed] });
+      const row = new ActionRowBuilder().addComponents(selectMenu);
+      
+      return interaction.reply({ embeds: [embed], components: [row] });
     } catch (error) {
       console.error('Error en tienda:', error);
       return interaction.reply({ content: '❌ Error al cargar la tienda', flags: 64 });

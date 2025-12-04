@@ -670,6 +670,73 @@ client.on('interactionCreate', async (interaction) => {
       return interaction.reply({ content: '❌ Error al actualizar tema', flags: 64 });
     }
   }
+  
+  // Manejador para compras de tienda
+  if (interaction.customId.startsWith('tienda_buy_')) {
+    try {
+      const { buyItem, getUserEconomy, ITEMS } = await import('./utils/economyDB.js');
+      const { EmbedBuilder } = await import('discord.js');
+      
+      const itemId = interaction.values[0];
+      const item = ITEMS[itemId];
+      
+      if (!item) {
+        return interaction.reply({ content: '❌ Item no encontrado', flags: 64 });
+      }
+      
+      const economy = await getUserEconomy(interaction.guildId, interaction.user.id);
+      
+      if ((economy.lagcoins || 0) < item.price) {
+        return interaction.reply({ 
+          content: `❌ No tienes suficientes Lagcoins. Necesitas **${item.price}** pero tienes **${economy.lagcoins || 0}**`, 
+          flags: 64 
+        });
+      }
+
+      // Para items no consumibles/powerups/seguros, verificar si ya lo tiene
+      if (!['consumible', 'powerup', 'seguro'].includes(item.category)) {
+        if (economy.items && economy.items.includes(itemId)) {
+          return interaction.reply({ content: '❌ Ya tienes este item', flags: 64 });
+        }
+      }
+
+      const result = await buyItem(interaction.guildId, interaction.user.id, itemId);
+
+      if (result.error) {
+        const errorMessages = {
+          'item_not_found': '❌ Item no encontrado',
+          'insufficient_funds': `❌ No tienes suficientes Lagcoins`,
+          'already_owned': '❌ Ya tienes este item',
+          'system_error': '❌ Error del sistema'
+        };
+        return interaction.reply({ content: errorMessages[result.error] || `❌ Error: ${result.error}`, flags: 64 });
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor('#00FF00')
+        .setTitle('✅ ¡Compra Realizada!')
+        .setDescription(`Compraste: **${item.emoji} ${item.name}**`)
+        .addFields(
+          { name: 'Descripción', value: item.description },
+          { name: 'Precio', value: `${item.price} Lagcoins`, inline: true },
+          { name: 'Nuevo Saldo', value: `${result.economy.lagcoins} Lagcoins`, inline: true }
+        );
+
+      if (item.unlocks) {
+        embed.addFields({ name: '🔓 Desbloquea', value: `Trabajo: ${item.unlocks}` });
+      }
+      
+      if (item.effect) {
+        const durationMin = Math.round((item.effect.duration || 0) / 60000);
+        embed.addFields({ name: '⚡ Efecto Activado', value: `${item.description}\nDuración: ${durationMin} minutos` });
+      }
+
+      return interaction.reply({ embeds: [embed] });
+    } catch (error) {
+      console.error('Error comprando item:', error);
+      return interaction.reply({ content: '❌ Error al procesar la compra', flags: 64 });
+    }
+  }
 });
 
 // Manejador de comandos
