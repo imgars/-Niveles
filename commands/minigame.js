@@ -1159,3 +1159,25 @@ async function endAhorcadosGame(interaction, gameState) {
     }]
   });
 }
+
+export async function startTriviaFromMenu(interaction) {
+  const cooldown = db.checkCooldown('minigame_trivia', interaction.user.id);
+  if (cooldown) {
+    return interaction.reply({
+      content: `⏱️ Debes esperar ${formatDuration(cooldown)} antes de jugar trivia de nuevo.`,
+      ephemeral: true
+    });
+  }
+  await playTrivia(interaction);
+}
+
+export async function startHangmanFromMenu(interaction) {
+  const cooldown = db.checkCooldown('minigame_hangman', interaction.user.id);
+  if (cooldown) {
+    return interaction.reply({
+      content: `⏱️ Debes esperar ${formatDuration(cooldown)} antes de jugar ahorcado de nuevo.`,
+      ephemeral: true
+    });
+  }
+  await playSoloHangman(interaction);
+}

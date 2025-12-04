@@ -7,9 +7,9 @@ export default {
     .setDescription('Muestra información general del bot'),
 
   async execute(interaction) {
-    const allUsers = Object.values(db.users).filter(u => u.guildId === interaction.guild.id);
+    const allUsers = db.getAllUsers(interaction.guild.id);
     const totalXP = allUsers.reduce((sum, user) => sum + (user.totalXp || 0), 0);
-    const maxLevel = Math.max(...allUsers.map(u => u.level || 0), 0);
+    const maxLevel = allUsers.length > 0 ? Math.max(...allUsers.map(u => u.level || 0)) : 0;
     const activeBoosts = db.boosts.global.length;
 
     const embed = new EmbedBuilder()

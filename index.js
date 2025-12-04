@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Collection, AttachmentBuilder, REST, Routes } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, AttachmentBuilder, REST, Routes, EmbedBuilder } from 'discord.js';
 import { CONFIG } from './config.js';
 import db from './utils/database.js';
 import { calculateLevel, getXPProgress, getRandomXP, calculateBoostMultiplier, addLevels } from './utils/xpSystem.js';
@@ -685,33 +685,44 @@ client.on('interactionCreate', async (interaction) => {
     const selected = interaction.values[0];
     
     if (selected === 'trivia') {
-      const minigameCommand = client.commands.get('minigame');
-      if (minigameCommand) {
-        interaction.options = {
-          getSubcommand: () => 'trivia',
-          getUser: () => null,
-          getString: () => null
-        };
-        return minigameCommand.execute(interaction);
-      }
-      return interaction.reply({ content: 'Usa `/minigame trivia` para jugar trivia', flags: 64 });
+      const { startTriviaFromMenu } = await import('./commands/minigame.js');
+      return startTriviaFromMenu(interaction);
     } else if (selected === 'rps') {
-      return interaction.reply({ content: '✋ Para jugar **Piedra, Papel o Tijeras**, necesitas retar a otro usuario.\n\nUsa: `/minigame rps @usuario`', flags: 64 });
+      const embed = new EmbedBuilder()
+        .setColor(0x3498DB)
+        .setTitle('✋ Piedra, Papel o Tijeras')
+        .setDescription('Reta a otro usuario a una partida al mejor de 5!')
+        .addFields(
+          { name: '🎁 Recompensa', value: '30% boost x2h', inline: true },
+          { name: '⏱️ Cooldown', value: '2 horas', inline: true },
+          { name: '📝 Como jugar', value: '`/minigame rps @usuario`', inline: false }
+        );
+      return interaction.reply({ embeds: [embed], ephemeral: true });
     } else if (selected === 'roulette') {
-      return interaction.reply({ content: '🔫 Para jugar **Ruleta Rusa**, necesitas retar a otro usuario.\n\n⚠️ **Advertencia:** El perdedor pierde niveles!\n\nUsa: `/minigame roulette @usuario`', flags: 64 });
+      const embed = new EmbedBuilder()
+        .setColor(0xE74C3C)
+        .setTitle('🔫 Ruleta Rusa')
+        .setDescription('⚠️ **Alto riesgo!** El perdedor pierde niveles!')
+        .addFields(
+          { name: '✅ Ganador', value: '+2.5 niveles', inline: true },
+          { name: '❌ Perdedor', value: '-3 niveles', inline: true },
+          { name: '📝 Como jugar', value: '`/minigame roulette @usuario`', inline: false }
+        );
+      return interaction.reply({ embeds: [embed], ephemeral: true });
     } else if (selected === 'ahorcado_solo') {
-      const minigameCommand = client.commands.get('minigame');
-      if (minigameCommand) {
-        interaction.options = {
-          getSubcommand: () => 'hangman',
-          getUser: () => null,
-          getString: () => null
-        };
-        return minigameCommand.execute(interaction);
-      }
-      return interaction.reply({ content: 'Usa `/minigame hangman` para jugar Ahorcado', flags: 64 });
+      const { startHangmanFromMenu } = await import('./commands/minigame.js');
+      return startHangmanFromMenu(interaction);
     } else if (selected === 'ahorcado_multi') {
-      return interaction.reply({ content: '👥 Para jugar **Ahorcado Multijugador**, necesitas retar a otro usuario.\n\nUsa: `/minigame ahorcados @usuario`', flags: 64 });
+      const embed = new EmbedBuilder()
+        .setColor(0xF39C12)
+        .setTitle('👥 Ahorcado Multijugador')
+        .setDescription('Juega contra otro usuario! Cada uno crea palabras para el otro.')
+        .addFields(
+          { name: '🎁 Recompensa', value: '+0.5 niveles', inline: true },
+          { name: '⏱️ Cooldown', value: '30 minutos', inline: true },
+          { name: '📝 Como jugar', value: '`/minigame ahorcados @usuario`', inline: false }
+        );
+      return interaction.reply({ embeds: [embed], ephemeral: true });
     }
   }
   
