@@ -35,7 +35,7 @@ export default {
         },
         {
           name: '🔗 Enlaces',
-          value: '[Dashboard Web](https://niveles.onrender.com)',
+          value: '[Dashboard Web](https://niveles-wul5.onrender.com/#inicio)',
           inline: false
         }
       )
