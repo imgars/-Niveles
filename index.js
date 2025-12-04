@@ -685,15 +685,43 @@ client.on('interactionCreate', async (interaction) => {
     const selected = interaction.values[0];
     
     if (selected === 'trivia') {
+      const minigameCommand = client.commands.get('minigame');
+      if (minigameCommand) {
+        interaction.options = {
+          getSubcommand: () => 'trivia',
+          getUser: () => null,
+          getString: () => null
+        };
+        return minigameCommand.execute(interaction);
+      }
       return interaction.reply({ content: 'Usa `/minigame trivia` para jugar trivia', flags: 64 });
     } else if (selected === 'rps') {
-      return interaction.reply({ content: 'Usa `/minigame rps @usuario` para jugar Piedra, Papel o Tijeras', flags: 64 });
+      return interaction.reply({ content: '✋ Para jugar **Piedra, Papel o Tijeras**, necesitas retar a otro usuario.\n\nUsa: `/minigame rps @usuario`', flags: 64 });
     } else if (selected === 'roulette') {
-      return interaction.reply({ content: 'Usa `/minigame roulette @usuario` para jugar Ruleta Rusa', flags: 64 });
+      return interaction.reply({ content: '🔫 Para jugar **Ruleta Rusa**, necesitas retar a otro usuario.\n\n⚠️ **Advertencia:** El perdedor pierde niveles!\n\nUsa: `/minigame roulette @usuario`', flags: 64 });
     } else if (selected === 'ahorcado_solo') {
-      return interaction.reply({ content: 'Usa `/ahorcado solo` para jugar Ahorcado', flags: 64 });
+      const minigameCommand = client.commands.get('minigame');
+      if (minigameCommand) {
+        interaction.options = {
+          getSubcommand: () => 'hangman',
+          getUser: () => null,
+          getString: () => null
+        };
+        return minigameCommand.execute(interaction);
+      }
+      return interaction.reply({ content: 'Usa `/minigame hangman` para jugar Ahorcado', flags: 64 });
     } else if (selected === 'ahorcado_multi') {
-      return interaction.reply({ content: 'Usa `/ahorcado multi` para jugar Ahorcado Multijugador', flags: 64 });
+      return interaction.reply({ content: '👥 Para jugar **Ahorcado Multijugador**, necesitas retar a otro usuario.\n\nUsa: `/minigame ahorcados @usuario`', flags: 64 });
+    }
+  }
+  
+  if (interaction.customId === 'help_category_select') {
+    const helpCommand = client.commands.get('help');
+    if (helpCommand) {
+      interaction.options = {
+        getString: (name) => name === 'categoria' ? interaction.values[0] : null
+      };
+      return helpCommand.execute(interaction);
     }
   }
   

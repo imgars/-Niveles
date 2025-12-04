@@ -167,11 +167,11 @@ function getThemeColors(theme) {
   return themes[theme] || themes.pixel;
 }
 
-export async function generateRankCard(member, userData, progress) {
+export async function generateRankCard(member, userData, progress, boostsText = '') {
   const canvas = createCanvas(CARD_WIDTH, CARD_HEIGHT);
   const ctx = canvas.getContext('2d');
   
-  const theme = await getCardTheme(member, userData.level);
+  const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme);
   const colors = getThemeColors(theme);
   
   const gradient = ctx.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
@@ -245,6 +245,12 @@ export async function generateRankCard(member, userData, progress) {
   ctx.font = 'bold 16px Arial';
   const percentText = `${Math.floor(progress.percentage)}%`;
   ctx.fillText(percentText, barX + barWidth / 2 - 20, barY + 20);
+  
+  if (boostsText && boostsText.trim() !== '') {
+    ctx.fillStyle = '#00FF00';
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText(`🚀 ${boostsText}`, textX, barY + barHeight + 25);
+  }
   
   return canvas.toBuffer('image/png');
 }

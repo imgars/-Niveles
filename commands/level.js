@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import db from '../utils/database.js';
-import { getXPProgress, getSimplifiedBoostsText } from '../utils/xpSystem.js';
-import { generateRankCard, getCardTheme, getThemeButtonStyle } from '../utils/cardGenerator.js';
+import { getXPProgress, getSimplifiedBoostsText, getBoostTextForCard } from '../utils/xpSystem.js';
+import { generateRankCard, getCardTheme } from '../utils/cardGenerator.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -22,19 +22,16 @@ export default {
       const progress = getXPProgress(userData.totalXp, userData.level);
       const boosts = db.getActiveBoosts(targetUser.id, interaction.channelId);
       const boostsText = getSimplifiedBoostsText(boosts);
-
-      // Obtener el tema de la tarjeta (usar seleccionado o automático)
-      const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme);
-      const buttonStyle = getThemeButtonStyle(theme);
+      const boostCardText = getBoostTextForCard(boosts);
 
       try {
-        const cardBuffer = await generateRankCard(member, userData, progress);
+        const cardBuffer = await generateRankCard(member, userData, progress, boostCardText);
         const attachment = new AttachmentBuilder(cardBuffer, { name: 'rank.png' });
 
         const rewardBtn = new ButtonBuilder()
           .setCustomId('earn_rewards')
           .setLabel('🎮 Gana Recompensas')
-          .setStyle(buttonStyle);
+          .setStyle(ButtonStyle.Secondary);
 
         const row = new ActionRowBuilder().addComponents(rewardBtn);
 
@@ -48,7 +45,7 @@ export default {
         const rewardBtn = new ButtonBuilder()
           .setCustomId('earn_rewards')
           .setLabel('🎮 Gana Recompensas')
-          .setStyle(buttonStyle);
+          .setStyle(ButtonStyle.Secondary);
 
         const embed = {
           color: 0x7289DA,

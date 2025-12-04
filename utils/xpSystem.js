@@ -157,7 +157,6 @@ export function getActiveBoostsText(boosts) {
 export function getSimplifiedBoostsText(boosts) {
   if (!boosts || boosts.length === 0) return '';
   
-  // Calcular el multiplicador total
   let totalMultiplier = 0;
   for (const boost of boosts) {
     totalMultiplier += boost.multiplier;
@@ -165,6 +164,18 @@ export function getSimplifiedBoostsText(boosts) {
   
   const totalPercentage = Math.round(totalMultiplier * 100);
   return `🚀 +${totalPercentage}%`;
+}
+
+export function getBoostTextForCard(boosts) {
+  if (!boosts || boosts.length === 0) return '';
+  
+  let totalMultiplier = 0;
+  for (const boost of boosts) {
+    totalMultiplier += boost.multiplier;
+  }
+  
+  const totalPercentage = Math.round(totalMultiplier * 100);
+  return `Boost activo del ${totalPercentage}%`;
 }
 
 export function formatBoostMultiplier(multiplier) {

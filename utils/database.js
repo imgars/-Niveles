@@ -6,6 +6,7 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const BOOSTS_FILE = path.join(DATA_DIR, 'boosts.json');
 const COOLDOWNS_FILE = path.join(DATA_DIR, 'cooldowns.json');
 const BANS_FILE = path.join(DATA_DIR, 'bans.json');
+const SYSTEMS_FILE = path.join(DATA_DIR, 'systems.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -17,6 +18,7 @@ class Database {
     this.boosts = this.loadFile(BOOSTS_FILE, { global: [], users: {}, channels: {} });
     this.cooldowns = this.loadFile(COOLDOWNS_FILE, { xp: {}, minigames: {} });
     this.bans = this.loadFile(BANS_FILE, { users: {}, channels: [] });
+    this.systems = this.loadFile(SYSTEMS_FILE, {});
     this.mongoSync = null;
   }
 
@@ -232,6 +234,44 @@ class Database {
       }
     });
     this.saveFile(USERS_FILE, this.users);
+  }
+
+  getSystemStatus(guildId) {
+    if (!this.systems[guildId]) {
+      this.systems[guildId] = {
+        economy: true,
+        casino: true,
+        jobs: true,
+        minigames: true,
+        insurance: true,
+        robbery: true,
+        missions: true,
+        powerups: true
+      };
+    }
+    return this.systems[guildId];
+  }
+
+  setSystemStatus(guildId, system, enabled) {
+    if (!this.systems[guildId]) {
+      this.systems[guildId] = {
+        economy: true,
+        casino: true,
+        jobs: true,
+        minigames: true,
+        insurance: true,
+        robbery: true,
+        missions: true,
+        powerups: true
+      };
+    }
+    this.systems[guildId][system] = enabled;
+    this.saveFile(SYSTEMS_FILE, this.systems);
+  }
+
+  isSystemEnabled(guildId, system) {
+    const status = this.getSystemStatus(guildId);
+    return status[system] !== false;
   }
 }
 
