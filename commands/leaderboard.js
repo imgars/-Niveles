@@ -1,33 +1,62 @@
 import { SlashCommandBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { CONFIG } from '../config.js';
 import db from '../utils/database.js';
-import { generateLeaderboardImage } from '../utils/cardGenerator.js';
+import { generateLeaderboardImage, generateMinecraftLeaderboard } from '../utils/cardGenerator.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('leaderboard')
-    .setDescription('Muestra la tabla de clasificación del servidor'),
+    .setDescription('Muestra la tabla de clasificación del servidor')
+    .addStringOption(option =>
+      option.setName('tipo')
+        .setDescription('Tipo de leaderboard')
+        .addChoices(
+          { name: '🏆 General', value: 'general' },
+          { name: '⚔️ Top 100+ (Minecraft Style)', value: 'elite' }
+        )
+    ),
   
   async execute(interaction) {
     await interaction.deferReply();
     
     try {
+      const tipo = interaction.options.getString('tipo') || 'general';
       const member = await interaction.guild.members.fetch(interaction.user.id);
       const allUsers = db.getAllUsers(interaction.guild.id);
-      const sortedUsers = allUsers
-        .filter(u => u.totalXp && u.totalXp > 0 && u.level && u.level > 0)
-        .sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))
-        .slice(0, 10);
       
-      if (sortedUsers.length === 0) {
-        return interaction.editReply('📊 No hay usuarios en la tabla de clasificación todavía.');
+      let sortedUsers;
+      let imageBuffer;
+      let title;
+      
+      if (tipo === 'elite') {
+        sortedUsers = allUsers
+          .filter(u => u.totalXp && u.totalXp > 0 && u.level && u.level >= 100)
+          .sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))
+          .slice(0, 10);
+        
+        if (sortedUsers.length === 0) {
+          return interaction.editReply('⚔️ No hay usuarios nivel 100+ todavía. ¡Sé el primero en llegar!');
+        }
+        
+        imageBuffer = await generateMinecraftLeaderboard(sortedUsers, interaction.guild);
+        title = '⚔️ Top Leyendas (100+)';
+      } else {
+        sortedUsers = allUsers
+          .filter(u => u.totalXp && u.totalXp > 0 && u.level && u.level > 0)
+          .sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))
+          .slice(0, 10);
+        
+        if (sortedUsers.length === 0) {
+          return interaction.editReply('📊 No hay usuarios en la tabla de clasificación todavía.');
+        }
+        
+        const isSuperActive = member.roles.cache.has(CONFIG.LEVEL_ROLES[35]);
+        const theme = isSuperActive ? 'zelda' : 'pixel';
+        
+        imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, theme);
+        title = '🏆 Tabla de Clasificación';
       }
       
-      // Detectar si es Miembro Super Activo (Nivel 35+)
-      const isSuperActive = member.roles.cache.has(CONFIG.LEVEL_ROLES[35]);
-      const theme = isSuperActive ? 'zelda' : 'pixel';
-      
-      const imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, theme);
       const attachment = new AttachmentBuilder(imageBuffer, { name: 'leaderboard.png' });
       
       const viewFullButton = new ButtonBuilder()
@@ -37,31 +66,16 @@ export default {
       
       const row = new ActionRowBuilder().addComponents(viewFullButton);
       
-      if (isSuperActive) {
-        // Solo imagen para Super Activos
-        await interaction.editReply({
-          embeds: [{
-            color: 0xFFD700,
-            title: '🏆 Tabla de Clasificación',
-            image: { url: 'attachment://leaderboard.png' },
-            footer: { text: `Total de usuarios activos: ${allUsers.length}` }
-          }],
-          files: [attachment],
-          components: [row]
-        });
-      } else {
-        // Imagen para usuarios normales
-        await interaction.editReply({
-          embeds: [{
-            color: 0xFFD700,
-            title: '🏆 Tabla de Clasificación',
-            image: { url: 'attachment://leaderboard.png' },
-            footer: { text: '⭐ ¡Sigue chateando para subir en el ranking!' }
-          }],
-          files: [attachment],
-          components: [row]
-        });
-      }
+      await interaction.editReply({
+        embeds: [{
+          color: tipo === 'elite' ? 0x55FF55 : 0xFFD700,
+          title: title,
+          image: { url: 'attachment://leaderboard.png' },
+          footer: { text: `Total de usuarios activos: ${allUsers.length}` }
+        }],
+        files: [attachment],
+        components: [row]
+      });
     } catch (error) {
       console.error('Error generating leaderboard:', error);
       await interaction.editReply('❌ Error al generar la tabla de clasificación.');

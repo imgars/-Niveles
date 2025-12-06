@@ -342,4 +342,10 @@ export function formatCooldownTime(ms) {
   return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
 }
 
+export function getCasinoCooldown(userId, gameType) {
+  const check = checkCasinoCooldown(userId, gameType);
+  if (check.canPlay) return 0;
+  return check.remaining || 0;
+}
+
 export { CASINO_COOLDOWNS, BASE_ODDS, NATIONALITY_CASINO_MODIFIERS };

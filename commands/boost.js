@@ -1,7 +1,13 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import db from '../utils/database.js';
 import { isStaff, formatDuration } from '../utils/helpers.js';
 import { getNightBoostStatus } from '../utils/timeBoost.js';
+import { getAdminBoost } from '../utils/economyDB.js';
+
+function filterActiveBoosts(boosts) {
+  const now = Date.now();
+  return boosts.filter(b => !b.expiresAt || b.expiresAt > now);
+}
 
 export default {
   data: new SlashCommandBuilder()
@@ -50,7 +56,7 @@ export default {
     
     if (subcommand === 'add') {
       if (!isStaff(interaction.member)) {
-        return interaction.reply({ content: '❌ No tienes permisos para usar este comando.', ephemeral: true });
+        return interaction.reply({ content: '❌ No tienes permisos para usar este comando.', flags: 64 });
       }
       
       const user = interaction.options.getUser('usuario');
@@ -59,7 +65,7 @@ export default {
       const duration = interaction.options.getInteger('duracion');
       
       if (!user && !channel) {
-        return interaction.reply({ content: '❌ Debes especificar un usuario o un canal.', ephemeral: true });
+        return interaction.reply({ content: '❌ Debes especificar un usuario o un canal.', flags: 64 });
       }
       
       const durationMs = duration > 0 ? duration * 60 * 1000 : null;
@@ -91,50 +97,76 @@ export default {
     }
     
     if (subcommand === 'list') {
-      const allBoosts = {
-        global: db.boosts.global,
-        users: db.boosts.users,
-        channels: db.boosts.channels
-      };
-      
+      const now = Date.now();
       const fields = [];
       
-      if (allBoosts.global.length > 0) {
-        const globalList = allBoosts.global.map(b => `• ${b.description}`).join('\n');
+      const activeGlobal = filterActiveBoosts(db.boosts.global || []);
+      if (activeGlobal.length > 0) {
+        const globalList = activeGlobal.map(b => {
+          const remaining = b.expiresAt ? ` (${formatDuration(b.expiresAt - now)})` : ' (Permanente)';
+          return `• ${b.description}${remaining}`;
+        }).join('\n');
         fields.push({ name: '🌍 Boosts Globales', value: globalList });
       }
       
       const userBoosts = [];
-      for (const [userId, boosts] of Object.entries(allBoosts.users)) {
-        if (boosts.length > 0) {
-          userBoosts.push(`<@${userId}>: ${boosts[0].description}`);
+      for (const [userId, boosts] of Object.entries(db.boosts.users || {})) {
+        const activeBoosts = filterActiveBoosts(boosts);
+        for (const boost of activeBoosts) {
+          const remaining = boost.expiresAt ? ` (${formatDuration(boost.expiresAt - now)})` : '';
+          userBoosts.push(`<@${userId}>: ${boost.description}${remaining}`);
         }
       }
       if (userBoosts.length > 0) {
-        fields.push({ name: '👤 Boosts de Usuarios', value: userBoosts.join('\n') });
+        fields.push({ name: '👤 Boosts de Usuarios', value: userBoosts.slice(0, 10).join('\n') });
       }
       
       const channelBoosts = [];
-      for (const [channelId, boosts] of Object.entries(allBoosts.channels)) {
-        if (boosts.length > 0) {
-          channelBoosts.push(`<#${channelId}>: ${boosts[0].description}`);
+      for (const [channelId, boosts] of Object.entries(db.boosts.channels || {})) {
+        const activeBoosts = filterActiveBoosts(boosts);
+        for (const boost of activeBoosts) {
+          const remaining = boost.expiresAt ? ` (${formatDuration(boost.expiresAt - now)})` : '';
+          channelBoosts.push(`<#${channelId}>: ${boost.description}${remaining}`);
         }
       }
       if (channelBoosts.length > 0) {
-        fields.push({ name: '📺 Boosts de Canales', value: channelBoosts.join('\n') });
+        fields.push({ name: '📺 Boosts de Canales', value: channelBoosts.slice(0, 10).join('\n') });
+      }
+      
+      const nightStatus = getNightBoostStatus();
+      if (nightStatus.active) {
+        fields.push({
+          name: '🌙 Boost Nocturno',
+          value: `+${Math.floor(nightStatus.multiplier * 100)}% (Automático 18:00-06:00 VE)`
+        });
+      }
+      
+      const adminBoost = getAdminBoost();
+      if (adminBoost) {
+        const remaining = formatDuration(adminBoost.expiresAt - now);
+        fields.push({
+          name: '⚡ Boost de Admin',
+          value: `+${Math.floor(adminBoost.percentage * 100)}% (${remaining})`
+        });
       }
       
       if (fields.length === 0) {
-        return interaction.reply('📊 No hay boosts activos actualmente.');
+        const embed = new EmbedBuilder()
+          .setColor(0x7289DA)
+          .setTitle('📊 Lista de Boosts')
+          .setDescription('No hay boosts activos actualmente.\n\n*El boost nocturno se activa automáticamente de 18:00 a 06:00 (Venezuela).*');
+        return interaction.reply({ embeds: [embed] });
       }
       
-      return interaction.reply({
-        embeds: [{
-          color: 0xFFD700,
-          title: '📊 Lista de Boosts Activos',
-          fields: fields
-        }]
-      });
+      const embed = new EmbedBuilder()
+        .setColor(0xFFD700)
+        .setTitle('📊 Lista de Boosts Activos')
+        .setDescription('Todos los boosts activos en el servidor:')
+        .addFields(fields)
+        .setFooter({ text: 'Los boosts son acumulativos' })
+        .setTimestamp();
+      
+      return interaction.reply({ embeds: [embed] });
     }
     
     if (subcommand === 'status') {
@@ -155,12 +187,41 @@ export default {
         });
       }
       
-      if (db.boosts.global.length > 0) {
-        const globalBoost = db.boosts.global[0];
+      const activeGlobal = filterActiveBoosts(db.boosts.global || []);
+      if (activeGlobal.length > 0) {
+        const globalBoost = activeGlobal[0];
         const remaining = globalBoost.expiresAt ? formatDuration(globalBoost.expiresAt - Date.now()) : 'Permanente';
         fields.push({
           name: '🌍 Boost Global',
           value: `${globalBoost.description}\nDuración restante: ${remaining}`,
+          inline: false
+        });
+      }
+      
+      const adminBoost = getAdminBoost();
+      if (adminBoost) {
+        const remaining = formatDuration(adminBoost.expiresAt - Date.now());
+        fields.push({
+          name: '⚡ Boost de Admin',
+          value: `+${Math.floor(adminBoost.percentage * 100)}%\nDuración restante: ${remaining}`,
+          inline: false
+        });
+      }
+      
+      let totalUserBoosts = 0;
+      let totalChannelBoosts = 0;
+      
+      for (const boosts of Object.values(db.boosts.users || {})) {
+        totalUserBoosts += filterActiveBoosts(boosts).length;
+      }
+      for (const boosts of Object.values(db.boosts.channels || {})) {
+        totalChannelBoosts += filterActiveBoosts(boosts).length;
+      }
+      
+      if (totalUserBoosts > 0 || totalChannelBoosts > 0) {
+        fields.push({
+          name: '📊 Boosts Individuales',
+          value: `👤 Usuarios: ${totalUserBoosts}\n📺 Canales: ${totalChannelBoosts}`,
           inline: false
         });
       }
@@ -171,7 +232,7 @@ export default {
           title: '📊 Estado de Boosts',
           description: '**Nota:** Los boosts son acumulativos',
           fields: fields,
-          footer: { text: 'Usa /boost list para ver todos los boosts activos' }
+          footer: { text: 'Usa /boost list para ver detalles' }
         }]
       });
     }
