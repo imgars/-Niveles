@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let leaderboardData = [];
     let currentPage = 1;
-    const itemsPerPage = 50;
+    const itemsPerPage = 25;
     let filteredData = [];
 
     function showSection(sectionId) {

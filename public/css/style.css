@@ -1659,3 +1659,80 @@ body {
     font-size: 8px;
     color: var(--text-dim);
 }
+
+.nationalities-section {
+    margin-top: 40px;
+    padding: 30px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    border: 2px solid rgba(88, 101, 242, 0.3);
+}
+
+.nationalities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.nationality-category {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nationality-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.nationality-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(47, 49, 54, 0.8);
+    border-radius: 6px;
+    border-left: 3px solid #5865F2;
+    transition: all 0.2s ease;
+}
+
+.nationality-card:hover {
+    background: rgba(88, 101, 242, 0.2);
+    transform: translateX(3px);
+}
+
+.nationality-card.rare {
+    border-left-color: #FFD700;
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.nationality-card.rare:hover {
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.nationality-card .flag {
+    font-size: 20px;
+}
+
+.nationality-card .country-name {
+    flex: 1;
+    font-size: 9px;
+    color: #FFFFFF;
+}
+
+.nationality-card .multiplier {
+    font-size: 10px;
+    color: #5865F2;
+    font-weight: bold;
+}
+
+.nationality-card.rare .multiplier {
+    color: #FFD700;
+}
+
+.nationality-card .multiplier.legendary {
+    color: #FF6B6B;
+    text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+}

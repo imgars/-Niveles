@@ -243,6 +243,18 @@ NO_XP_CHANNELS: ['1313723272290111559', '1258524941289263254']
 
 ## Cambios Recientes
 
+### 7 de Diciembre 2025 - v3.1.0
+- FIX: Sistema de boosts corregido (100=x1, 200=x2, 1000=x10)
+- FIX: Ahorcado ahora da recompensas correctamente tras 3 rondas
+- FIX: Bug de N/A y NaN en sistema de niveles (validacion de datos)
+- MEJORADO: /shop con precios mas altos
+- NUEVO: Tarjetas comprables en tienda (Minecraft 5000, FNAF 4500, Roblox 7000)
+- MEJORADO: /perfil ahora usa embed en vez de imagen con info completa
+- FIX: /gamecard roblox y brawl stars muestran imagenes directamente
+- MEJORADO: Leaderboard estilo Discord con grises y azules pixel art
+- NUEVO: Seccion de Nacionalidades en pagina web (29 paises con banderas)
+- MEJORADO: Leaderboard web ahora paginado (25 usuarios por pagina)
+
 ### 6 de Diciembre 2025 - v3.0.0 (PIXEL ART UPDATE)
 - NUEVO: Tarjetas de rango estilo PIXEL ART completo
 - NUEVO: 9 temas de tarjetas (pixel, ocean, zelda, pokemon, gd, night, roblox, minecraft, fnaf)
@@ -271,9 +283,9 @@ NO_XP_CHANNELS: ['1313723272290111559', '1258524941289263254']
 
 ---
 
-**Ultima actualizacion**: 6 de Diciembre de 2025
+**Ultima actualizacion**: 7 de Diciembre de 2025
 **Estado**: COMPLETO - Todos los sistemas implementados
-**Version**: 3.0.0 - PIXEL ART UPDATE
+**Version**: 3.1.0 - Bug Fixes & Web Improvements
 **Entorno**: Replit (desarrollo) + Render (produccion)
 **GitHub**: https://github.com/imgars/-Niveles.git
 **MongoDB**: Sincronizacion con fallback a JSON

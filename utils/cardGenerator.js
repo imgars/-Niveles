@@ -508,50 +508,94 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'discord
   const canvas = createCanvas(700, 760);
   const ctx = canvas.getContext('2d');
   
-  const colors = getPixelArtThemeColors(theme);
+  const discordGrey = {
+    dark: '#1E1F22',
+    medium: '#2B2D31', 
+    light: '#313338',
+    lighter: '#383A40',
+    border: '#3F4147'
+  };
+  const discordBlue = {
+    blurple: '#5865F2',
+    light: '#7289DA',
+    dark: '#4752C4'
+  };
   
-  drawPixelatedGradientBackground(ctx, 700, 760, colors.gradient);
-  
-  if (colors.stars) {
-    drawStars(ctx, 700, 760, 40);
+  const pixelSize = 8;
+  for (let row = 0; row < Math.ceil(760 / pixelSize); row++) {
+    for (let col = 0; col < Math.ceil(700 / pixelSize); col++) {
+      const t = row / Math.ceil(760 / pixelSize);
+      let baseColor;
+      if (t < 0.3) baseColor = discordGrey.dark;
+      else if (t < 0.6) baseColor = discordGrey.medium;
+      else baseColor = discordGrey.light;
+      
+      const noise = (Math.random() - 0.5) * 8;
+      const rgb = hexToRgb(baseColor);
+      ctx.fillStyle = `rgb(${Math.max(0, Math.min(255, rgb.r + noise))}, ${Math.max(0, Math.min(255, rgb.g + noise))}, ${Math.max(0, Math.min(255, rgb.b + noise))})`;
+      ctx.fillRect(col * pixelSize, row * pixelSize, pixelSize, pixelSize);
+    }
   }
   
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
   for (let i = 0; i < 760; i += 4) {
     if (i % 8 === 0) {
       ctx.fillRect(0, i, 700, 2);
     }
   }
   
-  drawPixelBorder(ctx, 0, 0, 700, 760, colors.border, 6);
+  ctx.fillStyle = discordBlue.blurple;
+  ctx.fillRect(0, 0, 700, 6);
+  ctx.fillRect(0, 754, 700, 6);
+  ctx.fillRect(0, 0, 6, 760);
+  ctx.fillRect(694, 0, 6, 760);
   
-  ctx.fillStyle = colors.text;
-  ctx.font = 'bold 24px Arial, sans-serif';
+  ctx.fillStyle = discordBlue.dark;
+  ctx.fillRect(6, 6, 688, 3);
+  ctx.fillRect(6, 6, 3, 748);
+  
+  ctx.fillStyle = discordGrey.dark;
+  ctx.fillRect(20, 15, 660, 50);
+  ctx.fillStyle = discordBlue.blurple;
+  ctx.fillRect(20, 15, 660, 3);
+  ctx.fillRect(20, 62, 660, 3);
+  
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 26px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('🏆 LEADERBOARD 🏆', 350, 40);
+  ctx.fillText('🏆 LEADERBOARD 🏆', 350, 48);
   ctx.textAlign = 'left';
-  
-  ctx.fillStyle = colors.border;
-  ctx.fillRect(20, 55, 660, 4);
   
   for (let i = 0; i < Math.min(10, topUsers.length); i++) {
     const user = topUsers[i];
     const y = 75 + (i * 68);
     
-    let rankColor;
-    if (i === 0) rankColor = '#FFD700';
-    else if (i === 1) rankColor = '#C0C0C0';
-    else if (i === 2) rankColor = '#CD7F32';
-    else rankColor = colors.accent;
+    let rankColor, bgColor;
+    if (i === 0) {
+      rankColor = '#FFD700';
+      bgColor = 'rgba(255, 215, 0, 0.1)';
+    } else if (i === 1) {
+      rankColor = '#C0C0C0';
+      bgColor = 'rgba(192, 192, 192, 0.08)';
+    } else if (i === 2) {
+      rankColor = '#CD7F32';
+      bgColor = 'rgba(205, 127, 50, 0.08)';
+    } else {
+      rankColor = discordBlue.blurple;
+      bgColor = 'rgba(88, 101, 242, 0.05)';
+    }
     
-    ctx.fillStyle = i < 3 ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.3)';
+    ctx.fillStyle = discordGrey.medium;
+    ctx.fillRect(15, y, 670, 62);
+    
+    ctx.fillStyle = bgColor;
     ctx.fillRect(15, y, 670, 62);
     
     ctx.fillStyle = rankColor;
-    ctx.fillRect(15, y, 670, 3);
-    ctx.fillRect(15, y + 59, 670, 3);
-    ctx.fillRect(15, y, 3, 62);
-    ctx.fillRect(682, y, 3, 62);
+    ctx.fillRect(15, y, 4, 62);
+    
+    ctx.fillStyle = discordGrey.border;
+    ctx.fillRect(15, y + 61, 670, 1);
     
     try {
       const member = await guild.members.fetch(user.userId).catch(() => null);
@@ -559,9 +603,14 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'discord
         const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 64 });
         const avatar = await loadImage(avatarURL);
         
+        ctx.fillStyle = discordGrey.dark;
+        ctx.fillRect(28, y + 7, 50, 50);
         ctx.fillStyle = rankColor;
-        ctx.fillRect(25, y + 8, 48, 48);
-        ctx.drawImage(avatar, 27, y + 10, 44, 44);
+        ctx.fillRect(28, y + 7, 50, 3);
+        ctx.fillRect(28, y + 54, 50, 3);
+        ctx.fillRect(28, y + 7, 3, 50);
+        ctx.fillRect(75, y + 7, 3, 50);
+        ctx.drawImage(avatar, 31, y + 10, 44, 44);
       }
     } catch (error) {
       console.error('Error loading avatar for leaderboard:', error);
@@ -569,15 +618,17 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'discord
     
     const medals = ['👑', '🥈', '🥉'];
     ctx.fillStyle = rankColor;
-    ctx.font = 'bold 22px Arial, sans-serif';
+    ctx.font = 'bold 24px Arial, sans-serif';
     if (i < 3) {
-      ctx.fillText(medals[i], 85, y + 40);
+      ctx.fillText(medals[i], 95, y + 42);
     } else {
-      ctx.fillText(`#${i + 1}`, 85, y + 40);
+      ctx.fillStyle = discordBlue.light;
+      ctx.font = 'bold 20px Arial, sans-serif';
+      ctx.fillText(`#${i + 1}`, 95, y + 42);
     }
     
-    ctx.fillStyle = colors.text;
-    ctx.font = '18px Arial, sans-serif';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 18px Arial, sans-serif';
     let username = 'Usuario';
     try {
       const member = await guild.members.fetch(user.userId).catch(() => null);
@@ -587,15 +638,34 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'discord
     } catch (e) {
       console.error('Error fetching username:', e);
     }
-    ctx.fillText(username.substring(0, 20), 140, y + 40);
+    ctx.fillText(username.substring(0, 18), 140, y + 38);
     
-    ctx.fillStyle = colors.accent;
-    ctx.font = 'bold 18px Arial, sans-serif';
-    ctx.fillText(`LVL ${user.level}`, 550, y + 32);
-    ctx.font = '14px Arial, sans-serif';
-    ctx.fillStyle = colors.text;
-    ctx.fillText(`${(user.totalXp || 0).toLocaleString()} XP`, 550, y + 52);
+    ctx.fillStyle = '#B5BAC1';
+    ctx.font = '13px Arial, sans-serif';
+    ctx.fillText(`${(user.totalXp || 0).toLocaleString()} XP total`, 140, y + 55);
+    
+    ctx.fillStyle = discordGrey.dark;
+    ctx.fillRect(530, y + 15, 140, 34);
+    ctx.fillStyle = discordBlue.blurple;
+    ctx.fillRect(530, y + 15, 140, 2);
+    ctx.fillRect(530, y + 47, 140, 2);
+    ctx.fillRect(530, y + 15, 2, 34);
+    ctx.fillRect(668, y + 15, 2, 34);
+    
+    ctx.fillStyle = discordBlue.light;
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`NIVEL ${user.level}`, 600, y + 40);
+    ctx.textAlign = 'left';
   }
+  
+  ctx.fillStyle = discordGrey.dark;
+  ctx.fillRect(20, 755 - 25, 660, 20);
+  ctx.fillStyle = '#B5BAC1';
+  ctx.font = '11px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('💬 Discord Style • Pixel Art Leaderboard', 350, 755 - 11);
+  ctx.textAlign = 'left';
   
   return canvas.toBuffer('image/png');
 }

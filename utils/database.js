@@ -74,7 +74,35 @@ class Database {
         selectedCardTheme: null
       };
     }
-    return this.users[key];
+    
+    const user = this.users[key];
+    let needsPersist = false;
+    
+    if (user.totalXp === null || user.totalXp === undefined || isNaN(user.totalXp)) {
+      user.totalXp = 0;
+      needsPersist = true;
+    }
+    if (user.level === null || user.level === undefined || isNaN(user.level) || user.level < 0) {
+      user.level = 0;
+      needsPersist = true;
+    }
+    if (user.xp === null || user.xp === undefined || isNaN(user.xp)) {
+      user.xp = 0;
+      needsPersist = true;
+    }
+    
+    if (needsPersist) {
+      this.saveFile(USERS_FILE, this.users);
+      if (this.mongoSync) {
+        setImmediate(() => {
+          this.mongoSync.saveUserToMongo(guildId, userId, user).catch(err => 
+            console.error('Error persisting corrected user to MongoDB:', err.message)
+          );
+        });
+      }
+    }
+    
+    return user;
   }
 
   saveUser(guildId, userId, data) {

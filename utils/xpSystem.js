@@ -40,6 +40,12 @@ export function getTotalXPForLevel(level) {
 }
 
 export function calculateLevel(totalXp) {
+  if (totalXp === null || totalXp === undefined || isNaN(totalXp) || totalXp < 0) {
+    return 0;
+  }
+  
+  totalXp = Math.floor(Number(totalXp));
+  
   let level = 0;
   let xpNeeded = 0;
   
@@ -48,19 +54,29 @@ export function calculateLevel(totalXp) {
     xpNeeded += calculateXPForLevel(level);
   }
   
-  return level - 1;
+  return Math.max(0, level - 1);
 }
 
 export function getXPProgress(totalXp, level) {
+  if (totalXp === null || totalXp === undefined || isNaN(totalXp)) totalXp = 0;
+  if (level === null || level === undefined || isNaN(level) || level < 0) level = 0;
+  
+  totalXp = Math.floor(Number(totalXp));
+  level = Math.floor(Number(level));
+  
   const currentLevelXP = getTotalXPForLevel(level);
   const nextLevelXP = getTotalXPForLevel(level + 1);
   const currentXP = totalXp - currentLevelXP;
   const neededXP = nextLevelXP - currentLevelXP;
   
+  const safeCurrentXP = isNaN(currentXP) ? 0 : Math.max(0, currentXP);
+  const safeNeededXP = isNaN(neededXP) || neededXP <= 0 ? 1 : neededXP;
+  const percentage = (safeCurrentXP / safeNeededXP) * 100;
+  
   return {
-    current: Math.max(0, currentXP),
-    needed: neededXP,
-    percentage: Math.min(100, Math.max(0, (currentXP / neededXP) * 100))
+    current: safeCurrentXP,
+    needed: safeNeededXP,
+    percentage: isNaN(percentage) ? 0 : Math.min(100, Math.max(0, percentage))
   };
 }
 
