@@ -42,10 +42,14 @@ export default {
         
         const userLevel = userData.level || 0;
         const selectedTheme = userData.selectedLeaderboardTheme || 'minecraft';
+        const isSuperActive = member.roles.cache.has(CONFIG.LEVEL_ROLES[35]);
         
         if (userLevel >= 100 && selectedTheme === 'pokemon') {
           imageBuffer = await generatePokemonLeaderboard(sortedUsers, interaction.guild);
           title = '🔥 Pokemon Masters (100+)';
+        } else if (isSuperActive && selectedTheme === 'zelda') {
+          imageBuffer = await generateZeldaLeaderboard(sortedUsers, interaction.guild);
+          title = '⚔️ Heroes of Hyrule (100+)';
         } else {
           imageBuffer = await generateMinecraftLeaderboard(sortedUsers, interaction.guild);
           title = '⚔️ Top Leyendas (100+)';
