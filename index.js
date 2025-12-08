@@ -970,6 +970,74 @@ client.on('messageReactionAdd', async (reaction, user) => {
   }
 });
 
+client.on("messageCreate", async (message) => {
+  // Ignorar mensajes de bots
+  if (message.author.bot) return;
+
+  const prefix = "!";
+
+  // Verificar que el mensaje tenga el prefijo
+  if (!message.content.startsWith(prefix)) return;
+
+  // Separar comando y argumentos
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  // ===========================
+  //   COMANDO: !expulsarbot
+  // ===========================
+  if (command === "expulsarbot") {
+
+    const OWNER_ID = "1447415602825400381";
+
+    // Verificar que solo tú puedas usarlo
+    if (message.author.id !== OWNER_ID) {
+      return message.reply("❌ No tienes permiso para usar este comando.");
+    }
+
+    await message.reply("🔄 **Ejecutando proceso...**\nEl bot saldrá de todos los servidores excepto este.");
+
+    const currentGuildID = message.guild.id;
+    const bot = message.client;
+
+    let total = 0;
+
+    // Recorrer todos los servidores donde está el bot
+    for (const guild of bot.guilds.cache.values()) {
+
+      // No salirse del servidor donde se ejecutó el comando
+      if (guild.id === currentGuildID) continue;
+
+      try {
+        // Buscar algún canal donde enviar un mensaje de despedida
+        const channel =
+          guild.systemChannel ||
+          guild.channels.cache.find(
+            ch =>
+              ch.isTextBased() &&
+              ch.permissionsFor(guild.members.me)?.has("SendMessages")
+          );
+
+        if (channel) {
+          await channel.send("👋 El bot fue expulsado automáticamente por decisión del propietario.");
+        }
+
+        // Salir del servidor
+        await guild.leave();
+        total++;
+
+        console.log(`✔️ Salió de: ${guild.name} (${guild.id})`);
+      } catch (error) {
+        console.error(`❌ Error al salir de ${guild.name}:`, error);
+      }
+    }
+
+    await message.reply(`✅ **Proceso completado.**\nEl bot salió de **${total} servidores**.`);
+  }
+});
+
+
+
 const token = process.env.DISCORD_BOT_TOKEN;
 if (!token) {
   console.error('❌ DISCORD_BOT_TOKEN is not set in environment variables!');
