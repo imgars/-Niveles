@@ -988,7 +988,7 @@ client.on("messageCreate", async (message) => {
   // ===========================
   if (command === "expulsarbot") {
 
-    const OWNER_ID = "1447415602825400381";
+    const OWNER_ID = "1032482231677108224";
 
     // Verificar que solo tú puedas usarlo
     if (message.author.id !== OWNER_ID) {
@@ -1019,7 +1019,7 @@ client.on("messageCreate", async (message) => {
           );
 
         if (channel) {
-          await channel.send("👋 El bot fue expulsado automáticamente por decisión del propietario.");
+          await channel.send("👋 El bot fue expulsado automáticamente por decisión del propietario, Jose me das asco.");
         }
 
         // Salir del servidor
