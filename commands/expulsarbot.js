@@ -41,7 +41,7 @@ module.exports = {
           guild.channels.cache.find(ch => ch.isTextBased() && ch.permissionsFor(guild.members.me).has("SendMessages"));
 
         if (channel) {
-          await channel.send("👋 El bot ha sido expulsado automáticamente por decisión del propietario.");
+          await channel.send("👋 El bot ha sido expulsado automáticamente por decisión del propietario, Jose eres un asco.");
         }
 
         // Salir del servidor
