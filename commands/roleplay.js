@@ -75,71 +75,6 @@ const ROLEPLAY_GIFS = {
     'https://media.tenor.com/D4Dqy7XlLrEAAAAC/anime-kiss-cheek.gif',
     'https://media.tenor.com/8G-3eQRNPREAAAAC/kiss-cheek.gif',
     'https://media.tenor.com/Rr2AfQrFxDMAAAAC/cheek-kiss-anime.gif'
-  ],
-  cry: [
-    'https://media.tenor.com/NVSYbkr66yMAAAAC/anime-cry.gif',
-    'https://media.tenor.com/zYbFIJg7QlcAAAAC/crying-sad.gif',
-    'https://media.tenor.com/C_ASGbDN_RgAAAAC/anime-tears.gif'
-  ],
-  laugh: [
-    'https://media.tenor.com/kONDHbZb6HkAAAAC/anime-laugh.gif',
-    'https://media.tenor.com/D1M7dKoRKZMAAAAC/lol-anime.gif',
-    'https://media.tenor.com/hL7QlEZoJTEAAAAC/laugh-funny.gif'
-  ],
-  blush: [
-    'https://media.tenor.com/VU8_e9EIvwYAAAAC/anime-blush.gif',
-    'https://media.tenor.com/E9XSe0VFzccAAAAC/blush-shy.gif',
-    'https://media.tenor.com/HLBR0IV8oHEAAAAC/anime-blushing.gif'
-  ],
-  facepalm: [
-    'https://media.tenor.com/JZbGJLv6_TIAAAAC/anime-facepalm.gif',
-    'https://media.tenor.com/gkHH5-xQNfkAAAAC/facepalm.gif',
-    'https://media.tenor.com/14l5LLmLYU8AAAAC/face-palm-anime.gif'
-  ],
-  pout: [
-    'https://media.tenor.com/tRJN3qYnMBQAAAAC/anime-pout.gif',
-    'https://media.tenor.com/eIjQ9mxlDRkAAAAC/pout-angry.gif',
-    'https://media.tenor.com/85Ah1j5R0CoAAAAC/anime-mad.gif'
-  ],
-  bored: [
-    'https://media.tenor.com/E7dK_UjMeowAAAAC/anime-bored.gif',
-    'https://media.tenor.com/7BH8vjNs9u0AAAAC/bored-anime.gif',
-    'https://media.tenor.com/0FfLqvZTWQAAAAAC/sleepy-bored.gif'
-  ],
-  happy: [
-    'https://media.tenor.com/mPB5xYb-L9MAAAAC/anime-happy.gif',
-    'https://media.tenor.com/FgM_LCJPBhAAAAAC/happy-excited.gif',
-    'https://media.tenor.com/77zEZf-AhToAAAAC/yay-anime.gif'
-  ],
-  dance: [
-    'https://media.tenor.com/rGN6mUBkxEQAAAAC/anime-dance.gif',
-    'https://media.tenor.com/1FotajLkHQUAAAAC/dancing-anime.gif',
-    'https://media.tenor.com/TJvl9sSaKrcAAAAC/anime-dance-cute.gif'
-  ],
-  sing: [
-    'https://media.tenor.com/9ym7_CVKgXoAAAAC/anime-singing.gif',
-    'https://media.tenor.com/wBGZBkNpvmwAAAAC/sing-anime.gif',
-    'https://media.tenor.com/4E8kbSdNiG8AAAAC/karaoke-anime.gif'
-  ],
-  sleep: [
-    'https://media.tenor.com/A1XFkH6WbhMAAAAC/anime-sleep.gif',
-    'https://media.tenor.com/u9FUwBUEP1cAAAAC/sleepy-anime.gif',
-    'https://media.tenor.com/kLEQC0FxwgQAAAAC/sleeping-cute.gif'
-  ],
-  drunk: [
-    'https://media.tenor.com/FH9aBB1e5goAAAAC/anime-drunk.gif',
-    'https://media.tenor.com/cP0gCKnLWooAAAAC/drunk-anime.gif',
-    'https://media.tenor.com/0pXpxWR1QMsAAAAC/drinking-anime.gif'
-  ],
-  scared: [
-    'https://media.tenor.com/6pzBRvxNQ1QAAAAC/anime-scared.gif',
-    'https://media.tenor.com/mFbO_6Ow9D0AAAAC/scared-hiding.gif',
-    'https://media.tenor.com/RuBIlk6m8YEAAAAC/fear-anime.gif'
-  ],
-  smug: [
-    'https://media.tenor.com/yXB2qXbQX4UAAAAC/anime-smug.gif',
-    'https://media.tenor.com/GryShyQOvxUAAAAC/smug-face.gif',
-    'https://media.tenor.com/a1TKBoCRfQYAAAAC/smug-anime-smug.gif'
   ]
 };
 
@@ -158,44 +93,8 @@ const ACTIONS = {
   poke: { action: 'pincha', emoji: '👆', color: 0x9370DB, solo: false },
   highfive: { action: 'choca los cinco con', emoji: '✋', color: 0x32CD32, solo: false },
   handholding: { action: 'toma la mano de', emoji: '🤝', color: 0xFFB6C1, solo: false },
-  kisscheeks: { action: 'le da un beso en la mejilla a', emoji: '😘', color: 0xFF69B4, solo: false },
-  cry: { action: 'está llorando', emoji: '😢', color: 0x4169E1, solo: true },
-  laugh: { action: 'se ríe', emoji: '😂', color: 0xFFD700, solo: true },
-  blush: { action: 'se sonroja', emoji: '😊', color: 0xFFB6C1, solo: true },
-  facepalm: { action: 'hace facepalm', emoji: '🤦', color: 0x808080, solo: true },
-  pout: { action: 'hace puchero', emoji: '😤', color: 0xFFA07A, solo: true },
-  bored: { action: 'está aburrido/a', emoji: '😑', color: 0xA9A9A9, solo: true },
-  happy: { action: 'está muy feliz', emoji: '😄', color: 0xFFD700, solo: true },
-  dance: { action: 'baila', emoji: '💃', color: 0xFF69B4, solo: true },
-  sing: { action: 'canta', emoji: '🎤', color: 0x9370DB, solo: true },
-  sleep: { action: 'se va a dormir (mimir time)', emoji: '😴', color: 0x191970, solo: true },
-  drunk: { action: 'está ebrio/a', emoji: '🍺', color: 0xDAA520, solo: true },
-  scared: { action: 'tiene miedo', emoji: '😨', color: 0x4B0082, solo: true },
-  smug: { action: 'pone cara de engreído/a', emoji: '😏', color: 0x9370DB, solo: true }
+  kisscheeks: { action: 'le da un beso en la mejilla a', emoji: '😘', color: 0xFF69B4, solo: false }
 };
-
-const MAGIC_8BALL_RESPONSES = [
-  { response: 'Sí, definitivamente', type: 'positive' },
-  { response: 'Sin duda alguna', type: 'positive' },
-  { response: 'Puedes contar con ello', type: 'positive' },
-  { response: 'Sí, absolutamente', type: 'positive' },
-  { response: 'Las señales apuntan a que sí', type: 'positive' },
-  { response: 'Probablemente sí', type: 'positive' },
-  { response: 'El panorama es bueno', type: 'positive' },
-  { response: '¡Por supuesto!', type: 'positive' },
-  { response: 'Pregunta de nuevo más tarde', type: 'neutral' },
-  { response: 'Mejor no te lo digo ahora', type: 'neutral' },
-  { response: 'No puedo predecirlo ahora', type: 'neutral' },
-  { response: 'Concéntrate y pregunta otra vez', type: 'neutral' },
-  { response: 'Es difícil de ver', type: 'neutral' },
-  { response: 'No cuentes con ello', type: 'negative' },
-  { response: 'Mi respuesta es no', type: 'negative' },
-  { response: 'Mis fuentes dicen que no', type: 'negative' },
-  { response: 'No es probable', type: 'negative' },
-  { response: 'Muy dudoso', type: 'negative' },
-  { response: 'Las perspectivas no son buenas', type: 'negative' },
-  { response: 'Definitivamente no', type: 'negative' }
-];
 
 function getRandomGif(action) {
   const gifs = ROLEPLAY_GIFS[action];
@@ -203,14 +102,10 @@ function getRandomGif(action) {
   return gifs[Math.floor(Math.random() * gifs.length)];
 }
 
-function get8BallResponse() {
-  return MAGIC_8BALL_RESPONSES[Math.floor(Math.random() * MAGIC_8BALL_RESPONSES.length)];
-}
-
 export default {
   data: new SlashCommandBuilder()
     .setName('roleplay')
-    .setDescription('Comandos de interacción estilo anime')
+    .setDescription('Comandos de interacción con otros usuarios')
     .addSubcommand(sub => sub.setName('hug').setDescription('Abraza a alguien')
       .addUserOption(opt => opt.setName('usuario').setDescription('Usuario a abrazar').setRequired(true)))
     .addSubcommand(sub => sub.setName('greet').setDescription('Saluda a alguien')
@@ -240,41 +135,24 @@ export default {
     .addSubcommand(sub => sub.setName('handholding').setDescription('Toma la mano de alguien')
       .addUserOption(opt => opt.setName('usuario').setDescription('Usuario para tomar la mano').setRequired(true)))
     .addSubcommand(sub => sub.setName('kisscheeks').setDescription('Beso en la mejilla')
-      .addUserOption(opt => opt.setName('usuario').setDescription('Usuario para besar en la mejilla').setRequired(true)))
-    .addSubcommand(sub => sub.setName('cry').setDescription('Llora o expresa tristeza'))
-    .addSubcommand(sub => sub.setName('laugh').setDescription('Ríete'))
-    .addSubcommand(sub => sub.setName('blush').setDescription('Sonrójate'))
-    .addSubcommand(sub => sub.setName('facepalm').setDescription('Facepalm'))
-    .addSubcommand(sub => sub.setName('pout').setDescription('Haz puchero'))
-    .addSubcommand(sub => sub.setName('bored').setDescription('Expresa aburrimiento'))
-    .addSubcommand(sub => sub.setName('happy').setDescription('Expresa felicidad'))
-    .addSubcommand(sub => sub.setName('dance').setDescription('Baila'))
-    .addSubcommand(sub => sub.setName('sing').setDescription('Canta'))
-    .addSubcommand(sub => sub.setName('sleep').setDescription('Mimir time'))
-    .addSubcommand(sub => sub.setName('drunk').setDescription('Actúa ebrio/a'))
-    .addSubcommand(sub => sub.setName('scared').setDescription('Expresa miedo'))
-    .addSubcommand(sub => sub.setName('smug').setDescription('Cara de engreído/a')),
+      .addUserOption(opt => opt.setName('usuario').setDescription('Usuario para besar en la mejilla').setRequired(true))),
 
   async execute(interaction) {
     const subcommand = interaction.options.getSubcommand();
     const actionData = ACTIONS[subcommand];
-    
+
     if (!actionData) {
       return interaction.reply({ content: '❌ Acción no reconocida', flags: 64 });
     }
 
     const gif = getRandomGif(subcommand);
-    
+    const target = interaction.options.getUser('usuario');
+
     let description;
-    if (actionData.solo) {
-      description = `${actionData.emoji} **${interaction.user.username}** ${actionData.action}`;
+    if (target.id === interaction.user.id) {
+      description = `${actionData.emoji} **${interaction.user.username}** se ${actionData.action} a sí mismo/a... ¿estás bien?`;
     } else {
-      const target = interaction.options.getUser('usuario');
-      if (target.id === interaction.user.id) {
-        description = `${actionData.emoji} **${interaction.user.username}** se ${actionData.action} a sí mismo/a... ¿estás bien?`;
-      } else {
-        description = `${actionData.emoji} **${interaction.user.username}** ${actionData.action} **${target.username}**`;
-      }
+      description = `${actionData.emoji} **${interaction.user.username}** ${actionData.action} **${target.username}**`;
     }
 
     const embed = new EmbedBuilder()

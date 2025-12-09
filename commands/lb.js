@@ -15,8 +15,16 @@ export default {
       const member = await interaction.guild.members.fetch(interaction.user.id);
       const allUsers = db.getAllUsers(interaction.guild.id);
       const sortedUsers = allUsers
-        .filter(u => u.level > 0 || u.totalXp > 0)
-        .sort((a, b) => b.totalXp - a.totalXp)
+        .filter(u => {
+          const totalXp = Number(u.totalXp) || 0;
+          const level = Number(u.level) || 0;
+          return totalXp > 0 && level >= 0 && !isNaN(totalXp) && !isNaN(level);
+        })
+        .sort((a, b) => {
+          const xpA = Number(a.totalXp) || 0;
+          const xpB = Number(b.totalXp) || 0;
+          return xpB - xpA;
+        })
         .slice(0, 10);
       
       if (sortedUsers.length === 0) {

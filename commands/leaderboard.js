@@ -45,8 +45,16 @@ export default {
       }
       
       const sortedUsers = allUsers
-        .filter(u => u.totalXp && u.totalXp > 0 && u.level && u.level > 0)
-        .sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))
+        .filter(u => {
+          const totalXp = Number(u.totalXp) || 0;
+          const level = Number(u.level) || 0;
+          return totalXp > 0 && level >= 0 && !isNaN(totalXp) && !isNaN(level);
+        })
+        .sort((a, b) => {
+          const xpA = Number(a.totalXp) || 0;
+          const xpB = Number(b.totalXp) || 0;
+          return xpB - xpA;
+        })
         .slice(0, 10);
       
       if (sortedUsers.length === 0) {
