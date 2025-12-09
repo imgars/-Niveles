@@ -52,7 +52,7 @@ export async function getAvailableThemes(member, level, purchasedCards = []) {
   return [...new Set(themes)];
 }
 
-export async function getCardTheme(member, level, selectedTheme = null) {
+export async function getCardTheme(member, level, selectedTheme = null, purchasedCards = []) {
   const userId = member.user.id;
   let roles;
   
@@ -65,7 +65,7 @@ export async function getCardTheme(member, level, selectedTheme = null) {
   }
   
   if (selectedTheme) {
-    const available = await getAvailableThemes(member, level);
+    const available = await getAvailableThemes(member, level, purchasedCards);
     if (available.includes(selectedTheme)) {
       return selectedTheme;
     }
@@ -365,7 +365,7 @@ export async function generateRankCard(member, userData, progress, boostsText = 
   const canvas = createCanvas(CARD_WIDTH, CARD_HEIGHT);
   const ctx = canvas.getContext('2d');
   
-  const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme);
+  const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme, userData.purchasedCards || []);
   const colors = getPixelArtThemeColors(theme);
   
   drawPixelatedGradientBackground(ctx, CARD_WIDTH, CARD_HEIGHT, colors.gradient);

@@ -383,6 +383,8 @@ if (failedCount > 0) {
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   
+  client.user.setActivity('https://niveles-wul5.onrender.com/#inicio', { type: 0 });
+  
   initializeNightBoost();
   
   const commands = client.commands.map(cmd => cmd.data.toJSON());
@@ -595,12 +597,12 @@ async function handleLevelUp(message, member, userData, oldLevel) {
     const attachment = new AttachmentBuilder(cardBuffer, { name: 'levelup.png' });
     
     await levelUpChannel.send({
-      content: `🎉 ¡Felicidades <@${member.user.id}>! Has alcanzado el **Nivel ${userData.level}**! 🎉`,
+      content: `Felicidades <@${member.user.id}> Hablaste Tantas webadas que subiste a Nivel ${userData.level} ¡**GG**!`,
       files: [attachment]
     });
   } catch (error) {
     console.error('Error sending level up message:', error);
-    await levelUpChannel.send(`🎉 ¡Felicidades <@${member.user.id}>! Has alcanzado el **Nivel ${userData.level}**! 🎉`);
+    await levelUpChannel.send(`Felicidades <@${member.user.id}> Hablaste Tantas webadas que subiste a Nivel ${userData.level} ¡**GG**!`);
   }
 }
 
@@ -731,6 +733,213 @@ client.on('interactionCreate', async (interaction) => {
         .setColor('#7289DA')
         .setTitle('✅ Cancelado')
         .setDescription('No se termino la racha.');
+      
+      await interaction.update({ embeds: [embed], components: [] });
+    }
+    
+    if (interaction.customId.startsWith('marry_accept_')) {
+      const { getUserEconomy, saveUserEconomy } = await import('./utils/economyDB.js');
+      const { pendingProposals } = await import('./commands/marry.js');
+      const proposalKey = interaction.customId.replace('marry_accept_', '');
+      const proposal = pendingProposals.get(proposalKey);
+      
+      if (!proposal) {
+        return interaction.reply({ content: '❌ La propuesta ha expirado', flags: 64 });
+      }
+      
+      if (interaction.user.id !== proposal.target) {
+        return interaction.reply({ content: '❌ Solo la persona a quien se le propuso puede aceptar', flags: 64 });
+      }
+      
+      const proposerEconomy = await getUserEconomy(proposal.guildId, proposal.proposer);
+      const targetEconomy = await getUserEconomy(proposal.guildId, proposal.target);
+      
+      const totalCoins = (proposerEconomy.lagcoins || 0) + (targetEconomy.lagcoins || 0);
+      
+      proposerEconomy.marriedTo = proposal.target;
+      proposerEconomy.lagcoins = totalCoins;
+      targetEconomy.marriedTo = proposal.proposer;
+      targetEconomy.lagcoins = totalCoins;
+      
+      await saveUserEconomy(proposal.guildId, proposal.proposer, proposerEconomy);
+      await saveUserEconomy(proposal.guildId, proposal.target, targetEconomy);
+      
+      pendingProposals.delete(proposalKey);
+      
+      const embed = new EmbedBuilder()
+        .setColor(0xFF69B4)
+        .setTitle('💕 ¡Felicidades!')
+        .setDescription(`<@${proposal.proposer}> y <@${proposal.target}> ahora están casados!`)
+        .addFields({ name: '💰 Cartera Compartida', value: `${totalCoins} Lagcoins` })
+        .setImage('https://media.tenor.com/KoR0nSZcHQYAAAAC/anime-wedding.gif');
+      
+      await interaction.update({ embeds: [embed], components: [] });
+    }
+    
+    if (interaction.customId.startsWith('marry_reject_')) {
+      const { pendingProposals } = await import('./commands/marry.js');
+      const proposalKey = interaction.customId.replace('marry_reject_', '');
+      const proposal = pendingProposals.get(proposalKey);
+      
+      if (!proposal) {
+        return interaction.reply({ content: '❌ La propuesta ha expirado', flags: 64 });
+      }
+      
+      if (interaction.user.id !== proposal.target) {
+        return interaction.reply({ content: '❌ Solo la persona a quien se le propuso puede rechazar', flags: 64 });
+      }
+      
+      pendingProposals.delete(proposalKey);
+      
+      const embed = new EmbedBuilder()
+        .setColor(0x8B0000)
+        .setTitle('💔 Propuesta Rechazada')
+        .setDescription(`<@${proposal.target}> ha rechazado la propuesta de <@${proposal.proposer}>`)
+        .setImage('https://media.tenor.com/MbdLmMq8r8wAAAAC/anime-sad.gif');
+      
+      await interaction.update({ embeds: [embed], components: [] });
+    }
+    
+    if (interaction.customId.startsWith('divorce_confirm_')) {
+      const { getUserEconomy, saveUserEconomy } = await import('./utils/economyDB.js');
+      const userId = interaction.customId.replace('divorce_confirm_', '');
+      
+      if (interaction.user.id !== userId) {
+        return interaction.reply({ content: '❌ Solo quien ejecuto el comando puede confirmar', flags: 64 });
+      }
+      
+      const userEconomy = await getUserEconomy(interaction.guildId, userId);
+      if (!userEconomy.marriedTo) {
+        return interaction.reply({ content: '❌ Ya no estas casado/a', flags: 64 });
+      }
+      
+      const partnerId = userEconomy.marriedTo;
+      const partnerEconomy = await getUserEconomy(interaction.guildId, partnerId);
+      
+      const totalCoins = (userEconomy.lagcoins || 0) + (partnerEconomy.lagcoins || 0);
+      const splitAmount = Math.floor(totalCoins / 2);
+      
+      userEconomy.marriedTo = null;
+      userEconomy.lagcoins = splitAmount;
+      partnerEconomy.marriedTo = null;
+      partnerEconomy.lagcoins = splitAmount;
+      
+      await saveUserEconomy(interaction.guildId, userId, userEconomy);
+      await saveUserEconomy(interaction.guildId, partnerId, partnerEconomy);
+      
+      const embed = new EmbedBuilder()
+        .setColor(0x8B0000)
+        .setTitle('💔 Divorcio Completado')
+        .setDescription(`<@${userId}> y <@${partnerId}> se han divorciado`)
+        .addFields({ name: '💰 División de Bienes', value: `Cada uno recibió ${splitAmount} Lagcoins` });
+      
+      await interaction.update({ embeds: [embed], components: [] });
+    }
+    
+    if (interaction.customId.startsWith('divorce_cancel_')) {
+      const embed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('✅ Cancelado')
+        .setDescription('El divorcio ha sido cancelado. ¡Su matrimonio sigue en pie!');
+      
+      await interaction.update({ embeds: [embed], components: [] });
+    }
+    
+    if (interaction.customId.startsWith('deleterankcards_confirm_')) {
+      const { isStaff } = await import('./utils/helpers.js');
+      const userId = interaction.customId.replace('deleterankcards_confirm_', '');
+      
+      if (interaction.user.id !== userId) {
+        return interaction.reply({ content: '❌ Solo quien ejecuto el comando puede confirmar', flags: 64 });
+      }
+      
+      if (!isStaff(interaction.member)) {
+        return interaction.reply({ content: '❌ No tienes permisos', flags: 64 });
+      }
+      
+      const allUsers = db.getAllUsers(interaction.guildId);
+      let deletedCount = 0;
+      
+      for (const user of allUsers) {
+        if (user.purchasedCards && user.purchasedCards.length > 0) {
+          user.purchasedCards = [];
+          user.selectedCardTheme = null;
+          db.saveUser(interaction.guildId, user.userId, user);
+          deletedCount++;
+        }
+      }
+      
+      const embed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('✅ Tarjetas Eliminadas')
+        .setDescription(`Se eliminaron las tarjetas de **${deletedCount}** usuarios`)
+        .addFields({ name: '📋 Nota', value: 'Los usuarios conservan sus roles. Deben volver a alcanzar el nivel para recuperar las tarjetas.' });
+      
+      await interaction.update({ embeds: [embed], components: [] });
+    }
+    
+    if (interaction.customId.startsWith('deleterankcards_cancel_')) {
+      const embed = new EmbedBuilder()
+        .setColor(0x7289DA)
+        .setTitle('✅ Cancelado')
+        .setDescription('No se eliminaron las tarjetas.');
+      
+      await interaction.update({ embeds: [embed], components: [] });
+    }
+    
+    if (interaction.customId.startsWith('tradecard_accept_')) {
+      const { pendingTrades } = await import('./commands/tradecard.js');
+      const tradeKey = interaction.customId.replace('tradecard_accept_', '');
+      const trade = pendingTrades.get(tradeKey);
+      
+      if (!trade) {
+        return interaction.reply({ content: '❌ El regalo ha expirado', flags: 64 });
+      }
+      
+      if (interaction.user.id !== trade.receiver) {
+        return interaction.reply({ content: '❌ Solo el receptor puede aceptar', flags: 64 });
+      }
+      
+      const senderData = db.getUser(trade.guildId, trade.sender);
+      const receiverData = db.getUser(trade.guildId, trade.receiver);
+      
+      if (!senderData.purchasedCards || !senderData.purchasedCards.includes(trade.cardType)) {
+        pendingTrades.delete(tradeKey);
+        return interaction.reply({ content: '❌ El remitente ya no tiene esa tarjeta', flags: 64 });
+      }
+      
+      senderData.purchasedCards = senderData.purchasedCards.filter(c => c !== trade.cardType);
+      if (senderData.selectedCardTheme === trade.cardType) {
+        senderData.selectedCardTheme = senderData.purchasedCards[0] || null;
+      }
+      
+      if (!receiverData.purchasedCards) receiverData.purchasedCards = [];
+      receiverData.purchasedCards.push(trade.cardType);
+      receiverData.selectedCardTheme = trade.cardType;
+      
+      db.saveUser(trade.guildId, trade.sender, senderData);
+      db.saveUser(trade.guildId, trade.receiver, receiverData);
+      
+      pendingTrades.delete(tradeKey);
+      
+      const embed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('🎁 ¡Regalo Aceptado!')
+        .setDescription(`<@${trade.receiver}> recibió la tarjeta **${trade.cardName}** de <@${trade.sender}>!`);
+      
+      await interaction.update({ embeds: [embed], components: [] });
+    }
+    
+    if (interaction.customId.startsWith('tradecard_reject_')) {
+      const { pendingTrades } = await import('./commands/tradecard.js');
+      const tradeKey = interaction.customId.replace('tradecard_reject_', '');
+      
+      pendingTrades.delete(tradeKey);
+      
+      const embed = new EmbedBuilder()
+        .setColor(0xFF4444)
+        .setTitle('❌ Regalo Rechazado')
+        .setDescription('El regalo ha sido rechazado.');
       
       await interaction.update({ embeds: [embed], components: [] });
     }

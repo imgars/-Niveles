@@ -7,84 +7,74 @@ export default {
   data: new SlashCommandBuilder()
     .setName('leaderboard')
     .setDescription('Muestra la tabla de clasificación del servidor')
-    .addStringOption(option =>
-      option.setName('tipo')
-        .setDescription('Tipo de leaderboard')
-        .addChoices(
-          { name: '🏆 General', value: 'general' },
-          { name: '⚔️ Top 100+ (Elite)', value: 'elite' },
-          { name: '⚔️ Zelda (Super Activos)', value: 'zelda' }
-        )
-    ),
+    .addSubcommand(sub =>
+      sub.setName('ver')
+        .setDescription('Ver el leaderboard con tu tema seleccionado'))
+    .addSubcommand(sub =>
+      sub.setName('select')
+        .setDescription('Selecciona el tipo de leaderboard')
+        .addStringOption(option =>
+          option.setName('tipo')
+            .setDescription('Tipo de leaderboard')
+            .setRequired(true)
+            .addChoices(
+              { name: '🏆 General (Pixel)', value: 'pixel' },
+              { name: '⛏️ Minecraft', value: 'minecraft' },
+              { name: '🔥 Pokemon (Nivel 100+)', value: 'pokemon' },
+              { name: '⚔️ Zelda (Super Activos)', value: 'zelda' }
+            )
+        )),
   
   async execute(interaction) {
     await interaction.deferReply();
     
     try {
-      const tipo = interaction.options.getString('tipo') || 'general';
+      const subcommand = interaction.options.getSubcommand();
       const member = await interaction.guild.members.fetch(interaction.user.id);
       const allUsers = db.getAllUsers(interaction.guild.id);
       const userData = db.getUser(interaction.guild.id, interaction.user.id);
       
-      let sortedUsers;
+      let tipo;
+      
+      if (subcommand === 'select') {
+        tipo = interaction.options.getString('tipo');
+        userData.selectedLeaderboardTheme = tipo;
+        db.saveUser(interaction.guild.id, interaction.user.id, userData);
+      } else {
+        tipo = userData.selectedLeaderboardTheme || 'pixel';
+      }
+      
+      const sortedUsers = allUsers
+        .filter(u => u.totalXp && u.totalXp > 0 && u.level && u.level > 0)
+        .sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))
+        .slice(0, 10);
+      
+      if (sortedUsers.length === 0) {
+        return interaction.editReply('📊 No hay usuarios en la tabla de clasificación todavía.');
+      }
+      
       let imageBuffer;
       let title;
+      const isSuperActive = member.roles.cache.has(CONFIG.LEVEL_ROLES[35]);
+      const userLevel = userData.level || 0;
       
-      if (tipo === 'elite') {
-        sortedUsers = allUsers
-          .filter(u => u.totalXp && u.totalXp > 0 && u.level && u.level >= 100)
-          .sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))
-          .slice(0, 10);
-        
-        if (sortedUsers.length === 0) {
-          return interaction.editReply('⚔️ No hay usuarios nivel 100+ todavía. ¡Sé el primero en llegar!');
+      if (tipo === 'pokemon') {
+        if (userLevel < 100) {
+          return interaction.editReply('❌ Necesitas nivel 100+ para ver el leaderboard Pokemon.');
         }
-        
-        const userLevel = userData.level || 0;
-        const selectedTheme = userData.selectedLeaderboardTheme || 'minecraft';
-        const isSuperActive = member.roles.cache.has(CONFIG.LEVEL_ROLES[35]);
-        
-        if (userLevel >= 100 && selectedTheme === 'pokemon') {
-          imageBuffer = await generatePokemonLeaderboard(sortedUsers, interaction.guild);
-          title = '🔥 Pokemon Masters (100+)';
-        } else if (isSuperActive && selectedTheme === 'zelda') {
-          imageBuffer = await generateZeldaLeaderboard(sortedUsers, interaction.guild);
-          title = '⚔️ Heroes of Hyrule (100+)';
-        } else {
-          imageBuffer = await generateMinecraftLeaderboard(sortedUsers, interaction.guild);
-          title = '⚔️ Top Leyendas (100+)';
-        }
+        imageBuffer = await generatePokemonLeaderboard(sortedUsers, interaction.guild);
+        title = '🔥 Pokemon Masters';
       } else if (tipo === 'zelda') {
-        const isSuperActive = member.roles.cache.has(CONFIG.LEVEL_ROLES[35]);
         if (!isSuperActive) {
-          return interaction.editReply('❌ Necesitas el rol Super Activo (nivel 35+) para ver este leaderboard.');
+          return interaction.editReply('❌ Necesitas el rol Super Activo (nivel 35+) para ver el leaderboard Zelda.');
         }
-        
-        sortedUsers = allUsers
-          .filter(u => u.totalXp && u.totalXp > 0 && u.level && u.level > 0)
-          .sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))
-          .slice(0, 10);
-        
-        if (sortedUsers.length === 0) {
-          return interaction.editReply('📊 No hay usuarios en la tabla de clasificación todavía.');
-        }
-        
         imageBuffer = await generateZeldaLeaderboard(sortedUsers, interaction.guild);
         title = '⚔️ Heroes of Hyrule';
+      } else if (tipo === 'minecraft') {
+        imageBuffer = await generateMinecraftLeaderboard(sortedUsers, interaction.guild);
+        title = '⛏️ Minecraft Legends';
       } else {
-        sortedUsers = allUsers
-          .filter(u => u.totalXp && u.totalXp > 0 && u.level && u.level > 0)
-          .sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))
-          .slice(0, 10);
-        
-        if (sortedUsers.length === 0) {
-          return interaction.editReply('📊 No hay usuarios en la tabla de clasificación todavía.');
-        }
-        
-        const isSuperActive = member.roles.cache.has(CONFIG.LEVEL_ROLES[35]);
-        const theme = isSuperActive ? 'zelda' : 'pixel';
-        
-        imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, theme);
+        imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, 'pixel');
         title = '🏆 Tabla de Clasificación';
       }
       
@@ -97,12 +87,20 @@ export default {
       
       const row = new ActionRowBuilder().addComponents(viewFullButton);
       
+      const themeNames = {
+        pixel: '🏆 General',
+        minecraft: '⛏️ Minecraft',
+        pokemon: '🔥 Pokemon',
+        zelda: '⚔️ Zelda'
+      };
+      
       await interaction.editReply({
         embeds: [{
-          color: tipo === 'elite' ? 0xFF4500 : (tipo === 'zelda' ? 0x90EE90 : 0xFFD700),
+          color: tipo === 'pokemon' ? 0xFF4500 : (tipo === 'zelda' ? 0x90EE90 : (tipo === 'minecraft' ? 0x7CFC00 : 0xFFD700)),
           title: title,
+          description: subcommand === 'select' ? `✅ Tema guardado: **${themeNames[tipo]}**` : null,
           image: { url: 'attachment://leaderboard.png' },
-          footer: { text: `Total de usuarios activos: ${allUsers.length}` }
+          footer: { text: `Total de usuarios activos: ${allUsers.length} | Tema: ${themeNames[tipo]}` }
         }],
         files: [attachment],
         components: [row]

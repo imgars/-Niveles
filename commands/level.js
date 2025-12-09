@@ -31,7 +31,7 @@ export default {
       const boostsText = getSimplifiedBoostsText(boosts);
       const boostCardText = getBoostTextForCard(boosts);
 
-      const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme);
+      const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme, userData.purchasedCards || []);
       const buttonColor = getThemeButtonColor(theme);
       const buttonStyle = buttonStyleMap[buttonColor] || ButtonStyle.Primary;
 

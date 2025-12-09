@@ -243,6 +243,26 @@ NO_XP_CHANNELS: ['1313723272290111559', '1258524941289263254']
 
 ## Cambios Recientes
 
+### 9 de Diciembre 2025 - v3.2.0 (ROLEPLAY & SOCIAL UPDATE)
+- NUEVO: Comandos roleplay estilo Nekotina (30+ acciones con GIFs animados)
+  - /roleplay hug, pat, slap, bite, cuddle, lick, punch, etc.
+  - Acciones interactivas y solos (cry, laugh, blush, dance, etc.)
+- NUEVO: /8ball - Bola magica que responde preguntas
+- NUEVO: /marry - Casarse y compartir cartera de economia
+- NUEVO: /divorce - Divorciarse y dividir bienes
+- NUEVO: /eliminarrankcards - Staff puede eliminar todas las tarjetas
+- NUEVO: /giftcard - Staff regala tarjetas a usuarios
+- NUEVO: /tradecard - Usuarios regalan sus tarjetas a otros
+- MEJORADO: /leaderboard ahora tiene subcomandos (ver/select)
+  - /leaderboard ver - Ver con tu tema guardado
+  - /leaderboard select - Seleccionar y guardar tema
+- FIX: Tarjetas compradas en /shop ahora aparecen en /level
+- FIX: Buscador de usuarios en leaderboard web (busca por nombre)
+- NUEVO: Click en usuarios del leaderboard web muestra modal con info
+- NUEVO: Estado "Jugando" en perfil del bot
+- MEJORADO: Mensaje de subir de nivel mas divertido
+- NUEVO: Imagenes para categorias de trivia
+
 ### 7 de Diciembre 2025 - v3.1.0
 - FIX: Sistema de boosts corregido (100=x1, 200=x2, 1000=x10)
 - FIX: Ahorcado ahora da recompensas correctamente tras 3 rondas
@@ -283,9 +303,9 @@ NO_XP_CHANNELS: ['1313723272290111559', '1258524941289263254']
 
 ---
 
-**Ultima actualizacion**: 7 de Diciembre de 2025
+**Ultima actualizacion**: 9 de Diciembre de 2025
 **Estado**: COMPLETO - Todos los sistemas implementados
-**Version**: 3.1.0 - Bug Fixes & Web Improvements
+**Version**: 3.2.0 - Roleplay & Social Update
 **Entorno**: Replit (desarrollo) + Render (produccion)
 **GitHub**: https://github.com/imgars/-Niveles.git
 **MongoDB**: Sincronizacion con fallback a JSON

@@ -285,10 +285,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const avatarUrl = user.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
             
             return `
-                <tr>
+                <tr class="user-row" data-user='${JSON.stringify({
+                    userId: user.userId,
+                    username: user.username || displayName,
+                    displayName: displayName,
+                    avatar: avatarUrl,
+                    level: user.level,
+                    totalXp: user.totalXp,
+                    rank: rank
+                }).replace(/'/g, "\\'")}'>
                     <td class="rank-col ${rankClass}">${rankIcon} #${rank}</td>
                     <td class="user-col">
-                        <div class="user-info">
+                        <div class="user-info clickable-user">
                             <img src="${avatarUrl}" alt="Avatar" class="user-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
                             <span class="user-name">${escapeHtml(displayName)}</span>
                         </div>
@@ -298,6 +306,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 </tr>
             `;
         }).join('');
+        
+        document.querySelectorAll('.user-row').forEach(row => {
+            row.addEventListener('click', function() {
+                try {
+                    const userData = JSON.parse(this.dataset.user);
+                    showUserModal(userData);
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                }
+            });
+        });
 
         updatePagination();
     }
@@ -339,9 +358,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (query === '') {
                 filteredData = [...leaderboardData];
             } else {
-                filteredData = leaderboardData.filter(user => 
-                    user.userId.toLowerCase().includes(query)
-                );
+                filteredData = leaderboardData.filter(user => {
+                    const username = (user.username || '').toLowerCase();
+                    const displayName = (user.displayName || '').toLowerCase();
+                    const userId = (user.userId || '').toLowerCase();
+                    return username.includes(query) || displayName.includes(query) || userId.includes(query);
+                });
             }
             
             currentPage = 1;
@@ -357,6 +379,56 @@ document.addEventListener('DOMContentLoaded', function() {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    function showUserModal(userData) {
+        let modal = document.getElementById('user-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'user-modal';
+            modal.className = 'user-modal';
+            modal.innerHTML = `
+                <div class="user-modal-content">
+                    <span class="user-modal-close">&times;</span>
+                    <div class="user-modal-header">
+                        <img class="user-modal-avatar" src="" alt="Avatar">
+                        <div class="user-modal-info">
+                            <h2 class="user-modal-name"></h2>
+                            <p class="user-modal-rank"></p>
+                        </div>
+                    </div>
+                    <div class="user-modal-stats">
+                        <div class="user-modal-stat">
+                            <span class="stat-value user-modal-level"></span>
+                            <span class="stat-label">Nivel</span>
+                        </div>
+                        <div class="user-modal-stat">
+                            <span class="stat-value user-modal-xp"></span>
+                            <span class="stat-label">XP Total</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.user-modal-close').addEventListener('click', () => {
+                modal.classList.remove('show');
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        }
+        
+        modal.querySelector('.user-modal-avatar').src = userData.avatar;
+        modal.querySelector('.user-modal-name').textContent = userData.displayName || userData.username;
+        modal.querySelector('.user-modal-rank').textContent = `Posicion #${userData.rank}`;
+        modal.querySelector('.user-modal-level').textContent = userData.level;
+        modal.querySelector('.user-modal-xp').textContent = formatNumber(userData.totalXp);
+        
+        modal.classList.add('show');
     }
 
     async function loadStats() {
