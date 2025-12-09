@@ -17,11 +17,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@napi-rs/canvas": "^0.1.44",
-    "discord.js": "^14.14.1",
-    "express": "^4.21.2",
-    "moment-timezone": "^0.5.43",
-    "mongoose": "^9.0.0",
+    "@napi-rs/canvas": "^0.1.84",
+    "discord.js": "^14.25.1",
+    "express": "^4.22.1",
+    "moment-timezone": "^0.5.48",
+    "mongoose": "^9.0.1",
     "node-cron": "^3.0.3"
   }
 }
