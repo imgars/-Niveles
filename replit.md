@@ -243,6 +243,26 @@ NO_XP_CHANNELS: ['1313723272290111559', '1258524941289263254']
 
 ## Cambios Recientes
 
+### 9 de Diciembre 2025 - v3.3.0 (STANDALONE COMMANDS UPDATE)
+- NUEVO: Comandos de roleplay ahora son independientes (28 comandos nuevos)
+  - Roleplay: /hug, /greet, /goodbye, /pat, /slap, /bite, /feed, /cuddle, /lick, /punch, /kill, /poke, /highfive, /handholding, /kisscheeks
+  - Emociones: /cry, /laugh, /blush, /facepalm, /pout, /bored, /happy, /dance, /sing, /sleep, /drunk, /scared, /smug
+- NUEVO: /jumbo - Mostrar emojis en grande
+- NUEVO: /pingrole - Staff puede mencionar cualquier rol incluyendo @everyone
+- MEJORADO: /leaderboard ahora auto-selecciona el tema basado en rol
+  - Pokemon para nivel 100+ o rol Inmortal
+  - Zelda para rol Super Activo (nivel 35+)
+  - Pixel para el resto
+- MEJORADO: /level muestra boosts activos con tiempo restante detallado
+  - VIP, Booster, Nocturno, y boosts personalizados
+- MEJORADO: /giveitem y /removeitem ya no muestran "Instance failed" en Render
+- ACTUALIZADO: Estado del bot cambiado a "/info para ver mas informacion"
+- ACTUALIZADO: Rol nivel 100 ID cambiado a 1313716964383920269
+- ACTUALIZADO: /gamecard ahora solo soporta Minecraft (removido Roblox y Brawl Stars)
+- NUEVO: Seccion de Roleplay en la pagina web
+- NUEVO: Archivo Notas.md con notas de actualizacion para Discord
+- Total de comandos: 103
+
 ### 9 de Diciembre 2025 - v3.2.0 (ROLEPLAY & SOCIAL UPDATE)
 - NUEVO: Comandos roleplay estilo Nekotina (30+ acciones con GIFs animados)
   - /roleplay hug, pat, slap, bite, cuddle, lick, punch, etc.
@@ -305,7 +325,7 @@ NO_XP_CHANNELS: ['1313723272290111559', '1258524941289263254']
 
 **Ultima actualizacion**: 9 de Diciembre de 2025
 **Estado**: COMPLETO - Todos los sistemas implementados
-**Version**: 3.2.0 - Roleplay & Social Update
+**Version**: 3.3.0 - Standalone Commands Update
 **Entorno**: Replit (desarrollo) + Render (produccion)
 **GitHub**: https://github.com/imgars/-Niveles.git
 **MongoDB**: Sincronizacion con fallback a JSON
