@@ -46,6 +46,14 @@ document.querySelectorAll('.nav-link').forEach(link => {
     });
 });
 
+// Almacenar histórico de datos
+const dataHistory = {
+    timestamps: [],
+    xpData: [],
+    levelsData: [],
+    maxPoints: 12
+};
+
 // Cargar datos del dashboard
 async function loadDashboardData() {
     try {
@@ -84,9 +92,47 @@ async function loadDashboardData() {
         document.getElementById('mongoStatus').textContent = data.mongoStatus || 'Desconectado';
         document.getElementById('nodeVersion').textContent = data.nodeVersion || 'v20.0.0';
         
+        // Guardar histórico
+        const now = new Date();
+        const timeLabel = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        dataHistory.timestamps.push(timeLabel);
+        dataHistory.xpData.push(data.xpToday || 0);
+        dataHistory.levelsData.push(data.levelsToday || 0);
+        
+        if (dataHistory.timestamps.length > dataHistory.maxPoints) {
+            dataHistory.timestamps.shift();
+            dataHistory.xpData.shift();
+            dataHistory.levelsData.shift();
+        }
+        
+        // Actualizar gráfico
+        updateActivityChart();
+        
     } catch (error) {
         console.error('Error cargando dashboard:', error);
     }
+}
+
+// Actualizar gráfico de actividad
+function updateActivityChart() {
+    const chartContainer = document.querySelector('.activity-chart');
+    const maxValue = Math.max(...dataHistory.xpData) || 100;
+    
+    const bars = dataHistory.timestamps.map((time, i) => {
+        const xpValue = dataHistory.xpData[i];
+        const percentage = (xpValue / maxValue) * 100;
+        
+        return `
+            <div class="bar">
+                <div class="bar-fill" style="height: ${Math.max(percentage, 10)}%;" title="XP: ${xpValue}"></div>
+                <div class="bar-value">${xpValue}</div>
+                <div class="bar-label">${time}</div>
+            </div>
+        `;
+    }).join('');
+    
+    chartContainer.innerHTML = `<div class="simple-bar-chart">${bars || '<p style="color: #999;">Cargando datos...</p>'}</div>`;
 }
 
 // Formatear uptime
@@ -139,7 +185,7 @@ window.addEventListener('load', () => {
     if (!checkAuthentication()) return;
     
     loadDashboardData();
-    setInterval(loadDashboardData, 30000); // Actualizar cada 30 segundos
+    setInterval(loadDashboardData, 10000); // Actualizar cada 10 segundos
     
     updateSessionTime();
     setInterval(updateSessionTime, 1000); // Actualizar cada segundo

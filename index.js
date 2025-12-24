@@ -1306,6 +1306,7 @@ app.get('/api/admin/dashboard', verifyAdminToken, (req, res) => {
     const today = new Date().toDateString();
     let xpToday = 0;
     let levelsToday = 0;
+    let missionsToday = 0;
     
     for (const user of Object.values(db.users)) {
       if (user.lastUpdate && new Date(user.lastUpdate).toDateString() === today) {
@@ -1319,6 +1320,13 @@ app.get('/api/admin/dashboard', verifyAdminToken, (req, res) => {
     const uptime = process.uptime() * 1000;
     const botStatus = client.isReady() ? 'Online' : 'Offline';
     
+    // Estadísticas de memoria
+    const memUsage = process.memoryUsage();
+    const memPercent = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
+    
+    // Actividad del servidor
+    const startupTime = Date.now() - uptime;
+    
     res.json({
       botStatus,
       uptime,
@@ -1326,12 +1334,14 @@ app.get('/api/admin/dashboard', verifyAdminToken, (req, res) => {
       userCount,
       xpToday,
       levelsToday,
-      missionsToday: 0,
+      missionsToday,
       errorsToday: 0,
       botVersion,
       lastSync: Date.now(),
       mongoStatus,
-      nodeVersion
+      nodeVersion,
+      memoryUsage: memPercent,
+      startupTime
     });
   } catch (error) {
     console.error('Error en dashboard API:', error);
