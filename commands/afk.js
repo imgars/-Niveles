@@ -28,7 +28,7 @@ export default {
       .setColor(0xFFFF00) // Amarillo
       .setAuthor({ name: interaction.user.username, iconURL: interaction.user.displayAvatarURL() })
       .setTitle('Estado ausente establecido.')
-      .setDescription(`**Motivo:** ${reason}\n\nAvisaré a quienes te mencionan. >w<`)
+      .setDescription(`**Motivo:** ${reason}\n\nAvisaré a las personas que te mencionen ⭐`)
       .setThumbnail(interaction.user.displayAvatarURL());
       
     return interaction.reply({ embeds: [embed] });
