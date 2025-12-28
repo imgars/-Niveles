@@ -217,6 +217,7 @@ function createNewEconomy(guildId, userId) {
     minigamesWon: 0,
     tradesCompleted: 0,
     auctionsWon: 0,
+    marriedTo: null,
     createdAt: new Date().toISOString()
   };
 }

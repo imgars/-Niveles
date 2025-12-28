@@ -243,6 +243,15 @@ NO_XP_CHANNELS: ['1313723272290111559', '1258524941289263254']
 
 ## Cambios Recientes
 
+### 28 de Diciembre 2025 - v3.3.1 (CLEANUP UPDATE)
+- REMOVIDO: 27 comandos de roleplay/emociones
+  - Eliminados: /hug, /greet, /goodbye, /pat, /slap, /bite, /feed, /cuddle, /lick, /punch, /kill, /poke, /highfive, /handholding, /kisscheeks, /cry, /laugh, /blush, /facepalm, /pout, /happy, /dance, /sing, /sleep, /drunk, /scared, /smug
+  - MANTENIM: /marry (para sistemas de matrimonio y divorcio)
+- FIXED: Bug en /divorce - Ahora detecta correctamente cuando un usuario está casado
+  - Añadido campo `marriedTo: null` a createNewEconomy en economyDB.js
+  - /divorce ahora funciona sin errores
+- Total de comandos: 76 (reducido de 103)
+
 ### 9 de Diciembre 2025 - v3.3.0 (STANDALONE COMMANDS UPDATE)
 - NUEVO: Comandos de roleplay ahora son independientes (28 comandos nuevos)
   - Roleplay: /hug, /greet, /goodbye, /pat, /slap, /bite, /feed, /cuddle, /lick, /punch, /kill, /poke, /highfive, /handholding, /kisscheeks
@@ -323,9 +332,9 @@ NO_XP_CHANNELS: ['1313723272290111559', '1258524941289263254']
 
 ---
 
-**Ultima actualizacion**: 9 de Diciembre de 2025
+**Ultima actualizacion**: 28 de Diciembre de 2025
 **Estado**: COMPLETO - Todos los sistemas implementados
-**Version**: 3.3.0 - Standalone Commands Update
+**Version**: 3.3.1 - Cleanup Update
 **Entorno**: Replit (desarrollo) + Render (produccion)
 **GitHub**: https://github.com/imgars/-Niveles.git
 **MongoDB**: Sincronizacion con fallback a JSON
