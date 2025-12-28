@@ -71,7 +71,8 @@ class Database {
         xp: 0,
         level: 0,
         totalXp: 0,
-        selectedCardTheme: null
+        selectedCardTheme: null,
+        afk: { status: false, reason: null, timestamp: null }
       };
     }
     

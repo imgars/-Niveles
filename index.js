@@ -431,6 +431,35 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   if (!message.guild) return;
   
+  // Manejar AFK - Quitar si el usuario envía un mensaje
+  const authorData = db.getUser(message.guild.id, message.author.id);
+  if (authorData.afk && authorData.afk.status) {
+    authorData.afk.status = false;
+    authorData.afk.reason = null;
+    authorData.afk.timestamp = null;
+    db.saveUser(message.guild.id, message.author.id, authorData);
+    
+    message.reply({ content: `👋 ¡Bienvenido de nuevo <@${message.author.id}>! He quitado tu estado AFK.`, ephemeral: false }).then(msg => {
+      setTimeout(() => msg.delete().catch(() => {}), 5000);
+    });
+  }
+
+  // Manejar AFK - Avisar si mencionan a alguien AFK
+  if (message.mentions.users.size > 0) {
+    message.mentions.users.forEach(user => {
+      const mentionedData = db.getUser(message.guild.id, user.id);
+      if (mentionedData.afk && mentionedData.afk.status) {
+        const timeAgo = Math.floor((Date.now() - mentionedData.afk.timestamp) / 1000 / 60);
+        message.reply({ 
+          content: `💤 **${user.username}** está AFK: ${mentionedData.afk.reason} (${timeAgo} minutos)`,
+          allowedMentions: { repliedUser: false }
+        }).then(msg => {
+          setTimeout(() => msg.delete().catch(() => {}), 5000);
+        });
+      }
+    });
+  }
+  
   // Manejar Easter Eggs
   try {
     const { handleEasterEgg } = await import('./utils/easterEggs.js');

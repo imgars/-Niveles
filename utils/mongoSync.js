@@ -8,7 +8,12 @@ const userSchema = new mongoose.Schema({
   guildId: String,
   xp: { type: Number, default: 0 },
   level: { type: Number, default: 0 },
-  totalXp: { type: Number, default: 0 }
+  totalXp: { type: Number, default: 0 },
+  afk: {
+    status: { type: Boolean, default: false },
+    reason: { type: String, default: null },
+    timestamp: { type: Number, default: null }
+  }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
