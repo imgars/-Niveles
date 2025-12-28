@@ -430,6 +430,30 @@ client.once('ready', async () => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   if (!message.guild) return;
+
+  // Manejar comando prefix !afk
+  if (message.content.toLowerCase().startsWith('!afk')) {
+    const args = message.content.split(' ');
+    const reason = args.slice(1).join(' ') || 'No especificado';
+    const userData = db.getUser(message.guild.id, message.author.id);
+    
+    userData.afk = {
+      status: true,
+      reason: reason,
+      timestamp: Date.now()
+    };
+    
+    db.saveUser(message.guild.id, message.author.id, userData);
+    
+    const embed = new EmbedBuilder()
+      .setColor(0xFFFF00) // Amarillo
+      .setAuthor({ name: message.author.username, iconURL: message.author.displayAvatarURL() })
+      .setTitle('Estado ausente establecido.')
+      .setDescription(`**Motivo:** ${reason}\n\n-# Avisaré a quienes te mencionan ⭐`)
+      .setThumbnail(message.author.displayAvatarURL());
+      
+    return message.reply({ embeds: [embed] });
+  }
   
   // Manejar AFK - Quitar si el usuario envía un mensaje
   const authorData = db.getUser(message.guild.id, message.author.id);
