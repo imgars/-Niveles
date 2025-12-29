@@ -1,7 +1,6 @@
 import { SlashCommandBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { CONFIG } from '../config.js';
 import db from '../utils/database.js';
-import { generateLeaderboardImage, generateMinecraftLeaderboard, generatePokemonLeaderboard, generateZeldaLeaderboard } from '../utils/cardGenerator.js';
+import { generateLeaderboardImage } from '../utils/cardGenerator.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -12,27 +11,7 @@ export default {
     await interaction.deferReply();
     
     try {
-      const member = await interaction.guild.members.fetch(interaction.user.id);
       const allUsers = db.getAllUsers(interaction.guild.id);
-      
-      let userData;
-      try {
-        userData = db.getUser(interaction.guild.id, interaction.user.id);
-      } catch (e) {
-        userData = null;
-      }
-      
-      const userLevel = (userData && userData.level) ? userData.level : 0;
-      const isSuperActive = member.roles.cache.has(CONFIG.LEVEL_ROLES[35]);
-      const hasLevel100Role = CONFIG.LEVEL_100_ROLE_ID && member.roles.cache.has(CONFIG.LEVEL_100_ROLE_ID);
-      const isLevel100 = userLevel >= 100 || hasLevel100Role;
-      
-      let tipo = 'pixel';
-      if (isLevel100) {
-        tipo = 'pokemon';
-      } else if (isSuperActive) {
-        tipo = 'zelda';
-      }
       
       const sortedUsers = allUsers
         .filter(u => {
@@ -51,20 +30,7 @@ export default {
         return interaction.editReply('📊 No hay usuarios en la tabla de clasificación todavía.');
       }
       
-      let imageBuffer;
-      let title;
-      
-      if (tipo === 'pokemon') {
-        imageBuffer = await generatePokemonLeaderboard(sortedUsers, interaction.guild);
-        title = '🔥 Pokemon Masters';
-      } else if (tipo === 'zelda') {
-        imageBuffer = await generateZeldaLeaderboard(sortedUsers, interaction.guild);
-        title = '⚔️ Heroes of Hyrule';
-      } else {
-        imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, 'pixel');
-        title = '⚡ Tabla de Clasificación';
-      }
-      
+      const imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, 'pixel');
       const attachment = new AttachmentBuilder(imageBuffer, { name: 'leaderboard.png' });
       
       const viewFullButton = new ButtonBuilder()
@@ -74,17 +40,10 @@ export default {
       
       const row = new ActionRowBuilder().addComponents(viewFullButton);
       
-      const themeNames = {
-        pixel: '⚡ General',
-        minecraft: '⛏️ Minecraft',
-        pokemon: '🔥 Pokemon',
-        zelda: '⚔️ Zelda'
-      };
-      
       await interaction.editReply({
         embeds: [{
-          color: tipo === 'pokemon' ? 0xFF4500 : (tipo === 'zelda' ? 0x90EE90 : 0xFFD700),
-          title: title,
+          color: 0xFFD700,
+          title: '🏆 Tabla de Clasificación',
           image: { url: 'attachment://leaderboard.png' },
           footer: { text: `¡Chatea en el servidor para subir de nivel! ⚡` }
         }],

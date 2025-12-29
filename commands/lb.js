@@ -12,7 +12,6 @@ export default {
     await interaction.deferReply();
     
     try {
-      const member = await interaction.guild.members.fetch(interaction.user.id);
       const allUsers = db.getAllUsers(interaction.guild.id);
       const sortedUsers = allUsers
         .filter(u => {
@@ -31,11 +30,7 @@ export default {
         return interaction.editReply('📊 No hay usuarios en la tabla de clasificación todavía.');
       }
       
-      // Detectar si es Miembro Super Activo (Nivel 35+)
-      const isSuperActive = member.roles.cache.has(CONFIG.LEVEL_ROLES[35]);
-      const theme = isSuperActive ? 'zelda' : 'pixel';
-      
-      const imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, theme);
+      const imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, 'pixel');
       const attachment = new AttachmentBuilder(imageBuffer, { name: 'leaderboard.png' });
       
       const viewFullButton = new ButtonBuilder()
