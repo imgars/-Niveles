@@ -113,15 +113,17 @@ const economySchema = new mongoose.Schema({
     totalJobs: { type: Number, default: 0 },
     favoriteJob: String
   },
-  transactions: [{
-    type: String,
-    amount: Number,
-    from: String,
-    to: String,
-    description: String,
-    date: { type: Date, default: Date.now },
-    _id: false
-  }],
+  transactions: [
+    {
+      type: String,
+      amount: Number,
+      from: String,
+      to: String,
+      description: String,
+      date: { type: Date, default: Date.now },
+      _id: false
+    }
+  ],
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -495,13 +497,20 @@ export async function addLagcoins(guildId, userId, amount, reason = 'work') {
 export async function removeLagcoins(guildId, userId, amount, reason = 'spend') {
   if (!isConnected) return null;
   try {
-    const economy = await Economy.findOne({ guildId, userId });
-    if (!economy || economy.lagcoins < amount) return null;
-
-    economy.lagcoins -= amount;
-    economy.totalSpent = (economy.totalSpent || 0) + amount;
-    economy.transactions.push({ type: String(reason), amount: Number(-amount), date: new Date() });
-    await economy.save();
+    const economy = await Economy.findOneAndUpdate(
+      { guildId, userId, lagcoins: { $gte: amount } },
+      { 
+        $inc: { lagcoins: -amount, totalSpent: amount },
+        $push: { 
+          transactions: { 
+            type: String(reason), 
+            amount: -amount, 
+            date: new Date() 
+          } 
+        }
+      },
+      { new: true }
+    );
     return economy;
   } catch (error) {
     console.error('Error removiendo lagcoins:', error.message);
@@ -512,18 +521,36 @@ export async function removeLagcoins(guildId, userId, amount, reason = 'spend') 
 export async function transferLagcoins(guildId, fromUserId, toUserId, amount) {
   if (!isConnected) return null;
   try {
-    const from = await Economy.findOne({ guildId, userId: fromUserId });
-    if (!from || from.lagcoins < amount) return null;
+    const from = await Economy.findOneAndUpdate(
+      { guildId, userId: fromUserId, lagcoins: { $gte: amount } },
+      { 
+        $inc: { lagcoins: -amount },
+        $push: { 
+          transactions: { 
+            type: 'transfer', 
+            amount: -amount, 
+            to: toUserId, 
+            date: new Date() 
+          } 
+        }
+      },
+      { new: true }
+    );
 
-    from.lagcoins -= amount;
-    from.transactions.push({ type: 'transfer', amount: Number(-amount), to: toUserId, date: new Date() });
-    await from.save();
+    if (!from) return null;
 
     const to = await Economy.findOneAndUpdate(
       { guildId, userId: toUserId },
       { 
         $inc: { lagcoins: amount },
-        $push: { transactions: { type: 'transfer', amount: Number(amount), from: fromUserId, date: new Date() } }
+        $push: { 
+          transactions: { 
+            type: 'transfer', 
+            amount: amount, 
+            from: fromUserId, 
+            date: new Date() 
+          } 
+        }
       },
       { upsert: true, new: true }
     );
