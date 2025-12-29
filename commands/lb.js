@@ -49,9 +49,9 @@ export default {
       await interaction.editReply({
         embeds: [{
           color: 0xFFD700,
-          title: '🏆 Tabla de Clasificación',
+          title: '⚡ Tabla de Clasificación',
           image: { url: 'attachment://leaderboard.png' },
-          footer: { text: `¡Chatea en el servidor para subir de nivel! 🏆` },
+          footer: { text: `¡Chatea en el servidor para subir de nivel! ⚡` },
           timestamp: new Date()
         }],
         files: [attachment],

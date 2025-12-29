@@ -62,7 +62,7 @@ export default {
         title = '⚔️ Heroes of Hyrule';
       } else {
         imageBuffer = await generateLeaderboardImage(sortedUsers, interaction.guild, 'pixel');
-        title = '🏆 Tabla de Clasificación';
+        title = '⚡ Tabla de Clasificación';
       }
       
       const attachment = new AttachmentBuilder(imageBuffer, { name: 'leaderboard.png' });
@@ -75,7 +75,7 @@ export default {
       const row = new ActionRowBuilder().addComponents(viewFullButton);
       
       const themeNames = {
-        pixel: '🏆 General',
+        pixel: '⚡ General',
         minecraft: '⛏️ Minecraft',
         pokemon: '🔥 Pokemon',
         zelda: '⚔️ Zelda'
@@ -86,7 +86,7 @@ export default {
           color: tipo === 'pokemon' ? 0xFF4500 : (tipo === 'zelda' ? 0x90EE90 : 0xFFD700),
           title: title,
           image: { url: 'attachment://leaderboard.png' },
-          footer: { text: `¡Chatea en el servidor para subir de nivel! 🏆` }
+          footer: { text: `¡Chatea en el servidor para subir de nivel! ⚡` }
         }],
         files: [attachment],
         components: [row]

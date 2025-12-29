@@ -55,7 +55,7 @@ export default {
           .setCustomId('info_leaderboard')
           .setLabel('Leaderboard')
           .setStyle(ButtonStyle.Secondary)
-          .setEmoji('🏆'),
+          .setEmoji('⚡'),
         new ButtonBuilder()
           .setCustomId('info_work')
           .setLabel('Trabajar')
@@ -105,7 +105,7 @@ export default {
             await i.reply({ content: '💰 Usa `/balance` para ver tus Lagcoins!', flags: 64 });
             break;
           case 'info_leaderboard':
-            await i.reply({ content: '🏆 Usa `/leaderboard` para ver la tabla de clasificación!', flags: 64 });
+            await i.reply({ content: '⚡ Usa `/leaderboard` para ver la tabla de clasificación!', flags: 64 });
             break;
           case 'info_work':
             await i.reply({ content: '💼 Usa `/work` para ver trabajos disponibles o `/trabajar` para un trabajo específico!', flags: 64 });
