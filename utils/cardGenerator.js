@@ -518,7 +518,8 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'discord
   
   const darkBg = '#2B2D31';
   const lightBg = '#313338';
-  const cyan = '#00FFFF';
+  const accent = '#FFD700';
+  const accentAlt = '#90EE90';
   const textColor = '#FFFFFF';
   
   ctx.fillStyle = darkBg;
@@ -526,49 +527,67 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'discord
   
   ctx.fillStyle = '#1E1F22';
   ctx.fillRect(0, 0, 700, 50);
-  ctx.fillStyle = cyan;
+  ctx.fillStyle = accent;
   ctx.font = 'bold 28px Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('🏆 LEADERBOARD 🏆', 350, 35);
   ctx.textAlign = 'left';
   
+  const userDataArray = [];
+  
+  // Load all avatars and usernames first
   for (let i = 0; i < Math.min(10, topUsers.length); i++) {
     const user = topUsers[i];
+    let member = null;
+    let username = 'Usuario';
+    let avatar = null;
+    
+    try {
+      member = await guild.members.fetch(user.userId).catch(() => null);
+      if (member) {
+        username = member.user.username;
+        const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 48 });
+        try {
+          avatar = await loadImage(avatarURL);
+        } catch (error) {
+          console.error('Error loading avatar image:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching member:', error);
+    }
+    
+    userDataArray.push({ user, username, avatar });
+  }
+  
+  // Now draw everything
+  for (let i = 0; i < userDataArray.length; i++) {
+    const { user, username, avatar } = userDataArray[i];
     const y = 50 + (i * 65);
     
     ctx.fillStyle = lightBg;
     ctx.fillRect(0, y, 700, 62);
-    ctx.fillStyle = cyan;
+    ctx.fillStyle = i % 2 === 0 ? accent : accentAlt;
     ctx.fillRect(0, y + 62, 700, 2);
     
-    try {
-      const member = await guild.members.fetch(user.userId).catch(() => null);
-      if (member) {
-        const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 48 });
-        const avatar = await loadImage(avatarURL);
+    // Draw avatar if loaded
+    if (avatar) {
+      try {
         ctx.drawImage(avatar, 12, y + 7, 48, 48);
+      } catch (error) {
+        console.error('Error drawing avatar:', error);
       }
-    } catch (error) {
-      console.error('Error loading avatar:', error);
     }
     
     ctx.fillStyle = textColor;
     ctx.font = 'bold 18px Arial, sans-serif';
     ctx.fillText(`#${i + 1}`, 68, y + 20);
     
-    let username = 'Usuario';
-    try {
-      const member = await guild.members.fetch(user.userId).catch(() => null);
-      if (member) {
-        username = member.user.username;
-      }
-    } catch (e) {}
-    
     ctx.fillStyle = textColor;
     ctx.font = 'bold 16px Arial, sans-serif';
     ctx.fillText(`@${username.substring(0, 20)}`, 108, y + 20);
     
-    ctx.fillStyle = cyan;
+    ctx.fillStyle = i % 2 === 0 ? accent : accentAlt;
     ctx.font = 'bold 16px Arial, sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText(`LVL: ${user.level}`, 680, y + 20);
