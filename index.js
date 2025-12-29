@@ -455,6 +455,72 @@ client.on('messageCreate', async (message) => {
     return message.reply({ embeds: [embed] });
   }
   
+  // Manejar comando prefix !level
+  if (message.content.toLowerCase().startsWith('!level')) {
+    try {
+      const command = client.commands.get('level');
+      if (!command) return;
+      
+      const args = message.content.split(' ');
+      const targetUser = message.mentions.users.first() || message.author;
+      
+      const interactionAdapter = {
+        user: message.author,
+        guild: message.guild,
+        channelId: message.channelId,
+        options: {
+          getUser: () => targetUser
+        },
+        reply: (options) => message.reply(options)
+      };
+      
+      await command.execute(interactionAdapter);
+      return;
+    } catch (error) {
+      console.error('Error in !level command:', error);
+    }
+  }
+  
+  // Manejar comando prefix !lb
+  if (message.content.toLowerCase().startsWith('!lb')) {
+    try {
+      const command = client.commands.get('lb');
+      if (!command) return;
+      
+      const interactionAdapter = {
+        user: message.author,
+        guild: message.guild,
+        deferReply: () => Promise.resolve(),
+        editReply: (options) => message.reply(options)
+      };
+      
+      await command.execute(interactionAdapter);
+      return;
+    } catch (error) {
+      console.error('Error in !lb command:', error);
+    }
+  }
+  
+  // Manejar comando prefix !leaderboard
+  if (message.content.toLowerCase().startsWith('!leaderboard')) {
+    try {
+      const command = client.commands.get('leaderboard');
+      if (!command) return;
+      
+      const interactionAdapter = {
+        user: message.author,
+        guild: message.guild,
+        deferReply: () => Promise.resolve(),
+        editReply: (options) => message.reply(options)
+      };
+      
+      await command.execute(interactionAdapter);
+      return;
+    } catch (error) {
+      console.error('Error in !leaderboard command:', error);
+    }
+  }
+  
   // Manejar AFK - Quitar si el usuario envía un mensaje
   const authorData = db.getUser(message.guild.id, message.author.id);
   if (authorData.afk && authorData.afk.status) {
