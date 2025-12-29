@@ -8,6 +8,7 @@ export default {
 
   async execute(interaction) {
     const userEconomy = await getUserEconomy(interaction.guildId, interaction.user.id);
+    console.log(`[Divorce] User ${interaction.user.id} marriedTo: ${userEconomy.marriedTo}`);
 
     if (!userEconomy.marriedTo) {
       return interaction.reply({ content: '❌ No estás casado/a con nadie', flags: 64 });

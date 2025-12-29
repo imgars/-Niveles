@@ -165,7 +165,6 @@ export async function getUserEconomy(guildId, userId) {
     if (mongoConnected) {
       const result = await getEconomy(guildId, userId);
       if (result) {
-        // Convertir documento Mongoose a objeto plano
         const plainResult = result.toObject ? result.toObject() : result;
         return plainResult;
       }
@@ -355,6 +354,7 @@ export async function saveUserEconomy(guildId, userId, data) {
       userId,
       lagcoins: data.lagcoins !== undefined ? data.lagcoins : (existingData.lagcoins || 100),
       bankBalance: data.bankBalance !== undefined ? data.bankBalance : (existingData.bankBalance || 0),
+      marriedTo: data.marriedTo !== undefined ? data.marriedTo : (existingData.marriedTo || null),
       items: data.items || existingData.items || [],
       inventory: data.inventory || existingData.inventory || [],
       transactions: data.transactions || existingData.transactions || [],

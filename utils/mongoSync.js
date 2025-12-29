@@ -113,6 +113,7 @@ const economySchema = new mongoose.Schema({
     totalJobs: { type: Number, default: 0 },
     favoriteJob: String
   },
+  marriedTo: { type: String, default: null },
   transactions: [mongoose.Schema.Types.Mixed],
   createdAt: { type: Date, default: Date.now }
 });
@@ -574,7 +575,8 @@ export async function saveEconomyToMongo(guildId, userId, economyData) {
       totalEarned: economyData.totalEarned || 0,
       totalSpent: economyData.totalSpent || 0,
       items: economyData.items || [],
-      inventory: economyData.inventory || []
+      inventory: economyData.inventory || [],
+      marriedTo: economyData.marriedTo || null
     };
 
     if (economyData.casinoStats) {
