@@ -534,33 +534,41 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'discord
   ctx.textAlign = 'left';
   
   const userDataArray = [];
+  const usersToFetch = Math.min(10, topUsers.length);
   
-  // Load all avatars and usernames first
-  for (let i = 0; i < Math.min(10, topUsers.length); i++) {
+  // Fetch all members in parallel
+  const memberPromises = topUsers.slice(0, usersToFetch).map(user =>
+    guild.members.fetch(user.userId).catch(() => null)
+  );
+  
+  const members = await Promise.all(memberPromises);
+  
+  // Load all avatars in parallel with timeout
+  const loadImageWithTimeout = async (url, timeoutMs = 5000) => {
+    return Promise.race([
+      loadImage(url).catch(() => null),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)).catch(() => null)
+    ]).catch(() => null);
+  };
+  
+  const avatarPromises = members.map((member, i) => {
+    if (!member) return Promise.resolve(null);
+    const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 48 });
+    return loadImageWithTimeout(avatarURL, 5000);
+  });
+  
+  const avatars = await Promise.all(avatarPromises);
+  
+  // Build user data array
+  for (let i = 0; i < usersToFetch; i++) {
     const user = topUsers[i];
-    let member = null;
-    let username = 'Usuario';
-    let avatar = null;
-    
-    try {
-      member = await guild.members.fetch(user.userId).catch(() => null);
-      if (member) {
-        username = member.user.username;
-        const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 48 });
-        try {
-          avatar = await loadImage(avatarURL);
-        } catch (error) {
-          console.error('Error loading avatar image:', error);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching member:', error);
-    }
-    
+    const member = members[i];
+    const username = member ? member.user.username : 'Usuario';
+    const avatar = avatars[i];
     userDataArray.push({ user, username, avatar });
   }
   
-  // Now draw everything
+  // Draw everything
   for (let i = 0; i < userDataArray.length; i++) {
     const { user, username, avatar } = userDataArray[i];
     const y = 50 + (i * 65);
@@ -631,8 +639,31 @@ export async function generateMinecraftLeaderboard(topUsers, guild) {
   ctx.fillStyle = '#AAAAAA';
   ctx.fillRect(40, 70, 620, 2);
   
-  for (let i = 0; i < Math.min(10, topUsers.length); i++) {
+  const usersToFetch = Math.min(10, topUsers.length);
+  const memberPromises = topUsers.slice(0, usersToFetch).map(user =>
+    guild.members.fetch(user.userId).catch(() => null)
+  );
+  const members = await Promise.all(memberPromises);
+  
+  const loadImageWithTimeout = async (url, timeoutMs = 5000) => {
+    return Promise.race([
+      loadImage(url).catch(() => null),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)).catch(() => null)
+    ]).catch(() => null);
+  };
+  
+  const avatarPromises = members.map((member, i) => {
+    if (!member) return Promise.resolve(null);
+    const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 64 });
+    return loadImageWithTimeout(avatarURL, 5000);
+  });
+  
+  const avatars = await Promise.all(avatarPromises);
+  
+  for (let i = 0; i < usersToFetch; i++) {
     const user = topUsers[i];
+    const member = members[i];
+    const avatar = avatars[i];
     const y = 90 + (i * 62);
     
     ctx.fillStyle = i % 2 === 0 ? 'rgba(100, 100, 100, 0.3)' : 'rgba(60, 60, 60, 0.3)';
@@ -647,18 +678,14 @@ export async function generateMinecraftLeaderboard(topUsers, guild) {
     ctx.fillStyle = rankColor;
     ctx.fillRect(30, y, 4, 56);
     
-    try {
-      const member = await guild.members.fetch(user.userId).catch(() => null);
-      if (member) {
-        const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 64 });
-        const avatar = await loadImage(avatarURL);
-        
+    if (avatar) {
+      try {
         ctx.fillStyle = '#333333';
         ctx.fillRect(42, y + 6, 46, 46);
         ctx.drawImage(avatar, 44, y + 8, 42, 42);
+      } catch (error) {
+        console.error('Error drawing avatar:', error);
       }
-    } catch (error) {
-      console.error('Error loading avatar:', error);
     }
     
     const medals = ['👑', '⚔️', '🛡️'];
@@ -672,13 +699,7 @@ export async function generateMinecraftLeaderboard(topUsers, guild) {
     
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '16px Arial, sans-serif';
-    let username = 'Steve';
-    try {
-      const member = await guild.members.fetch(user.userId).catch(() => null);
-      if (member) {
-        username = member.user.username;
-      }
-    } catch (e) {}
+    const username = member ? member.user.username : 'Steve';
     ctx.fillText(username.substring(0, 18), 150, y + 36);
     
     ctx.fillStyle = '#55FF55';
@@ -729,8 +750,31 @@ export async function generatePokemonLeaderboard(topUsers, guild) {
   ctx.fillStyle = '#FF4500';
   ctx.fillRect(40, 70, 620, 2);
   
-  for (let i = 0; i < Math.min(10, topUsers.length); i++) {
+  const usersToFetch = Math.min(10, topUsers.length);
+  const memberPromises = topUsers.slice(0, usersToFetch).map(user =>
+    guild.members.fetch(user.userId).catch(() => null)
+  );
+  const members = await Promise.all(memberPromises);
+  
+  const loadImageWithTimeout = async (url, timeoutMs = 5000) => {
+    return Promise.race([
+      loadImage(url).catch(() => null),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)).catch(() => null)
+    ]).catch(() => null);
+  };
+  
+  const avatarPromises = members.map((member, i) => {
+    if (!member) return Promise.resolve(null);
+    const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 64 });
+    return loadImageWithTimeout(avatarURL, 5000);
+  });
+  
+  const avatars = await Promise.all(avatarPromises);
+  
+  for (let i = 0; i < usersToFetch; i++) {
     const user = topUsers[i];
+    const member = members[i];
+    const avatar = avatars[i];
     const y = 90 + (i * 62);
     
     ctx.fillStyle = i % 2 === 0 ? 'rgba(255, 100, 50, 0.15)' : 'rgba(255, 215, 0, 0.1)';
@@ -745,18 +789,14 @@ export async function generatePokemonLeaderboard(topUsers, guild) {
     ctx.fillStyle = rankColor;
     ctx.fillRect(30, y, 4, 56);
     
-    try {
-      const member = await guild.members.fetch(user.userId).catch(() => null);
-      if (member) {
-        const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 64 });
-        const avatar = await loadImage(avatarURL);
-        
+    if (avatar) {
+      try {
         ctx.fillStyle = '#FF0000';
         ctx.fillRect(42, y + 6, 46, 46);
         ctx.drawImage(avatar, 44, y + 8, 42, 42);
+      } catch (error) {
+        console.error('Error drawing avatar:', error);
       }
-    } catch (error) {
-      console.error('Error loading avatar:', error);
     }
     
     const medals = ['🏆', '⚡', '🌟'];
@@ -770,13 +810,7 @@ export async function generatePokemonLeaderboard(topUsers, guild) {
     
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '16px Arial, sans-serif';
-    let username = 'Trainer';
-    try {
-      const member = await guild.members.fetch(user.userId).catch(() => null);
-      if (member) {
-        username = member.user.username;
-      }
-    } catch (e) {}
+    const username = member ? member.user.username : 'Trainer';
     ctx.fillText(username.substring(0, 18), 150, y + 36);
     
     ctx.fillStyle = '#FFD700';
