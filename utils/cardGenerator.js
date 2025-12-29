@@ -553,7 +553,7 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'discord
   
   const avatarPromises = members.map((member, i) => {
     if (!member) return Promise.resolve(null);
-    const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 48 });
+    const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 64 });
     return loadImageWithTimeout(avatarURL, 5000);
   });
   
