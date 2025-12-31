@@ -33,6 +33,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (sectionId === 'preguntas') {
             loadQuestions();
         }
+
+        if (sectionId === 'inactividad') {
+            // Lógica adicional para inactividad si fuera necesaria
+        }
     }
 
     navLinks.forEach(link => {
