@@ -822,11 +822,17 @@ body {
     100% { border-color: var(--pokemon-red); }
 }
 
+.card-img-preview {
+    width: 100%;
+    height: auto;
+    display: block;
+    image-rendering: pixelated;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
 .theme-preview {
-    height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    height: auto;
+    padding: 10px;
     background: rgba(0,0,0,0.5);
 }
 
