@@ -84,7 +84,8 @@ export function getRandomXP() {
   return Math.floor(Math.random() * (CONFIG.BASE_XP_MAX - CONFIG.BASE_XP_MIN + 1)) + CONFIG.BASE_XP_MIN;
 }
 
-export function calculateBoostMultiplier(boosts) {
+export function calculateBoostMultiplier(boosts, isInactive = false) {
+  if (isInactive) return 0.5; // Ganar XP dos veces más lento
   if (!boosts || boosts.length === 0) return 1.0;
   
   let totalMultiplier = 100;

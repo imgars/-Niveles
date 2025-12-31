@@ -425,6 +425,53 @@ client.once('ready', async () => {
   });
   
   console.log('⏰ Cron job para verificar rachas configurado (diario a medianoche)');
+
+  // Cron job para verificar inactividad (cada 6 horas)
+  cron.schedule('0 */6 * * *', async () => {
+    console.log('🔍 Verificando usuarios inactivos...');
+    const inactiveRoleId = '1455315291532693789';
+    const notificationChannelId = '1441276918916710501';
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    for (const guild of client.guilds.cache.values()) {
+      const allUsers = db.getAllUsers(guild.id);
+      const channel = guild.channels.cache.get(notificationChannelId);
+
+      for (const userData of allUsers) {
+        if (userData.isInactive) continue;
+
+        const lastActivity = userData.lastActivity || 0;
+        if (now - lastActivity > SEVEN_DAYS_MS) {
+          try {
+            const member = await guild.members.fetch(userData.userId).catch(() => null);
+            if (!member) continue;
+
+            userData.isInactive = true;
+            userData.inactivityMessages = 0;
+            db.saveUser(guild.id, userData.userId, userData);
+
+            if (!member.roles.cache.has(inactiveRoleId)) {
+              await member.roles.add(inactiveRoleId).catch(console.error);
+            }
+
+            if (channel) {
+              const inactiveEmbed = new EmbedBuilder()
+                .setColor(0xFF0000)
+                .setTitle('⚠️ Estado de Inactividad')
+                .setDescription(`El usuario <@${userData.userId}> ha entrado en estado de inactividad por pasar más de 7 días sin enviar mensajes.`)
+                .addFields({ name: 'Requisito para salir', value: 'Debe enviar 50 mensajes para recuperar su estado normal.' })
+                .setTimestamp();
+              
+              await channel.send({ content: `<@${userData.userId}>`, embeds: [inactiveEmbed] });
+            }
+          } catch (error) {
+            console.error(`Error procesando inactividad para ${userData.userId}:`, error);
+          }
+        }
+      }
+    }
+  });
 });
 
 client.on('messageCreate', async (message) => {
@@ -584,6 +631,45 @@ client.on('messageCreate', async (message) => {
   const member = message.member;
   const userData = db.getUser(message.guild.id, message.author.id);
   
+  // Actualizar última actividad
+  userData.lastActivity = Date.now();
+  
+  // Lógica de recuperación de inactividad
+  if (userData.isInactive) {
+    userData.inactivityMessages = (userData.inactivityMessages || 0) + 1;
+    
+    if (userData.inactivityMessages === 1) {
+       message.channel.send(`👋 <@${message.author.id}>, has vuelto! Actualmente tienes el rol de inactividad. Para quitártelo, debes enviar **50 mensajes** (Llevas ${userData.inactivityMessages}/50).`).then(msg => setTimeout(() => msg.delete().catch(() => {}), 10000));
+    }
+
+    if (userData.inactivityMessages >= 50) {
+      userData.isInactive = false;
+      userData.inactivityMessages = 0;
+      
+      const inactiveRoleId = '1455315291532693789';
+      if (member.roles.cache.has(inactiveRoleId)) {
+        member.roles.remove(inactiveRoleId).catch(console.error);
+      }
+      
+      // Recompensa: Boost de niveles temporal (ej. 50% por 24h)
+      db.addBoost('user', message.author.id, 150, 24 * 60 * 60 * 1000, 'Recompensa por recuperar actividad');
+      
+      const recoveryChannel = message.guild.channels.cache.get('1441276918916710501');
+      if (recoveryChannel) {
+        recoveryChannel.send(`🎉 ¡Felicidades <@${message.author.id}>! Has completado los 50 mensajes. Se te ha quitado el rol de inactividad y has ganado un **Boost de XP del 50% por 24 horas**.`);
+      }
+    }
+    db.saveUser(message.guild.id, message.author.id, userData);
+  } else {
+    db.saveUser(message.guild.id, message.author.id, userData);
+  }
+
+  // Restricción de canal #1400931230266032149
+  if (userData.isInactive && message.channel.id === '1400931230266032149') {
+    message.delete().catch(() => {});
+    return message.author.send("No puedes enviar mensajes en ese canal mientras estés inactivo.").catch(() => {});
+  }
+
   let xpGain = getRandomXP();
   
   const boosts = db.getActiveBoosts(message.author.id, message.channel.id);
@@ -594,7 +680,8 @@ client.on('messageCreate', async (message) => {
   }
   
   const nightBoost = getNightBoostMultiplier();
-  const boostMultiplier = calculateBoostMultiplier(boosts);
+  // Aplicar penalización de inactividad al multiplicador
+  const boostMultiplier = calculateBoostMultiplier(boosts, userData.isInactive);
   const totalMultiplier = baseMultiplier + nightBoost + (boostMultiplier - 1.0);
   
   xpGain = Math.floor(xpGain * totalMultiplier);
@@ -604,7 +691,10 @@ client.on('messageCreate', async (message) => {
   userData.level = calculateLevel(userData.totalXp);
   
   db.saveUser(message.guild.id, message.author.id, userData);
-  db.setCooldown('xp', message.author.id, CONFIG.XP_COOLDOWN);
+  
+  // Cooldown de XP: 30s si es inactivo, 10s normal (CONFIG.XP_COOLDOWN)
+  const xpCooldown = userData.isInactive ? 30000 : CONFIG.XP_COOLDOWN;
+  db.setCooldown('xp', message.author.id, xpCooldown);
   
   if (userData.level > oldLevel) {
     await handleLevelUp(message, member, userData, oldLevel);

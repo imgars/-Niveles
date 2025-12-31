@@ -72,12 +72,28 @@ class Database {
         level: 0,
         totalXp: 0,
         selectedCardTheme: null,
-        afk: { status: false, reason: null, timestamp: null }
+        afk: { status: false, reason: null, timestamp: null },
+        lastActivity: Date.now(),
+        inactivityMessages: 0,
+        isInactive: false
       };
     }
     
     const user = this.users[key];
     let needsPersist = false;
+
+    if (user.lastActivity === undefined) {
+      user.lastActivity = Date.now();
+      needsPersist = true;
+    }
+    if (user.inactivityMessages === undefined) {
+      user.inactivityMessages = 0;
+      needsPersist = true;
+    }
+    if (user.isInactive === undefined) {
+      user.isInactive = false;
+      needsPersist = true;
+    }
     
     if (user.totalXp === null || user.totalXp === undefined || isNaN(user.totalXp)) {
       user.totalXp = 0;
