@@ -523,4 +523,30 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.feature-card, .command-card, .minigame-card').forEach((card, index) => {
         card.style.animationDelay = `${index * 0.1}s`;
     });
+
+    // Lógica para el modal de imagen (zoom de tarjetas)
+    const imgModal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('img-full');
+    const captionText = document.getElementById('image-modal-caption');
+
+    document.querySelectorAll('.card-img-preview').forEach(img => {
+        img.onclick = function() {
+            imgModal.style.display = "block";
+            modalImg.src = this.src;
+            captionText.innerHTML = this.alt;
+        }
+    });
+
+    const closeImgModal = document.querySelector('.image-modal-close');
+    if (closeImgModal) {
+        closeImgModal.onclick = function() {
+            imgModal.style.display = "none";
+        }
+    }
+
+    window.onclick = function(event) {
+        if (event.target == imgModal) {
+            imgModal.style.display = "none";
+        }
+    }
 });

@@ -828,6 +828,71 @@ body {
     display: block;
     image-rendering: pixelated;
     border: 2px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.card-img-preview:hover {
+    transform: scale(1.02);
+    border-color: var(--primary);
+}
+
+/* Modal de Imagen Fullscreen */
+.image-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.9);
+}
+
+.image-modal-content {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 1000px;
+    image-rendering: pixelated;
+    border: 4px solid var(--primary);
+}
+
+#image-modal-caption {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
+    text-align: center;
+    color: var(--primary);
+    padding: 10px 0;
+    font-size: 12px;
+}
+
+.image-modal-close {
+    position: absolute;
+    top: 50px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.image-modal-close:hover,
+.image-modal-close:focus {
+    color: var(--secondary);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+@media only screen and (max-width: 700px){
+    .image-modal-content {
+        width: 100%;
+    }
 }
 
 .theme-preview {
