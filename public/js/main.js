@@ -541,7 +541,8 @@ document.addEventListener('DOMContentLoaded', function() {
         "Roblox": "Cómprala en la tienda con el comando `/shop` por **7,500 Lagcoins**.",
         "Twitch VIP": "Obtenla comprando una suscripción en el canal de **Twitch** de Sirgio.",
         "TikTok VIP": "Obtenla comprando una suscripción o siendo VIP en el canal de **TikTok** de Sirgio.",
-        "Boosters": "Obtenla mejorando (**Boosteando**) el servidor de Discord."
+        "Boosters": "Obtenla mejorando (**Boosteando**) el servidor de Discord.",
+        "Geometry Dash": "Obtenla mejorando (**Boosteando**) el servidor de Discord."
     };
 
     document.querySelectorAll('.card-img-preview').forEach(img => {
