@@ -528,12 +528,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const imgModal = document.getElementById('image-modal');
     const modalImg = document.getElementById('img-full');
     const captionText = document.getElementById('image-modal-caption');
+    const tutorialContent = document.getElementById('card-tutorial-content');
+
+    const cardTutorials = {
+        "Default": "Esta es la tarjeta básica. Se obtiene automáticamente al unirte al servidor.",
+        "FNAF": "Se desbloquea al alcanzar el **Nivel 40**. Un diseño terroríficamente pixelado.",
+        "Geometry Dash": "Se desbloquea al alcanzar el **Nivel 30**. Ideal para los amantes de los saltos.",
+        "Minecraft": "Se desbloquea al alcanzar el **Nivel 50**. Para los verdaderos constructores.",
+        "Night": "Se desbloquea al alcanzar el **Nivel 20**. Un diseño elegante y oscuro.",
+        "Ocean": "Se desbloquea al alcanzar el **Nivel 10**. Refrescante y azul.",
+        "Pixel": "Se desbloquea al alcanzar el **Nivel 5**. El origen de todo.",
+        "Pokemon": "Se desbloquea al alcanzar el **Nivel 60**. ¡Hazte con todos!",
+        "Roblox": "Se desbloquea al alcanzar el **Nivel 45**. Diversión asegurada.",
+        "Zelda": "Se desbloquea al alcanzar el **Nivel 75**. Una leyenda para leyendas.",
+        "Twitch VIP": "Para obtener esta tarjeta debes comprar una suscripción en el canal de **Twitch** de Sirgio.",
+        "TikTok VIP": "Para obtener esta tarjeta debes ser **VIP de TikTok** en el canal de Sirgio."
+    };
 
     document.querySelectorAll('.card-img-preview').forEach(img => {
         img.onclick = function() {
             imgModal.style.display = "block";
             modalImg.src = this.src;
-            captionText.innerHTML = this.alt;
+            const cardName = this.alt;
+            captionText.innerHTML = cardName;
+            
+            // Mostrar tutorial
+            if (tutorialContent) {
+                const tutorial = cardTutorials[cardName] || "Información no disponible.";
+                tutorialContent.innerHTML = `<p>${tutorial}</p>`;
+            }
         }
     });
 

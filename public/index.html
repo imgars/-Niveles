@@ -1058,10 +1058,28 @@
         </div>
 
         <!-- MODAL DE IMAGEN (FULLSCREEN) -->
+        <!-- Modal de Imagen Fullscreen -->
         <div id="image-modal" class="image-modal">
-            <span class="image-modal-close">&times;</span>
-            <img class="image-modal-content" id="img-full">
-            <div id="image-modal-caption"></div>
+            <div class="image-modal-container">
+                <span class="image-modal-close">&times;</span>
+                <div class="image-modal-layout">
+                    <div class="image-modal-image-side">
+                        <img class="image-modal-content" id="img-full">
+                        <div id="image-modal-caption"></div>
+                    </div>
+                    <div class="image-modal-info-side">
+                        <div class="card-tutorial">
+                            <h3>📖 Cómo obtenerla</h3>
+                            <div id="card-tutorial-content" class="tutorial-content">
+                                <!-- Se llena por JS -->
+                            </div>
+                        </div>
+                        <div class="card-selection-tip">
+                            <p>💡 <strong>Para equipar:</strong> Usa el comando <code>/rankcard select</code> en el bot.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- LEADERBOARD -->
