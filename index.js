@@ -509,6 +509,14 @@ client.once('ready', async () => {
               
               await channel.send({ content: `<@${userData.userId}>`, embeds: [inactiveEmbed] });
             }
+
+            // Añadir [Inactivo] al nombre
+            if (member.manageable) {
+              const oldNickname = member.nickname || member.user.username;
+              if (!oldNickname.startsWith('[Inactivo] ')) {
+                await member.setNickname(`[Inactivo] ${oldNickname}`).catch(console.error);
+              }
+            }
           } catch (error) {
             console.error(`Error procesando inactividad para ${userData.userId}:`, error);
           }
@@ -1424,6 +1432,8 @@ async function sendAuditLog(client, interaction, actionType, details = '') {
     console.error('Error enviando log de auditoría:', error);
   }
 }
+
+export { sendAuditLog };
 
 // Manejador de comandos
 client.on('interactionCreate', async (interaction) => {
