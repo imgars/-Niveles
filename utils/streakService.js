@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { isMongoConnected } from './mongoSync.js';
 
-const STREAK_BREAK_CHANNEL_ID = '1441276918916710501';
+export const STREAK_BREAK_CHANNEL_ID = '1441276918916710501';
 
 const streakSchema = new mongoose.Schema({
   guildId: { type: String, required: true, index: true },

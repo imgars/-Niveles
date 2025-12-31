@@ -6,7 +6,7 @@ import { generateRankCard } from './utils/cardGenerator.js';
 import { initializeNightBoost, getNightBoostMultiplier } from './utils/timeBoost.js';
 import { isStaff } from './utils/helpers.js';
 import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, saveQuestionToMongo, getQuestionsFromMongo, answerQuestionInMongo, getAllStreaksFromMongo, getUserMissions, updateMissionProgress, getEconomy, addLagcoins } from './utils/mongoSync.js';
-import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween } from './utils/streakService.js';
+import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
 import express from 'express';
 import cron from 'node-cron';
 
@@ -424,6 +424,48 @@ client.once('ready', async () => {
     timezone: 'America/Caracas'
   });
   
+  cron.schedule('0 20 * * *', async () => {
+    console.log('🔔 Enviando recordatorios de racha...');
+    try {
+      const allActiveStreaks = await getAllActiveStreaks();
+      const today = new Date().toISOString().split('T')[0];
+
+      for (const streak of allActiveStreaks) {
+        const guild = client.guilds.cache.get(streak.guildId);
+        if (!guild) continue;
+
+        const usersToNotify = [];
+        if (streak.user1LastMessage && streak.user1LastMessage.toISOString().split('T')[0] !== today) {
+          usersToNotify.push(streak.user1Id);
+        }
+        if (streak.user2LastMessage && streak.user2LastMessage.toISOString().split('T')[0] !== today) {
+          usersToNotify.push(streak.user2Id);
+        }
+
+        if (usersToNotify.length > 0) {
+          const channel = guild.channels.cache.get(STREAK_BREAK_CHANNEL_ID);
+          if (channel) {
+            const mentions = usersToNotify.map(id => `<@${id}>`).join(' y ');
+            const partnerId = usersToNotify.length === 1 ? (usersToNotify[0] === streak.user1Id ? streak.user2Id : streak.user1Id) : null;
+            
+            const reminderEmbed = new EmbedBuilder()
+              .setColor(0xFFA500)
+              .setTitle('🔥 ¡No pierdas tu racha!')
+              .setDescription(`${mentions}, aún no han interactuado hoy para mantener su racha de **${streak.streakCount} días**.`)
+              .setFooter({ text: 'Tienen hasta medianoche para enviar un mensaje mencionándose.' })
+              .setTimestamp();
+
+            await channel.send({ content: mentions, embeds: [reminderEmbed] });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error enviando recordatorios de racha:', error);
+    }
+  }, {
+    timezone: 'America/Caracas'
+  });
+
   console.log('⏰ Cron job para verificar rachas configurado (diario a medianoche)');
 
   // Cron job para verificar inactividad (cada 6 horas)
