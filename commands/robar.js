@@ -34,6 +34,12 @@ export default {
       }
 
       if (result.success) {
+        // Log de economía (Ganancia)
+        try {
+          const { sendEconomyLog } = await import('../index.js');
+          await sendEconomyLog(interaction.client, interaction, 'Robo Exitoso', result.stolen, `Le robó a <@${victim.id}>\nVíctima: ${victim.tag}`);
+        } catch (e) {}
+
         const embed = new EmbedBuilder()
           .setColor('#00FF00')
           .setTitle('🦹 ¡Robo Exitoso!')
@@ -46,6 +52,12 @@ export default {
 
         return interaction.reply({ embeds: [embed] });
       } else {
+        // Log de economía (Pérdida por multa)
+        try {
+          const { sendEconomyLog } = await import('../index.js');
+          await sendEconomyLog(interaction.client, interaction, 'Robo Fallido (Multa)', -result.fine, `Intentó robar a <@${victim.id}> y fue atrapado.`);
+        } catch (e) {}
+
         const embed = new EmbedBuilder()
           .setColor('#FF0000')
           .setTitle('🚔 ¡Te Atraparon!')

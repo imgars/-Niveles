@@ -1404,6 +1404,40 @@ client.on('interactionCreate', async (interaction) => {
 // Auditoría
 const AUDIT_CHANNEL_ID = '1431416957160259764';
 
+async function sendEconomyLog(client, interaction, type, amount, details = '') {
+  try {
+    const guild = interaction.guild;
+    if (!guild) return;
+    
+    const channel = guild.channels.cache.get(AUDIT_CHANNEL_ID);
+    if (!channel) return;
+
+    const user = interaction.user || interaction.author;
+    const isGain = amount >= 0;
+    const color = isGain ? 0x00FF00 : 0xFF0000;
+    const emoji = isGain ? '📈' : '📉';
+
+    const embed = new EmbedBuilder()
+      .setColor(color)
+      .setTitle(`${emoji} TRANSACCIÓN: ${type}`)
+      .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL() })
+      .addFields(
+        { name: 'Usuario', value: `<@${user.id}>`, inline: true },
+        { name: 'Cantidad', value: `**${amount.toLocaleString()} Lagcoins**`, inline: true },
+        { name: 'Canal', value: `<#${interaction.channelId || interaction.channel.id}>`, inline: true }
+      )
+      .setTimestamp();
+
+    if (details) {
+      embed.addFields({ name: 'Descripción', value: details });
+    }
+
+    await channel.send({ embeds: [embed] });
+  } catch (error) {
+    console.error('Error enviando log de economía:', error);
+  }
+}
+
 async function sendAuditLog(client, interaction, actionType, details = '') {
   try {
     const guild = interaction.guild;
@@ -1433,7 +1467,7 @@ async function sendAuditLog(client, interaction, actionType, details = '') {
   }
 }
 
-export { sendAuditLog };
+export { sendAuditLog, sendEconomyLog };
 
 // Manejador de comandos
 client.on('interactionCreate', async (interaction) => {
