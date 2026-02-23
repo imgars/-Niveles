@@ -1113,8 +1113,10 @@
                         <h3 style="margin-top: 30px;">Modo Mantenimiento</h3>
                         <div class="maintenance-section">
                             <label class="toggle-label">
-                                <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance(this.checked)">
-                                <span class="toggle-slider"></span>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance(this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </div>
                                 <span id="maintenanceStatus">Desactivado</span>
                             </label>
                             <p class="section-desc">El modo mantenimiento bloquea los comandos de economia para todos los usuarios no staff.</p>

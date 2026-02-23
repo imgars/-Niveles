@@ -1,6 +1,12 @@
 # -Niveles
 
 ## Recent Changes
+- **Fix Configuracion Page Blank (Febrero 2026):**
+  - Fixed the Configuracion page in the admin panel showing completely blank/gray.
+  - Root cause: `.toggle-slider` (maintenance toggle) had `position: absolute; inset: 0; background: #ccc` without a positioned parent, causing it to cover the entire viewport with a gray overlay.
+  - Fix: Wrapped the checkbox input and toggle-slider in a `.toggle-switch` container (which has `position: relative` and explicit dimensions).
+  - Added hash-based URL routing to admin.js (e.g., `dashboard.html#configuracion` navigates directly to that page).
+
 - **Sistema de Reacciones y Emociones (Febrero 2026):**
   - Slash command `/react` con 5 subcomandos: `hug`, `kiss`, `pat`, `ship`, `kill`.
   - 45+ comandos con prefijo `!` para reacciones: afecto, enojo, humor, emociones, interacción, especiales.

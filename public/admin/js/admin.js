@@ -1485,7 +1485,12 @@ const savedBg = localStorage.getItem('adminBg');
 if (savedTheme) applyTheme(savedTheme);
 if (savedBg) applyBackground(savedBg);
 
-loadDashboardData();
+const hashPage = window.location.hash?.replace('#', '');
+if (hashPage && PAGE_TITLES[hashPage]) {
+    showPage(hashPage);
+} else {
+    loadDashboardData();
+}
 updateSessionTime();
 setInterval(updateSessionTime, 60000);
 setInterval(loadAlertsData, 60000);
