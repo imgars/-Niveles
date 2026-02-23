@@ -36,7 +36,7 @@
     "xp": 0,
     "level": 0,
     "totalXp": null,
-    "lastActivity": 1771812204976,
+    "lastActivity": 1771812974028,
     "inactivityMessages": 0,
     "isInactive": false,
     "username": "im_gars",
@@ -145,7 +145,7 @@
     "guildId": "1212886282645147768",
     "xp": 0,
     "level": 0,
-    "totalXp": null,
+    "totalXp": 0,
     "lastActivity": 1771812412768,
     "inactivityMessages": 0,
     "isInactive": false,
@@ -200,7 +200,13 @@
     "guildId": "1212886282645147768",
     "xp": 0,
     "level": 0,
-    "totalXp": 0
+    "totalXp": 0,
+    "lastActivity": 1771812953243,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": "mzin_531",
+    "displayName": "[Mod] Mzingerkai",
+    "avatar": "https://cdn.discordapp.com/avatars/926219678798454875/7a9049fd5ae548570ae3d62c49aaf78c.webp?size=64"
   },
   "1212886282645147768-864250231888674837": {
     "userId": "864250231888674837",

@@ -1,9 +1,12 @@
 export const API_ENDPOINT_MAP = {
   hug: 'hug',
   kiss: 'kiss',
+  kisscheeks: 'peck',
   cuddle: 'cuddle',
   pat: 'pat',
   handholding: 'handhold',
+  love: 'kiss',
+  cheeks: 'nom',
   feed: 'feed',
   angry: 'angry',
   baka: 'baka',
@@ -11,86 +14,35 @@ export const API_ENDPOINT_MAP = {
   punch: 'punch',
   bite: 'bite',
   kickbutt: 'kick',
+  glare: 'stare',
+  kill: 'shoot',
+  spank: 'slap',
   happy: 'happy',
   laugh: 'laugh',
   smile: 'smile',
   dance: 'dance',
+  claps: 'thumbsup',
   highfive: 'highfive',
   smug: 'smug',
+  teehee: 'smile',
   cry: 'cry',
+  sad: 'cry',
   pout: 'pout',
   blush: 'blush',
+  scared: 'lurk',
+  confused: 'think',
+  bored: 'bored',
   facepalm: 'facepalm',
   shrug: 'shrug',
   poke: 'poke',
   tickle: 'tickle',
+  lick: 'nom',
   stare: 'stare',
   sleep: 'sleep',
-  bored: 'bored',
-  kill: 'shoot'
-};
-
-export const FALLBACK_GIFS = {
-  kisscheeks: [
-    'https://media1.tenor.com/m/BZyWzw2d5tAAAAAC/hyakkano-100-girlfriends.gif',
-    'https://media1.tenor.com/m/YcmB58RVNO4AAAAC/kiss-anime.gif'
-  ],
-  love: [
-    'https://media1.tenor.com/m/UEFGoNHQg2wAAAAC/fullmetal-alchemist-roy-mustang.gif',
-    'https://media1.tenor.com/m/sXeE98Z2pYgAAAAC/anime-love.gif'
-  ],
-  cheeks: [
-    'https://media1.tenor.com/m/ubZ4Jwga8YYAAAAC/animes.gif',
-    'https://media1.tenor.com/m/nXLOSFW2z2EAAAAC/anime.gif'
-  ],
-  glare: [
-    'https://media1.tenor.com/m/bR7hPXCRs7oAAAAC/anime-angry-stare.gif',
-    'https://media1.tenor.com/m/DPrdtMc-FTIAAAAC/annoyed-anime.gif'
-  ],
-  spank: [
-    'https://media1.tenor.com/m/rWBYWqjlE88AAAAC/anime-spank.gif',
-    'https://media1.tenor.com/m/o1t4lc2oMnYAAAAC/spank.gif'
-  ],
-  claps: [
-    'https://media1.tenor.com/m/ZMXz63fmavwAAAAC/anime-clap.gif',
-    'https://media1.tenor.com/m/nbIDJQBKqVIAAAAC/clap-anime.gif'
-  ],
-  teehee: [
-    'https://media1.tenor.com/m/hFcFKJWLhkEAAAAC/anime-giggle.gif',
-    'https://media1.tenor.com/m/dnjnS2mZ36UAAAAC/laughing-anime-girl-anime.gif'
-  ],
-  sad: [
-    'https://media1.tenor.com/m/CJEm2aPh9ckAAAAC/kh%C3%B3c.gif',
-    'https://media1.tenor.com/m/qA7EIp-3mK4AAAAC/anime-sad.gif'
-  ],
-  scared: [
-    'https://media1.tenor.com/m/gVoIPMJ9AIoAAAAC/anime-scared.gif',
-    'https://media1.tenor.com/m/y-AZGXMP2BgAAAAC/scared-anime.gif'
-  ],
-  confused: [
-    'https://media1.tenor.com/m/OHFV7RJDANAAAAAC/confused-anime.gif',
-    'https://media1.tenor.com/m/sHI4LJOUcnwAAAAC/confused-anime.gif'
-  ],
-  sip: [
-    'https://media1.tenor.com/m/7oCaSR-q1kkAAAAC/alice-vt.gif',
-    'https://media1.tenor.com/m/GM8-x-rZYSQAAAAC/sipping-tea-sip.gif'
-  ],
-  lick: [
-    'https://media1.tenor.com/m/3XVvFFLiMagAAAAC/anime-lick.gif',
-    'https://media1.tenor.com/m/rZYSYUGHQCUAAAAC/anime-lick.gif'
-  ],
-  gaming: [
-    'https://media1.tenor.com/m/jlnb6prcCnMAAAAC/anime-gaming.gif',
-    'https://media1.tenor.com/m/IpECLEd9ExMAAAAC/gamer-anime.gif'
-  ],
-  nani: [
-    'https://media1.tenor.com/m/C3Sn7cXy-LUAAAAC/nani-anime.gif',
-    'https://media1.tenor.com/m/0oP3k4b5ARUAAAAC/nani-huh.gif'
-  ],
-  ship: [
-    'https://media1.tenor.com/m/_8oadF3hZwIAAAAC/kiss.gif',
-    'https://media1.tenor.com/m/sXeE98Z2pYgAAAAC/anime-love.gif'
-  ]
+  sip: 'yawn',
+  gaming: 'happy',
+  nani: 'yeet',
+  ship: 'kiss'
 };
 
 export async function getGifUrl(reaction) {
@@ -106,12 +58,6 @@ export async function getGifUrl(reaction) {
       }
     } catch (e) {}
   }
-
-  const fallback = FALLBACK_GIFS[reaction];
-  if (fallback && fallback.length > 0) {
-    return fallback[Math.floor(Math.random() * fallback.length)];
-  }
-
   return null;
 }
 

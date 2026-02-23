@@ -9,7 +9,7 @@ import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, s
 import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFromMongo, getLogsFromMongo, getAlerts, exportLogs, getSystemsList, SYSTEMS } from './utils/activityLogger.js';
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
 import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
-import { REACTION_MESSAGES, getGifUrl } from './data/reactionGifs.js';
+import { REACTION_MESSAGES } from './data/reactionGifs.js';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cron from 'node-cron';
