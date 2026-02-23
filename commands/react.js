@@ -68,7 +68,7 @@ export default {
       }
 
       const percentage = calculateShipPercentage(user1.id, user2.id);
-      const embed = buildReactionEmbed('ship', user1, user2, { percentage });
+      const embed = await buildReactionEmbed('ship', user1, user2, { percentage });
       return interaction.reply({ embeds: [embed] });
     }
 
@@ -82,7 +82,7 @@ export default {
       return interaction.reply({ content: '❌ ¡No puedes hacer eso con un bot!', flags: 64 });
     }
 
-    const embed = buildReactionEmbed(subcommand, interaction.user, target);
+    const embed = await buildReactionEmbed(subcommand, interaction.user, target);
     return interaction.reply({ embeds: [embed] });
   }
 };

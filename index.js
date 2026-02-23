@@ -9,7 +9,7 @@ import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, s
 import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFromMongo, getLogsFromMongo, getAlerts, exportLogs, getSystemsList, SYSTEMS } from './utils/activityLogger.js';
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
 import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
-import { REACTION_MESSAGES } from './data/reactionGifs.js';
+import { REACTION_MESSAGES, getGifUrl } from './data/reactionGifs.js';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cron from 'node-cron';
@@ -2212,7 +2212,7 @@ client.on("messageCreate", async (message) => {
     if (!config) return;
 
     if (config.solo) {
-      const embed = buildReactionEmbed(command, message.author);
+      const embed = await buildReactionEmbed(command, message.author);
       if (embed) return message.reply({ embeds: [embed] });
     } else {
       const target = message.mentions.users.first();
@@ -2225,7 +2225,7 @@ client.on("messageCreate", async (message) => {
       if (target.bot) {
         return message.reply('❌ ¡No puedes hacer eso con un bot!');
       }
-      const embed = buildReactionEmbed(command, message.author, target);
+      const embed = await buildReactionEmbed(command, message.author, target);
       if (embed) return message.reply({ embeds: [embed] });
     }
     return;
@@ -2251,7 +2251,7 @@ client.on("messageCreate", async (message) => {
     }
 
     const percentage = calculateShipPercentage(user1.id, user2.id);
-    const embed = buildReactionEmbed('ship', user1, user2, { percentage });
+    const embed = await buildReactionEmbed('ship', user1, user2, { percentage });
     if (embed) return message.reply({ embeds: [embed] });
     return;
   }

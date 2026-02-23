@@ -1,11 +1,11 @@
 import { EmbedBuilder } from 'discord.js';
-import { getRandomGif, REACTION_MESSAGES } from '../data/reactionGifs.js';
+import { getGifUrl, REACTION_MESSAGES } from '../data/reactionGifs.js';
 
-export function buildReactionEmbed(reactionType, user, target = null, extras = {}) {
+export async function buildReactionEmbed(reactionType, user, target = null, extras = {}) {
   const config = REACTION_MESSAGES[reactionType];
   if (!config) return null;
 
-  const gif = getRandomGif(reactionType);
+  const gif = await getGifUrl(reactionType);
   let description;
 
   if (config.solo) {

@@ -41,4 +41,4 @@ run = ["node", "index.js"]
 [userenv]
 
 [userenv.shared]
-MONGODB_URI = "mongodb+srv://garscraftxd_db_user:FZKEDMJDTxWt9JW6@niveles.rj9trzi.mongodb.net/?appName=Niveles"
+DISCORD_BOT_TOKEN = "MTQzNjgxNzcxOTg0MzQ5MTk2MQ.GU3_WP.oDLcY40WQJ20F8YLwDezLjwR-oyp8bVGxU9adM"

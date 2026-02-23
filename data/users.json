@@ -4,7 +4,10 @@
     "guildId": "1212886282645147768",
     "xp": 0,
     "level": 0,
-    "totalXp": 0
+    "totalXp": 0,
+    "lastActivity": 1771812106842,
+    "inactivityMessages": 0,
+    "isInactive": false
   },
   "1212886282645147768-1168337859850289263": {
     "userId": "1168337859850289263",
@@ -31,8 +34,14 @@
     "userId": "1032482231677108224",
     "guildId": "1212886282645147768",
     "xp": 0,
-    "level": -1,
-    "totalXp": null
+    "level": 0,
+    "totalXp": null,
+    "lastActivity": 1771812204976,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": "im_gars",
+    "displayName": "Garss",
+    "avatar": "https://cdn.discordapp.com/avatars/1032482231677108224/b03fdc07d783b376e1719197c298e3c3.webp?size=64"
   },
   "1212886282645147768-1196639548877320202": {
     "userId": "1196639548877320202",
@@ -59,8 +68,14 @@
     "userId": "956700088103747625",
     "guildId": "1212886282645147768",
     "xp": 0,
-    "level": 12,
-    "totalXp": 3361
+    "level": 0,
+    "totalXp": 0,
+    "lastActivity": 1771812113646,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": "elsirgio",
+    "displayName": "Elsirgiowe",
+    "avatar": "https://cdn.discordapp.com/avatars/956700088103747625/b354d22a0620c1307cb62750a3855d40.webp?size=64"
   },
   "1212886282645147768-489193421349847041": {
     "userId": "489193421349847041",
@@ -130,7 +145,13 @@
     "guildId": "1212886282645147768",
     "xp": 0,
     "level": 0,
-    "totalXp": 66
+    "totalXp": null,
+    "lastActivity": 1771812412768,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": "cactus_da_negocios",
+    "displayName": "Cactus 🌵",
+    "avatar": "https://cdn.discordapp.com/avatars/1290378597684478024/d62b0db75739a8672bcd43596efee2d8.webp?size=64"
   },
   "1212886282645147768-1348661834021994580": {
     "userId": "1348661834021994580",
@@ -178,8 +199,8 @@
     "userId": "926219678798454875",
     "guildId": "1212886282645147768",
     "xp": 0,
-    "level": -1,
-    "totalXp": null
+    "level": 0,
+    "totalXp": 0
   },
   "1212886282645147768-864250231888674837": {
     "userId": "864250231888674837",
@@ -393,5 +414,68 @@
     "level": 0,
     "totalXp": 94,
     "selectedCardTheme": null
+  },
+  "1212886282645147768-1436817719843491961": {
+    "userId": "1436817719843491961",
+    "guildId": "1212886282645147768",
+    "xp": 0,
+    "level": 0,
+    "totalXp": 0,
+    "selectedCardTheme": null,
+    "purchasedCards": [],
+    "rankcard_custom": null,
+    "afk": {
+      "status": false,
+      "reason": null,
+      "timestamp": null
+    },
+    "lastActivity": 1771810824886,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": null,
+    "displayName": null,
+    "avatar": null
+  },
+  "1212886282645147768-1263976237249073306": {
+    "userId": "1263976237249073306",
+    "guildId": "1212886282645147768",
+    "xp": 0,
+    "level": 0,
+    "totalXp": 0,
+    "selectedCardTheme": null,
+    "purchasedCards": [],
+    "rankcard_custom": null,
+    "afk": {
+      "status": false,
+      "reason": null,
+      "timestamp": null
+    },
+    "lastActivity": 1771811441098,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": "dakness_oficial",
+    "displayName": "D∆K",
+    "avatar": "https://cdn.discordapp.com/avatars/1263976237249073306/1dd95c34cc06f48ea20d54e1c2d25a74.webp?size=64"
+  },
+  "1212886282645147768-1458530192845836582": {
+    "userId": "1458530192845836582",
+    "guildId": "1212886282645147768",
+    "xp": 0,
+    "level": 0,
+    "totalXp": 0,
+    "selectedCardTheme": null,
+    "purchasedCards": [],
+    "rankcard_custom": null,
+    "afk": {
+      "status": false,
+      "reason": null,
+      "timestamp": null
+    },
+    "lastActivity": 1771812366385,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": "elpelotocino0568",
+    "displayName": "Elpelotocino🥓",
+    "avatar": "https://cdn.discordapp.com/avatars/1458530192845836582/0df35153c77f5785fe87e8a81587aad9.webp?size=64"
   }
 }
