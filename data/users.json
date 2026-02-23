@@ -474,7 +474,7 @@
     "guildId": "1212886282645147768",
     "xp": 0,
     "level": 0,
-    "totalXp": 0,
+    "totalXp": null,
     "selectedCardTheme": null,
     "purchasedCards": [],
     "rankcard_custom": null,
@@ -483,7 +483,7 @@
       "reason": null,
       "timestamp": null
     },
-    "lastActivity": 1771812366385,
+    "lastActivity": 1771814631766,
     "inactivityMessages": 0,
     "isInactive": false,
     "username": "elpelotocino0568",
