@@ -18,7 +18,7 @@ export async function getAvailableThemes(member, level, purchasedCards = []) {
   }
   
   if (userId === CONFIG.SPECIAL_USER_ID) {
-    return ['discord', 'roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash', 'pixel'];
+    return ['discord', 'roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash', 'pixel', 'cuphead', 'undertale', 'fortnite'];
   }
   
   if (roles && roles.has(CONFIG.VIP_ROLE_ID)) {
@@ -72,7 +72,7 @@ export async function getCardTheme(member, level, selectedTheme = null, purchase
   }
   
   if (userId === CONFIG.SPECIAL_USER_ID) {
-    const themes = ['roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash'];
+    const themes = ['roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash', 'cuphead', 'undertale', 'fortnite'];
     return themes[Math.floor(Math.random() * themes.length)];
   }
   
@@ -115,6 +115,9 @@ export function getThemeButtonStyle(theme) {
     roblox: 4,
     minecraft: 3,
     fnaf: 4,
+    cuphead: 4,
+    undertale: 4,
+    fortnite: 1,
   };
   return themeStyles[theme] || 1;
 }
@@ -276,6 +279,54 @@ function getPixelArtThemeColors(theme) {
       barBg: '#1a0a0a',
       barFill: ['#FFD700', '#FF6347'],
       buttonColor: 'Danger'
+    },
+    cuphead: {
+      gradient: [
+        { pos: 0, color: '#F5E6C8' },
+        { pos: 0.3, color: '#E8D4A0' },
+        { pos: 0.7, color: '#D4B87A' },
+        { pos: 1, color: '#C4A265' }
+      ],
+      border: '#8B0000',
+      accent: '#CC0000',
+      text: '#1A0A00',
+      textShadow: '#F5E6C8',
+      barBg: '#5C3A1E',
+      barFill: ['#CC0000', '#FF4444'],
+      filmGrain: true,
+      buttonColor: 'Danger'
+    },
+    undertale: {
+      gradient: [
+        { pos: 0, color: '#000000' },
+        { pos: 0.4, color: '#0A0020' },
+        { pos: 0.8, color: '#050010' },
+        { pos: 1, color: '#000000' }
+      ],
+      border: '#FFFF00',
+      accent: '#FFFF00',
+      text: '#FFFFFF',
+      textShadow: '#440044',
+      barBg: '#1A0030',
+      barFill: ['#FFFF00', '#FF6600'],
+      determination: true,
+      buttonColor: 'Danger'
+    },
+    fortnite: {
+      gradient: [
+        { pos: 0, color: '#1B0A3C' },
+        { pos: 0.3, color: '#2D1B69' },
+        { pos: 0.6, color: '#0066FF' },
+        { pos: 1, color: '#00CCFF' }
+      ],
+      border: '#00CCFF',
+      accent: '#FFD700',
+      text: '#FFFFFF',
+      textShadow: '#0A0025',
+      barBg: '#0A0A2E',
+      barFill: ['#0066FF', '#00CCFF', '#FFD700'],
+      storm: true,
+      buttonColor: 'Primary'
     }
   };
   
@@ -353,6 +404,111 @@ function drawStars(ctx, width, height, count = 30) {
     ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
     ctx.fillRect(Math.floor(x / 2) * 2, Math.floor(y / 2) * 2, size, size);
   }
+}
+
+function drawCupheadEffects(ctx, width, height) {
+  ctx.globalAlpha = 0.15;
+  for (let i = 0; i < height; i += 3) {
+    ctx.fillStyle = i % 6 === 0 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.05)';
+    ctx.fillRect(0, i, width, 1);
+  }
+  ctx.globalAlpha = 0.08;
+  for (let i = 0; i < 200; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const size = Math.random() * 2 + 1;
+    ctx.fillStyle = Math.random() > 0.5 ? '#000000' : '#FFFFFF';
+    ctx.fillRect(x, y, size, size);
+  }
+  ctx.globalAlpha = 0.1;
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(0, 0, width, 8);
+  ctx.fillRect(0, height - 8, width, 8);
+  ctx.fillRect(0, 0, 8, height);
+  ctx.fillRect(width - 8, 0, 8, height);
+  const cornerSize = 20;
+  ctx.fillStyle = '#5C3A1E';
+  ctx.globalAlpha = 0.3;
+  ctx.fillRect(10, 10, cornerSize, 4);
+  ctx.fillRect(10, 10, 4, cornerSize);
+  ctx.fillRect(width - 10 - cornerSize, 10, cornerSize, 4);
+  ctx.fillRect(width - 14, 10, 4, cornerSize);
+  ctx.fillRect(10, height - 14, cornerSize, 4);
+  ctx.fillRect(10, height - 10 - cornerSize, 4, cornerSize);
+  ctx.fillRect(width - 10 - cornerSize, height - 14, cornerSize, 4);
+  ctx.fillRect(width - 14, height - 10 - cornerSize, 4, cornerSize);
+  ctx.globalAlpha = 1;
+}
+
+function drawUndertaleEffects(ctx, width, height) {
+  ctx.globalAlpha = 0.4;
+  const heartX = width - 60;
+  const heartY = 30;
+  const hs = 12;
+  ctx.fillStyle = '#FF0000';
+  ctx.fillRect(heartX - hs, heartY, hs, hs);
+  ctx.fillRect(heartX, heartY, hs, hs);
+  ctx.fillRect(heartX - hs * 2, heartY + hs, hs * 4, hs);
+  ctx.fillRect(heartX - hs * 2, heartY + hs * 2, hs * 4, hs);
+  ctx.fillRect(heartX - hs, heartY + hs * 3, hs * 2, hs);
+  ctx.fillRect(heartX - hs / 2, heartY + hs * 4, hs, hs);
+
+  ctx.globalAlpha = 0.06;
+  for (let i = 0; i < 60; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(Math.floor(x / 4) * 4, Math.floor(y / 4) * 4, 4, 4);
+  }
+
+  ctx.globalAlpha = 0.15;
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(12, 12, width - 24, height - 24);
+  ctx.globalAlpha = 1;
+}
+
+function drawFortniteEffects(ctx, width, height) {
+  ctx.globalAlpha = 0.2;
+  for (let i = 0; i < 15; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const radius = Math.random() * 40 + 10;
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, 'rgba(128, 0, 255, 0.3)');
+    gradient.addColorStop(0.5, 'rgba(0, 102, 255, 0.15)');
+    gradient.addColorStop(1, 'rgba(0, 204, 255, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  }
+
+  ctx.globalAlpha = 0.15;
+  for (let i = 0; i < 8; i++) {
+    const x1 = Math.random() * width;
+    const y1 = Math.random() * height;
+    ctx.strokeStyle = '#00CCFF';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    let cx = x1;
+    let cy = y1;
+    for (let j = 0; j < 4; j++) {
+      cx += (Math.random() - 0.5) * 30;
+      cy += Math.random() * 20 + 5;
+      ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 0.08;
+  for (let i = 0; i < 30; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * (height / 3);
+    const size = Math.random() * 3 + 1;
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(x, y, size, size);
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawPixelText(ctx, text, x, y, size, color) {
@@ -558,6 +714,18 @@ export async function generateRankCard(member, userData, progress, boostsText = 
   if (colors.stars) {
     drawStars(ctx, CARD_WIDTH, CARD_HEIGHT);
   }
+
+  if (colors.filmGrain) {
+    drawCupheadEffects(ctx, CARD_WIDTH, CARD_HEIGHT);
+  }
+
+  if (colors.determination) {
+    drawUndertaleEffects(ctx, CARD_WIDTH, CARD_HEIGHT);
+  }
+
+  if (colors.storm) {
+    drawFortniteEffects(ctx, CARD_WIDTH, CARD_HEIGHT);
+  }
   
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
   for (let i = 0; i < CARD_HEIGHT; i += 4) {
@@ -692,7 +860,10 @@ function getThemeLabel(theme) {
     night: '🌙 NIGHT',
     roblox: '🎲 ROBLOX',
     minecraft: '⛏️ MINECRAFT',
-    fnaf: '🐻 FNAF'
+    fnaf: '🐻 FNAF',
+    cuphead: '🎪 CUPHEAD',
+    undertale: '❤️ UNDERTALE',
+    fortnite: '🔫 FORTNITE'
   };
   return labels[theme] || theme.toUpperCase();
 }

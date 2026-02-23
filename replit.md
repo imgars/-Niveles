@@ -118,7 +118,7 @@ I prefer simple language. I want iterative development. Ask before making major 
 The bot is built with Node.js and uses a command-based structure for Discord interactions. Data persistence is handled via MongoDB for production deployments (Render) with a JSON fallback for development (Replit).
 
 **UI/UX Decisions:**
-- **PIXEL ART Theme:** A consistent pixel art style is applied to rank cards and leaderboards, with 9 distinct themes (Pixel, Ocean, Zelda, Pokemon, Geometry Dash, Night, Roblox, Minecraft, FNAF) unlocked based on user level or special conditions.
+- **PIXEL ART Theme:** A consistent pixel art style is applied to rank cards and leaderboards, with 12 distinct themes (Pixel, Ocean, Zelda, Pokemon, Geometry Dash, Night, Roblox, Minecraft, FNAF, Cuphead, Undertale, Fortnite) unlocked based on user level, special conditions, or shop purchase (500k Lagcoins for Cuphead/Undertale/Fortnite).
 - **Interactive Menus:** Commands like `/work` utilize interactive menus for better user experience.
 - **Web Dashboard:** A public web dashboard (`public/index.html`) provides additional information and leaderboards, including paginated results and user lookup modals.
 

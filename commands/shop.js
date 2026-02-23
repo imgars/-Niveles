@@ -19,7 +19,10 @@ export default {
           { name: 'Boost 100% 48h - 32000 Lagcoins', value: 'boost48' },
           { name: 'Tarjeta Minecraft - 16000 Lagcoins', value: 'card_minecraft' },
           { name: 'Tarjeta FNAF - 18000 Lagcoins', value: 'card_fnaf' },
-          { name: 'Tarjeta Roblox - 25000 Lagcoins', value: 'card_roblox' }
+          { name: 'Tarjeta Roblox - 25000 Lagcoins', value: 'card_roblox' },
+          { name: 'Tarjeta Cuphead - 500000 Lagcoins', value: 'card_cuphead' },
+          { name: 'Tarjeta Undertale - 500000 Lagcoins', value: 'card_undertale' },
+          { name: 'Tarjeta Fortnite - 500000 Lagcoins', value: 'card_fortnite' }
         )
         .setRequired(true)
     ),
@@ -43,7 +46,10 @@ export default {
       boost48: { price: 32000, boost: 200, hours: 48, name: 'Boost 100% 48h' },
       card_minecraft: { price: 16000, card: 'minecraft', name: 'Tarjeta Minecraft' },
       card_fnaf: { price: 18000, card: 'fnaf', name: 'Tarjeta FNAF' },
-      card_roblox: { price: 25000, card: 'roblox', name: 'Tarjeta Roblox' }
+      card_roblox: { price: 25000, card: 'roblox', name: 'Tarjeta Roblox' },
+      card_cuphead: { price: 500000, card: 'cuphead', name: 'Tarjeta Cuphead' },
+      card_undertale: { price: 500000, card: 'undertale', name: 'Tarjeta Undertale' },
+      card_fortnite: { price: 500000, card: 'fortnite', name: 'Tarjeta Fortnite' }
     };
 
     const itemData = items[item];

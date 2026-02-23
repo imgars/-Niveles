@@ -13,7 +13,10 @@ const THEME_NAMES = {
   night: '🌙 Noche Estrellada',
   roblox: '🟦 Roblox',
   minecraft: '⛏️ Minecraft',
-  fnaf: '🐻 FNAF'
+  fnaf: '🐻 FNAF',
+  cuphead: '🎪 Cuphead',
+  undertale: '❤️ Undertale',
+  fortnite: '🔫 Fortnite'
 };
 
 export default {
