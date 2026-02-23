@@ -36,7 +36,7 @@
     "xp": 0,
     "level": 0,
     "totalXp": null,
-    "lastActivity": 1771812974028,
+    "lastActivity": 1771813687452,
     "inactivityMessages": 0,
     "isInactive": false,
     "username": "im_gars",
@@ -48,7 +48,13 @@
     "guildId": "1212886282645147768",
     "xp": 0,
     "level": 0,
-    "totalXp": 0
+    "totalXp": null,
+    "lastActivity": 1771813679877,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": "agustisito.",
+    "displayName": "[Mod] agus joestar",
+    "avatar": "https://cdn.discordapp.com/avatars/1196639548877320202/ba53a5b6e5159f5c2b4fb0b558309ea5.webp?size=64"
   },
   "1212886282645147768-1104481464147517501": {
     "userId": "1104481464147517501",
@@ -146,7 +152,7 @@
     "xp": 0,
     "level": 0,
     "totalXp": 0,
-    "lastActivity": 1771812412768,
+    "lastActivity": 1771813602488,
     "inactivityMessages": 0,
     "isInactive": false,
     "username": "cactus_da_negocios",
@@ -201,7 +207,7 @@
     "xp": 0,
     "level": 0,
     "totalXp": 0,
-    "lastActivity": 1771812953243,
+    "lastActivity": 1771813146790,
     "inactivityMessages": 0,
     "isInactive": false,
     "username": "mzin_531",
@@ -447,7 +453,7 @@
     "guildId": "1212886282645147768",
     "xp": 0,
     "level": 0,
-    "totalXp": 0,
+    "totalXp": null,
     "selectedCardTheme": null,
     "purchasedCards": [],
     "rankcard_custom": null,
@@ -456,7 +462,7 @@
       "reason": null,
       "timestamp": null
     },
-    "lastActivity": 1771811441098,
+    "lastActivity": 1771813784299,
     "inactivityMessages": 0,
     "isInactive": false,
     "username": "dakness_oficial",
@@ -483,5 +489,47 @@
     "username": "elpelotocino0568",
     "displayName": "Elpelotocino🥓",
     "avatar": "https://cdn.discordapp.com/avatars/1458530192845836582/0df35153c77f5785fe87e8a81587aad9.webp?size=64"
+  },
+  "1212886282645147768-1465244332453003424": {
+    "userId": "1465244332453003424",
+    "guildId": "1212886282645147768",
+    "xp": 0,
+    "level": 0,
+    "totalXp": 0,
+    "selectedCardTheme": null,
+    "purchasedCards": [],
+    "rankcard_custom": null,
+    "afk": {
+      "status": false,
+      "reason": null,
+      "timestamp": null
+    },
+    "lastActivity": 1771813166820,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": null,
+    "displayName": null,
+    "avatar": null
+  },
+  "1212886282645147768-429457053791158281": {
+    "userId": "429457053791158281",
+    "guildId": "1212886282645147768",
+    "xp": 0,
+    "level": 0,
+    "totalXp": 0,
+    "selectedCardTheme": null,
+    "purchasedCards": [],
+    "rankcard_custom": null,
+    "afk": {
+      "status": false,
+      "reason": null,
+      "timestamp": null
+    },
+    "lastActivity": 1771813559191,
+    "inactivityMessages": 0,
+    "isInactive": false,
+    "username": null,
+    "displayName": null,
+    "avatar": null
   }
 }
