@@ -256,6 +256,11 @@ export const REACTION_GIFS = {
     'https://media.tenor.com/6oAf_gU0ZyIAAAAC/anime-gaming.gif',
     'https://media.tenor.com/6CqxFsb4pzUAAAAC/anime-playing-games.gif'
   ],
+  bored: [
+    'https://media.tenor.com/E7dK_UjMeowAAAAC/anime-bored.gif',
+    'https://media.tenor.com/7BH8vjNs9u0AAAAC/bored-anime.gif',
+    'https://media.tenor.com/0FfLqvZTWQAAAAAC/sleepy-bored.gif'
+  ],
   nani: [
     'https://media.tenor.com/C3Sn7cXy-LUAAAAC/nani-anime.gif',
     'https://media.tenor.com/hO9C7wd7EbIAAAAC/nani-omae-wa-mou-shindeiru.gif',

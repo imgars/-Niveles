@@ -15,7 +15,8 @@ export default {
           { name: '🎰 Casino', value: 'casino' },
           { name: '🎮 Minijuegos', value: 'minigames' },
           { name: '🎯 Misiones', value: 'missions' },
-          { name: '⚙️ Staff', value: 'staff' }
+          { name: '⚙️ Staff', value: 'staff' },
+          { name: '💕 Reacciones', value: 'reactions' }
         )
     ),
   
@@ -113,6 +114,24 @@ export default {
       return interaction.reply({ embeds: [embed] });
     }
     
+    if (category === 'reactions') {
+      const embed = new EmbedBuilder()
+        .setColor(0xFF69B4)
+        .setTitle('💕 Comandos de Reacción y Emociones')
+        .setDescription('Expresiones y reacciones al estilo anime. Los comandos con `/react` son slash commands, los demás usan el prefijo `!`')
+        .addFields(
+          { name: '💖 Slash Commands', value: '`/react hug` - Abrazar\n`/react kiss` - Besar\n`/react pat` - Caricia\n`/react ship` - Compatibilidad\n`/react kill` - Eliminar (broma)', inline: false },
+          { name: '❤️ Afecto (!)', value: '`!kisscheeks` `!cuddle` `!handholding` `!love` `!cheeks` `!feed`', inline: true },
+          { name: '💢 Enojo (!)', value: '`!angry` `!baka` `!slap` `!punch` `!bite` `!kickbutt` `!glare` `!spank`', inline: true },
+          { name: '😂 Humor (!)', value: '`!happy` `!laugh` `!smile` `!dance` `!claps` `!highfive` `!smug` `!teehee`', inline: true },
+          { name: '😢 Emociones (!)', value: '`!cry` `!sad` `!pout` `!blush` `!scared` `!confused` `!bored` `!facepalm` `!shrug`', inline: true },
+          { name: '🎮 Interacción (!)', value: '`!poke` `!tickle` `!lick` `!stare` `!sleep` `!sip` `!gaming`', inline: true },
+          { name: '🌟 Especiales (!)', value: '`!ship` `!nani`\n`/marry` `/divorce`', inline: true }
+        )
+        .setFooter({ text: 'Los comandos con @ requieren mencionar a un usuario' });
+      return interaction.reply({ embeds: [embed] });
+    }
+    
     if (category === 'missions') {
       const embed = new EmbedBuilder()
         .setColor(0x3498DB)
@@ -137,6 +156,7 @@ export default {
         { name: '🎰 Casino', value: '`/slots` `/blackjack` `/dice`', inline: true },
         { name: '🎮 Minijuegos', value: '`/minigame` trivia, rps, roulette', inline: true },
         { name: '🎯 Misiones', value: '`/mision` `/streak`', inline: true },
+        { name: '💕 Reacciones', value: '`/react` `!hug` `!slap` `!ship`', inline: true },
         { name: 'ℹ️ Info', value: '`/info` `/help`', inline: true }
       )
       .setFooter({ text: 'Usa /help categoria para ver más detalles' });
@@ -166,7 +186,11 @@ export default {
             new StringSelectMenuOptionBuilder()
               .setLabel('🎯 Misiones')
               .setDescription('Misiones y rachas')
-              .setValue('missions')
+              .setValue('missions'),
+            new StringSelectMenuOptionBuilder()
+              .setLabel('💕 Reacciones')
+              .setDescription('Comandos de reacción y emociones anime')
+              .setValue('reactions')
           )
       );
     

@@ -1,6 +1,16 @@
 # -Niveles
 
 ## Recent Changes
+- **Sistema de Reacciones y Emociones (Febrero 2026):**
+  - Slash command `/react` con 5 subcomandos: `hug`, `kiss`, `pat`, `ship`, `kill`.
+  - 45+ comandos con prefijo `!` para reacciones: afecto, enojo, humor, emociones, interacción, especiales.
+  - Cada comando muestra un embed con GIF anime aleatorio al estilo Nekotina.
+  - Comandos de dos usuarios muestran fotos de perfil de ambos (author icon + thumbnail).
+  - `ship` calcula compatibilidad determinista basada en IDs con barra de amor y comentario.
+  - Archivos: `data/reactionGifs.js` (GIFs), `utils/reactionHandler.js` (lógica), `commands/react.js` (slash).
+  - Prefix handler integrado en el segundo `messageCreate` de `index.js`.
+  - Categoría "Reacciones" añadida al comando `/help`.
+
 - **Mejoras Mobile + Rediseño Leaderboard (Febrero 2026):**
   - **Menú hamburguesa móvil:** Botón de 3 líneas que abre/cierra la navegación en pantallas pequeñas (<768px). Se cierra automáticamente al seleccionar una sección.
   - **Sección Inactividad fusionada:** El contenido de la sección "Inactividad" fue integrado como una tarjeta dentro de "Características", eliminando el enlace de navegación independiente.

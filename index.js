@@ -8,6 +8,8 @@ import { isStaff } from './utils/helpers.js';
 import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, saveQuestionToMongo, getQuestionsFromMongo, answerQuestionInMongo, getAllStreaksFromMongo, getUserMissions, updateMissionProgress, getEconomy, addLagcoins } from './utils/mongoSync.js';
 import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFromMongo, getLogsFromMongo, getAlerts, exportLogs, getSystemsList, SYSTEMS } from './utils/activityLogger.js';
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
+import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
+import { REACTION_MESSAGES } from './data/reactionGifs.js';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cron from 'node-cron';
@@ -2198,6 +2200,65 @@ client.on("messageCreate", async (message) => {
   // Separar comando y argumentos
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
+
+  // ===========================
+  //   COMANDOS DE REACCIÓN (prefix !)
+  // ===========================
+  const SOLO_REACTIONS = ['angry', 'happy', 'laugh', 'smile', 'dance', 'claps', 'smug', 'teehee', 'cry', 'sad', 'pout', 'blush', 'scared', 'confused', 'bored', 'facepalm', 'shrug', 'sleep', 'sip', 'nani'];
+  const TARGET_REACTIONS = ['kisscheeks', 'cuddle', 'handholding', 'love', 'cheeks', 'feed', 'baka', 'slap', 'punch', 'bite', 'kickbutt', 'glare', 'spank', 'highfive', 'poke', 'tickle', 'lick', 'stare', 'gaming', 'hug', 'kiss', 'pat', 'kill'];
+
+  if (SOLO_REACTIONS.includes(command) || TARGET_REACTIONS.includes(command)) {
+    const config = REACTION_MESSAGES[command];
+    if (!config) return;
+
+    if (config.solo) {
+      const embed = buildReactionEmbed(command, message.author);
+      if (embed) return message.reply({ embeds: [embed] });
+    } else {
+      const target = message.mentions.users.first();
+      if (!target) {
+        return message.reply(`❌ Debes mencionar a un usuario. Ejemplo: \`!${command} @usuario\``);
+      }
+      if (target.id === message.author.id) {
+        return message.reply('❌ ¡No puedes hacer eso contigo mismo!');
+      }
+      if (target.bot) {
+        return message.reply('❌ ¡No puedes hacer eso con un bot!');
+      }
+      const embed = buildReactionEmbed(command, message.author, target);
+      if (embed) return message.reply({ embeds: [embed] });
+    }
+    return;
+  }
+
+  if (command === 'ship') {
+    const mentioned = message.mentions.users;
+    let user1, user2;
+
+    if (mentioned.size >= 2) {
+      const arr = [...mentioned.values()];
+      user1 = arr[0];
+      user2 = arr[1];
+    } else if (mentioned.size === 1) {
+      user1 = message.author;
+      user2 = mentioned.first();
+    } else {
+      return message.reply('❌ Debes mencionar al menos un usuario. Ejemplo: `!ship @usuario1 @usuario2`');
+    }
+
+    if (user1.id === user2.id) {
+      return message.reply('❌ ¡No puedes hacer ship contigo mismo!');
+    }
+
+    const percentage = calculateShipPercentage(user1.id, user2.id);
+    const embed = buildReactionEmbed('ship', user1, user2, { percentage });
+    if (embed) return message.reply({ embeds: [embed] });
+    return;
+  }
+
+  if (command === 'acceptmarriage') {
+    return message.reply('💍 Usa el comando `/marry @usuario` para proponer matrimonio. La otra persona puede aceptar con el botón.');
+  }
 
   // ===========================
   //   COMANDO: !expulsarbot
