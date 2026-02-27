@@ -12,7 +12,10 @@ const AVAILABLE_CARDS = [
   { name: 'Night', value: 'night' },
   { name: 'Ocean', value: 'ocean' },
   { name: 'Pixel', value: 'pixel' },
-  { name: 'Discord', value: 'discord' }
+  { name: 'Discord', value: 'discord' },
+  { name: 'Fortnite', value: 'fortnite' },
+  { name: 'Undertale', value: 'undertale' },
+  { name: 'Cuphead', value: 'cuphead' }
 ];
 
 export default {
