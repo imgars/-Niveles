@@ -34,7 +34,31 @@ if (adminInfoBtn && adminDropdownWrapper) {
 const adminNameEl = document.getElementById('adminName');
 if (adminNameEl) {
     const username = localStorage.getItem('adminUsername');
-    adminNameEl.textContent = username ? `👤 ${username}` : '';
+    const discordId = localStorage.getItem('adminDiscordId');
+    const role = localStorage.getItem('adminRole');
+    
+    let avatarHtml = '👤';
+    if (discordId) {
+        // We use a placeholder or try to fetch from Discord if possible, 
+        // but for now we'll just show the name. The user asked for "logo" which is usually the avatar.
+        // If we want the real avatar, we'd need to fetch it or use the CDN if we have the hash.
+        // Since we don't have the hash, we'll just prep the UI.
+        avatarHtml = `<img src="https://cdn.discordapp.com/embed/avatars/0.png" id="adminAvatar" style="width:24px;height:24px;border-radius:50%;margin-right:8px;vertical-align:middle;">`;
+    }
+    
+    adminNameEl.innerHTML = `${avatarHtml} ${username || ''} <span style="font-size:0.8em;opacity:0.7;">(${role || ''})</span>`;
+    
+    // Try to update avatar if discordId exists
+    if (discordId) {
+        fetch(`/api/admin/staff-avatar/${discordId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.avatar) {
+                    const img = document.getElementById('adminAvatar');
+                    if (img) img.src = data.avatar;
+                }
+            }).catch(() => {});
+    }
 }
 
 // ===== SIDEBAR TOGGLE (MOBILE) =====

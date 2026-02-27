@@ -2427,7 +2427,23 @@ client.on("messageCreate", async (message) => {
 // ===== ADMIN PANEL API =====
 const ADMIN_ACCOUNTS = {
   'Gars': 'garcia14052012',
-  'Mazin': 'Mzin531'
+  'Mazin': 'Mzin531',
+  'gothhxjie': 'Danganronpa2',
+  'Baneenajessi777': 'melahagoaunamano'
+};
+
+const STAFF_DISCORD_IDS = {
+  'Baneenajessi777': '1196639548877320202',
+  'gothhxjie': '756698430155390986',
+  'Mazin': '926219678798454875',
+  'Gars': '1032482231677108224'
+};
+
+const ADMIN_ROLES = {
+  'Gars': 'Admin',
+  'Mazin': 'Admin',
+  'gothhxjie': 'Admin',
+  'Baneenajessi777': 'Moderador'
 };
 const sessionTokens = new Map();
 
@@ -2445,6 +2461,13 @@ function verifyAdminToken(req, res, next) {
     sessionTokens.delete(token);
     return res.status(401).json({ message: 'Sesión expirada' });
   }
+
+  // Inject user info into request
+  req.adminUser = {
+    username: session.username,
+    role: ADMIN_ROLES[session.username] || 'Admin',
+    discordId: STAFF_DISCORD_IDS[session.username]
+  };
   
   next();
 }
@@ -2472,6 +2495,8 @@ app.post('/api/admin/auth', express.json(), (req, res) => {
     token,
     expiry,
     username,
+    role: ADMIN_ROLES[username] || 'Admin',
+    discordId: STAFF_DISCORD_IDS[username],
     message: 'Autenticado correctamente'
   });
 });
@@ -2582,6 +2607,15 @@ app.get('/api/admin/xp', verifyAdminToken, (req, res) => {
 });
 
 // API Levels
+app.get('/api/admin/staff-avatar/:id', async (req, res) => {
+  try {
+    const user = await client.users.fetch(req.params.id);
+    res.json({ avatar: user.displayAvatarURL({ format: 'png', size: 64 }) });
+  } catch (error) {
+    res.status(404).json({ message: 'No encontrado' });
+  }
+});
+
 app.get('/api/admin/levels', verifyAdminToken, (req, res) => {
   try {
     const allUsers = Object.values(db.users);

@@ -177,6 +177,8 @@
                     localStorage.setItem('adminToken', data.token);
                     localStorage.setItem('tokenExpiry', data.expiry);
                     localStorage.setItem('adminUsername', data.username);
+                    localStorage.setItem('adminRole', data.role);
+                    localStorage.setItem('adminDiscordId', data.discordId);
                     setTimeout(() => {
                         window.location.href = '/admin/dashboard.html';
                     }, 500);
