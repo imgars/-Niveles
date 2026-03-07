@@ -10,8 +10,9 @@
   - **Fix paleta Neón:** Los colores neón ahora también se aplican al color de dibujo del pincel (antes solo cambiaban el color de acento). Sección dedicada de colores neón para dibujo.
   - **Resolución variable (VIP/Booster):** 3 opciones: Estándar (800x250), HD (1000x312), Full HD (1200x375). Costo extra de 2,000 LC. El canvas de dibujo se redimensiona al cambiar resolución.
   - **Objetos decorativos (stickers):** 20 objetos estándar y 10 VIP. Se renderizan como formas vectoriales dibujadas (no emojis) para compatibilidad con @napi-rs/canvas. Se colocan tocando/haciendo clic en la vista previa, se arrastran para reposicionar, doble clic para eliminar. Costo: 300 LC por objeto.
-  - **Imágenes con selector de archivos:** Botón "Seleccionar imagen" que abre la galería/gestor de archivos del dispositivo. Las imágenes se envían como base64 (máx 2MB). Ya no requiere URLs de Discord CDN. Vista previa con thumbnail y botón de eliminar.
-  - **Mejor posicionamiento de imágenes:** Sistema de drag & drop en la vista previa para mover imágenes en lugar de escribir coordenadas X/Y manualmente. Funciona con mouse y touch.
+  - **Imágenes con selector de archivos:** Un solo botón "Agregar imagen" que abre la galería/gestor de archivos del dispositivo. Máximo 3 imágenes (base64, máx 2MB c/u). Lista dinámica con thumbnails, tamaño editable (W/H), y botón de eliminar. Imágenes existentes se cargan al editar.
+  - **Mejor posicionamiento de imágenes:** Overlays visuales semi-transparentes sobre la vista previa que se pueden arrastrar (mouse y touch) para reposicionar las imágenes directamente. Se actualizan al redimensionar ventana.
+  - **Fix stickers duplicados:** Los stickers ya no se duplican al arrastrarlos. Flag `stickerDragJustEnded` previene que el evento click genere nuevos stickers después de un drag.
   - **UI mejorada para móviles:** Pestañas organizadas (Dibujar, Colores, Fondos, Objetos, Imágenes, Texto, Ajustes VIP). Diseño responsive completo. Función de deshacer (undo) con historial.
   - **Express body limit:** Incrementado a 10mb para `/api/rankcard` para soportar payloads con imágenes base64.
   - **Archivos modificados:** `utils/rankcardService.js`, `utils/cardGenerator.js`, `public/rankcard-editor.html`, `index.js`

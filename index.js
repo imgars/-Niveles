@@ -756,7 +756,7 @@ app.get('/api/rankcard/verify', async (req, res) => {
         neonColors: NEON_COLORS,
         standardFonts: STANDARD_FONTS,
         premiumFonts: hasVIP ? PREMIUM_FONTS : [],
-        maxImages: hasVIP ? 5 : 1,
+        maxImages: 3,
         drawColors: getDrawColorsForRole(hasVIP),
         brushes: getBrushesForRole(hasVIP),
         backgrounds: getBackgroundsForRole(hasVIP),

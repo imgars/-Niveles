@@ -262,8 +262,10 @@
 
       <div class="tab-content" id="tab-images">
         <h3 class="section-title">📷 Imágenes y logos</h3>
-        <p class="hint" style="margin-bottom:10px;">Máx. <span id="max-logos">1</span> imagen(es). Selecciona una imagen desde tu dispositivo (máx. 2 MB). Arrastra la imagen en la vista previa para posicionarla.</p>
-        <div id="logo-inputs"></div>
+        <p class="hint" style="margin-bottom:10px;">Máx. 3 imágenes (máx. 2 MB c/u). Arrastra las imágenes directamente sobre la vista previa para moverlas.</p>
+        <div id="logo-list"></div>
+        <button type="button" class="btn-preview" id="btn-add-image" style="margin-top:8px;padding:8px 14px;font-size:12px;">+ Agregar imagen</button>
+        <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;">
       </div>
 
       <div class="tab-content" id="tab-font">
@@ -331,6 +333,9 @@
     const MAX_UNDO = 15;
     let dragLogoIndex = -1;
     let dragOffsetX = 0, dragOffsetY = 0;
+    let uploadedLogos = [];
+    const MAX_LOGOS = 3;
+    let stickerDragJustEnded = false;
 
     function getToken() {
       return new URLSearchParams(window.location.search).get('token');
@@ -376,20 +381,13 @@
     }
 
     function getLogosFromInputs() {
-      const max = userData?.options?.maxImages || 1;
-      const logos = [];
-      for (let i = 0; i < max; i++) {
-        const urlEl = document.getElementById('logo-url-' + i);
-        if (!urlEl?.value?.trim()) continue;
-        logos.push({
-          url: urlEl.value.trim(),
-          x: Math.max(0, parseInt(document.getElementById('logo-x-' + i)?.value, 10) || 650),
-          y: Math.max(0, parseInt(document.getElementById('logo-y-' + i)?.value, 10) || 80),
-          width: Math.max(20, Math.min(200, parseInt(document.getElementById('logo-w-' + i)?.value, 10) || 60)),
-          height: Math.max(20, Math.min(200, parseInt(document.getElementById('logo-h-' + i)?.value, 10) || 60))
-        });
-      }
-      return logos;
+      return uploadedLogos.map(l => ({
+        url: l.dataUrl,
+        x: l.x,
+        y: l.y,
+        width: l.width,
+        height: l.height
+      }));
     }
 
     function saveUndoState() {
@@ -722,8 +720,6 @@
       const previewImg = document.getElementById('preview-img');
       overlay.innerHTML = '';
       if (previewImg.style.display === 'none') return;
-      const rect = previewImg.getBoundingClientRect();
-      const containerRect = document.getElementById('preview-container').getBoundingClientRect();
       const res = getCanvasResolution();
       const allStickers = [...(userData.options?.stickers || [])];
 
@@ -739,54 +735,67 @@
         const el = document.createElement('div');
         el.className = 'sticker-placed';
         el.style.pointerEvents = 'auto';
-        const pxX = (ps.x / res.width) * previewImg.offsetWidth;
-        const pxY = (ps.y / res.height) * previewImg.offsetHeight;
+        el.style.cursor = 'grab';
+        let curPxX = (ps.x / res.width) * previewImg.offsetWidth;
+        let curPxY = (ps.y / res.height) * previewImg.offsetHeight;
         const fontSize = Math.round(22 * (ps.scale || 1) * (previewImg.offsetWidth / res.width));
-        el.style.left = pxX + 'px';
-        el.style.top = pxY + 'px';
+        el.style.left = curPxX + 'px';
+        el.style.top = curPxY + 'px';
         el.style.fontSize = Math.max(10, fontSize) + 'px';
         el.style.transform = 'translate(-50%, -50%)';
+        el.style.userSelect = 'none';
+        el.style.webkitUserSelect = 'none';
         el.textContent = def.emoji;
         el.title = def.name + ' (arrastra para mover, doble clic para eliminar)';
 
-        let dragStartX = 0, dragStartY = 0, isDraggingSticker = false;
+        let offsetX = 0, offsetY = 0, isDragging = false, hasMoved = false;
 
-        function stickerDragStart(e) {
+        function onDown(e) {
           e.stopPropagation();
-          isDraggingSticker = true;
-          el.classList.add('dragging');
-          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-          dragStartX = clientX - pxX;
-          dragStartY = clientY - pxY;
-          if (e.touches) e.preventDefault();
-        }
-
-        function stickerDragMove(e) {
-          if (!isDraggingSticker) return;
           e.preventDefault();
+          isDragging = true;
+          hasMoved = false;
+          el.style.cursor = 'grabbing';
           const clientX = e.touches ? e.touches[0].clientX : e.clientX;
           const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-          const imgRect = previewImg.getBoundingClientRect();
-          const newPxX = clientX - dragStartX;
-          const newPxY = clientY - dragStartY;
-          el.style.left = newPxX + 'px';
-          el.style.top = newPxY + 'px';
-          placedStickers[idx].x = Math.round((newPxX / previewImg.offsetWidth) * res.width);
-          placedStickers[idx].y = Math.round((newPxY / previewImg.offsetHeight) * res.height);
+          offsetX = clientX - curPxX;
+          offsetY = clientY - curPxY;
+
+          function onMove(ev) {
+            if (!isDragging) return;
+            ev.preventDefault();
+            hasMoved = true;
+            const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+            const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+            curPxX = cx - offsetX;
+            curPxY = cy - offsetY;
+            el.style.left = curPxX + 'px';
+            el.style.top = curPxY + 'px';
+            placedStickers[idx].x = Math.round((curPxX / previewImg.offsetWidth) * res.width);
+            placedStickers[idx].y = Math.round((curPxY / previewImg.offsetHeight) * res.height);
+          }
+
+          function onUp() {
+            isDragging = false;
+            el.style.cursor = 'grab';
+            if (hasMoved) {
+              stickerDragJustEnded = true;
+              setTimeout(() => { stickerDragJustEnded = false; }, 200);
+            }
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+          }
+
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+          document.addEventListener('touchmove', onMove, { passive: false });
+          document.addEventListener('touchend', onUp);
         }
 
-        function stickerDragEnd() {
-          isDraggingSticker = false;
-          el.classList.remove('dragging');
-        }
-
-        el.addEventListener('mousedown', stickerDragStart);
-        document.addEventListener('mousemove', stickerDragMove);
-        document.addEventListener('mouseup', stickerDragEnd);
-        el.addEventListener('touchstart', stickerDragStart, { passive: false });
-        document.addEventListener('touchmove', stickerDragMove, { passive: false });
-        document.addEventListener('touchend', stickerDragEnd);
+        el.addEventListener('mousedown', onDown);
+        el.addEventListener('touchstart', onDown, { passive: false });
 
         el.addEventListener('dblclick', (e) => {
           e.stopPropagation();
@@ -798,11 +807,108 @@
 
         overlay.appendChild(el);
       });
+
+      renderImageOverlays();
+    }
+
+    function renderImageOverlays() {
+      let imgOverlay = document.getElementById('preview-images-overlay');
+      if (!imgOverlay) {
+        imgOverlay = document.createElement('div');
+        imgOverlay.id = 'preview-images-overlay';
+        imgOverlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+        document.getElementById('preview-container').appendChild(imgOverlay);
+      }
+      imgOverlay.innerHTML = '';
+      const previewImg = document.getElementById('preview-img');
+      if (previewImg.style.display === 'none') return;
+      const res = getCanvasResolution();
+
+      imgOverlay.style.top = (previewImg.offsetTop) + 'px';
+      imgOverlay.style.left = (previewImg.offsetLeft) + 'px';
+      imgOverlay.style.width = previewImg.offsetWidth + 'px';
+      imgOverlay.style.height = previewImg.offsetHeight + 'px';
+
+      uploadedLogos.forEach((logo, idx) => {
+        const el = document.createElement('div');
+        el.style.pointerEvents = 'auto';
+        el.style.position = 'absolute';
+        el.style.cursor = 'grab';
+        el.style.border = '1px dashed rgba(255,255,255,0.5)';
+        el.style.boxSizing = 'border-box';
+        el.style.userSelect = 'none';
+        el.style.webkitUserSelect = 'none';
+
+        const scaleW = previewImg.offsetWidth / res.width;
+        const scaleH = previewImg.offsetHeight / res.height;
+        let curLeft = logo.x * scaleW;
+        let curTop = logo.y * scaleH;
+        const elW = logo.width * scaleW;
+        const elH = logo.height * scaleH;
+        el.style.left = curLeft + 'px';
+        el.style.top = curTop + 'px';
+        el.style.width = elW + 'px';
+        el.style.height = elH + 'px';
+        el.style.backgroundImage = 'url(' + logo.dataUrl + ')';
+        el.style.backgroundSize = 'cover';
+        el.style.opacity = '0.7';
+        el.title = 'Arrastra para mover';
+
+        let offsetX = 0, offsetY = 0, isDragging = false;
+
+        function onDown(e) {
+          e.stopPropagation();
+          e.preventDefault();
+          isDragging = true;
+          el.style.cursor = 'grabbing';
+          el.style.opacity = '1';
+          const cx = e.touches ? e.touches[0].clientX : e.clientX;
+          const cy = e.touches ? e.touches[0].clientY : e.clientY;
+          offsetX = cx - curLeft;
+          offsetY = cy - curTop;
+
+          function onMove(ev) {
+            if (!isDragging) return;
+            ev.preventDefault();
+            const mx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+            const my = ev.touches ? ev.touches[0].clientY : ev.clientY;
+            curLeft = mx - offsetX;
+            curTop = my - offsetY;
+            el.style.left = curLeft + 'px';
+            el.style.top = curTop + 'px';
+            uploadedLogos[idx].x = Math.max(0, Math.round(curLeft / scaleW));
+            uploadedLogos[idx].y = Math.max(0, Math.round(curTop / scaleH));
+          }
+
+          function onUp() {
+            isDragging = false;
+            el.style.cursor = 'grab';
+            el.style.opacity = '0.7';
+            stickerDragJustEnded = true;
+            setTimeout(() => { stickerDragJustEnded = false; }, 200);
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+            renderLogoList();
+          }
+
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+          document.addEventListener('touchmove', onMove, { passive: false });
+          document.addEventListener('touchend', onUp);
+        }
+
+        el.addEventListener('mousedown', onDown);
+        el.addEventListener('touchstart', onDown, { passive: false });
+        imgOverlay.appendChild(el);
+      });
     }
 
     function setupPreviewStickerPlacement() {
       const previewContainer = document.getElementById('preview-container');
       previewContainer.addEventListener('click', (e) => {
+        if (stickerDragJustEnded) return;
         if (!selectedStickerId) return;
         const previewImg = document.getElementById('preview-img');
         if (previewImg.style.display === 'none') return;
@@ -813,6 +919,8 @@
         const scaleY = res.height / rect.height;
         const x = (e.clientX - rect.left) * scaleX;
         const y = (e.clientY - rect.top) * scaleY;
+
+        if (x < 0 || y < 0 || x > res.width || y > res.height) return;
 
         placedStickers.push({
           id: selectedStickerId,
@@ -937,18 +1045,15 @@
         if (c.resolution) { selectedResolution = c.resolution; highlightSelectedRes(); }
         if (c.stickers?.length) { placedStickers = c.stickers.map(s => ({...s})); renderPlacedStickers(); }
         if (c.logos?.length) {
-          c.logos.forEach((logo, i) => {
-            const urlEl = document.getElementById('logo-url-' + i);
-            if (urlEl) urlEl.value = logo.url || '';
-            const xEl = document.getElementById('logo-x-' + i);
-            if (xEl) xEl.value = logo.x ?? 650;
-            const yEl = document.getElementById('logo-y-' + i);
-            if (yEl) yEl.value = logo.y ?? 80;
-            const wEl = document.getElementById('logo-w-' + i);
-            if (wEl) wEl.value = logo.width ?? 60;
-            const hEl = document.getElementById('logo-h-' + i);
-            if (hEl) hEl.value = logo.height ?? 60;
-          });
+          uploadedLogos = c.logos.slice(0, MAX_LOGOS).map(logo => ({
+            dataUrl: logo.url || '',
+            name: 'Imagen guardada',
+            x: logo.x ?? 500,
+            y: logo.y ?? 80,
+            width: logo.width ?? 60,
+            height: logo.height ?? 60
+          }));
+          renderLogoList();
         }
         if (c.drawLayer && c.drawLayer.startsWith('data:image/png;base64,')) {
           const img = new Image();
@@ -976,7 +1081,7 @@
       document.querySelectorAll('#color-bg, #color-accent, #color-text, #color-bar, #font-select, #use-neon').forEach(el => {
         el.addEventListener('change', updateCost);
       });
-      document.getElementById('logo-inputs').addEventListener('input', updateCost);
+      document.getElementById('logo-list').addEventListener('input', updateCost);
     }
 
     function highlightDrawColor(color) {
@@ -1111,136 +1216,93 @@
     }
 
     function initLogos() {
-      const maxLogos = userData.options?.maxImages || 1;
-      document.getElementById('max-logos').textContent = maxLogos;
-      const container = document.getElementById('logo-inputs');
-      container.innerHTML = '';
-      for (let i = 0; i < maxLogos; i++) {
-        const wrap = document.createElement('div');
-        wrap.className = 'logo-item';
-        wrap.innerHTML =
-          '<input type="file" id="logo-file-' + i + '" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;">' +
-          '<input type="hidden" id="logo-url-' + i + '">' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-            '<button type="button" class="btn-preview" id="logo-select-btn-' + i + '" style="padding:8px 14px;font-size:11px;flex:0 0 auto;">📁 Seleccionar imagen</button>' +
-            '<span id="logo-filename-' + i + '" style="font-size:10px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px;"></span>' +
-            '<button type="button" class="btn-danger" id="logo-remove-btn-' + i + '" style="padding:4px 8px;font-size:10px;display:none;">✕</button>' +
-          '</div>' +
-          '<div id="logo-thumb-' + i + '" style="margin-bottom:6px;display:none;"><img style="max-height:50px;border-radius:4px;border:1px solid #444;" /></div>' +
-          '<div class="logo-pos-row">' +
-            '<label>X</label><input type="number" id="logo-x-' + i + '" min="0" max="1200" value="' + (650+i*50) + '">' +
-            '<label>Y</label><input type="number" id="logo-y-' + i + '" min="0" max="375" value="80">' +
-            '<label>W</label><input type="number" id="logo-w-' + i + '" min="20" max="200" value="60">' +
-            '<label>H</label><input type="number" id="logo-h-' + i + '" min="20" max="200" value="60">' +
-          '</div>' +
-          '<p class="logo-drag-hint">Actualiza la vista previa y arrastra la imagen directamente sobre ella</p>';
-        container.appendChild(wrap);
+      const addBtn = document.getElementById('btn-add-image');
+      const fileInput = document.getElementById('logo-file-input');
 
-        const fileInput = wrap.querySelector('#logo-file-' + i);
-        const selectBtn = wrap.querySelector('#logo-select-btn-' + i);
-        const removeBtn = wrap.querySelector('#logo-remove-btn-' + i);
-        const idx = i;
+      addBtn.addEventListener('click', () => {
+        if (uploadedLogos.length >= MAX_LOGOS) {
+          alert('Máximo ' + MAX_LOGOS + ' imágenes permitidas');
+          return;
+        }
+        fileInput.click();
+      });
 
-        selectBtn.addEventListener('click', () => fileInput.click());
-
-        fileInput.addEventListener('change', (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          if (file.size > 2 * 1024 * 1024) {
-            alert('La imagen no puede superar 2 MB');
-            fileInput.value = '';
-            return;
-          }
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            const b64 = ev.target.result;
-            document.getElementById('logo-url-' + idx).value = b64;
-            document.getElementById('logo-filename-' + idx).textContent = file.name;
-            const thumb = document.getElementById('logo-thumb-' + idx);
-            thumb.style.display = 'block';
-            thumb.querySelector('img').src = b64;
-            removeBtn.style.display = 'inline-block';
-            updateCost();
-          };
-          reader.readAsDataURL(file);
-        });
-
-        removeBtn.addEventListener('click', () => {
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+          alert('La imagen no puede superar 2 MB');
           fileInput.value = '';
-          document.getElementById('logo-url-' + idx).value = '';
-          document.getElementById('logo-filename-' + idx).textContent = '';
-          document.getElementById('logo-thumb-' + idx).style.display = 'none';
-          removeBtn.style.display = 'none';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          uploadedLogos.push({
+            dataUrl: ev.target.result,
+            name: file.name,
+            x: 500 + uploadedLogos.length * 70,
+            y: 80,
+            width: 60,
+            height: 60
+          });
+          renderLogoList();
+          renderImageOverlays();
           updateCost();
-        });
-      }
+        };
+        reader.readAsDataURL(file);
+        fileInput.value = '';
+      });
 
-      setupLogoDrag();
+      renderLogoList();
     }
 
-    function setupLogoDrag() {
-      const previewImg = document.getElementById('preview-img');
-      const previewContainer = document.getElementById('preview-container');
+    function renderLogoList() {
+      const container = document.getElementById('logo-list');
+      container.innerHTML = '';
+      const addBtn = document.getElementById('btn-add-image');
+      addBtn.style.display = uploadedLogos.length >= MAX_LOGOS ? 'none' : 'inline-block';
 
-      function startLogoDrag(e) {
-        if (selectedStickerId) return;
-        const rect = previewImg.getBoundingClientRect();
-        if (previewImg.style.display === 'none') return;
-        const res = getCanvasResolution();
-        const scaleX = res.width / rect.width;
-        const scaleY = res.height / rect.height;
-        let clientX, clientY;
-        if (e.touches) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
-        else { clientX = e.clientX; clientY = e.clientY; }
-        const x = (clientX - rect.left) * scaleX;
-        const y = (clientY - rect.top) * scaleY;
+      uploadedLogos.forEach((logo, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:6px;';
 
-        const max = userData?.options?.maxImages || 1;
-        for (let i = 0; i < max; i++) {
-          const urlEl = document.getElementById('logo-url-' + i);
-          if (!urlEl?.value?.trim()) continue;
-          const lx = parseInt(document.getElementById('logo-x-' + i)?.value, 10) || 0;
-          const ly = parseInt(document.getElementById('logo-y-' + i)?.value, 10) || 0;
-          const lw = parseInt(document.getElementById('logo-w-' + i)?.value, 10) || 60;
-          const lh = parseInt(document.getElementById('logo-h-' + i)?.value, 10) || 60;
-          if (x >= lx && x <= lx+lw && y >= ly && y <= ly+lh) {
-            dragLogoIndex = i;
-            dragOffsetX = x - lx;
-            dragOffsetY = y - ly;
-            e.preventDefault();
-            return;
-          }
-        }
-      }
+        const thumb = document.createElement('img');
+        thumb.src = logo.dataUrl;
+        thumb.style.cssText = 'width:40px;height:40px;object-fit:cover;border-radius:4px;border:1px solid #444;';
 
-      function moveLogoDrag(e) {
-        if (dragLogoIndex < 0) return;
-        e.preventDefault();
-        const rect = previewImg.getBoundingClientRect();
-        const res = getCanvasResolution();
-        const scaleX = res.width / rect.width;
-        const scaleY = res.height / rect.height;
-        let clientX, clientY;
-        if (e.touches) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
-        else { clientX = e.clientX; clientY = e.clientY; }
-        const x = Math.round((clientX - rect.left) * scaleX - dragOffsetX);
-        const y = Math.round((clientY - rect.top) * scaleY - dragOffsetY);
-        const xEl = document.getElementById('logo-x-' + dragLogoIndex);
-        const yEl = document.getElementById('logo-y-' + dragLogoIndex);
-        if (xEl) xEl.value = Math.max(0, x);
-        if (yEl) yEl.value = Math.max(0, y);
-      }
+        const info = document.createElement('div');
+        info.style.cssText = 'flex:1;min-width:0;';
+        info.innerHTML = '<div style="font-size:10px;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + logo.name + '</div>' +
+          '<div style="font-size:9px;color:#888;">Pos: ' + logo.x + ',' + logo.y + ' | ' + logo.width + 'x' + logo.height + '</div>';
 
-      function endLogoDrag() {
-        dragLogoIndex = -1;
-      }
+        const sizeRow = document.createElement('div');
+        sizeRow.style.cssText = 'display:flex;gap:4px;align-items:center;';
+        sizeRow.innerHTML =
+          '<label style="font-size:9px;color:#aaa;">W</label><input type="number" min="20" max="200" value="' + logo.width + '" style="width:45px;padding:2px;font-size:10px;background:#1a1a2e;color:#fff;border:1px solid #333;border-radius:3px;">' +
+          '<label style="font-size:9px;color:#aaa;">H</label><input type="number" min="20" max="200" value="' + logo.height + '" style="width:45px;padding:2px;font-size:10px;background:#1a1a2e;color:#fff;border:1px solid #333;border-radius:3px;">';
 
-      previewContainer.addEventListener('mousedown', startLogoDrag);
-      previewContainer.addEventListener('mousemove', moveLogoDrag);
-      previewContainer.addEventListener('mouseup', endLogoDrag);
-      previewContainer.addEventListener('touchstart', startLogoDrag, { passive: false });
-      previewContainer.addEventListener('touchmove', moveLogoDrag, { passive: false });
-      previewContainer.addEventListener('touchend', endLogoDrag);
+        const wInput = sizeRow.querySelectorAll('input')[0];
+        const hInput = sizeRow.querySelectorAll('input')[1];
+        wInput.addEventListener('change', () => { uploadedLogos[idx].width = Math.max(20, Math.min(200, parseInt(wInput.value) || 60)); renderImageOverlays(); });
+        hInput.addEventListener('change', () => { uploadedLogos[idx].height = Math.max(20, Math.min(200, parseInt(hInput.value) || 60)); renderImageOverlays(); });
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '✕';
+        removeBtn.className = 'btn-danger';
+        removeBtn.style.cssText = 'padding:4px 8px;font-size:10px;';
+        removeBtn.addEventListener('click', () => {
+          uploadedLogos.splice(idx, 1);
+          renderLogoList();
+          renderImageOverlays();
+          updateCost();
+        });
+
+        item.appendChild(thumb);
+        item.appendChild(info);
+        item.appendChild(sizeRow);
+        item.appendChild(removeBtn);
+        container.appendChild(item);
+      });
     }
 
     async function updateCost() {
@@ -1329,6 +1391,9 @@
     }
 
     document.addEventListener('DOMContentLoaded', loadUser);
+    window.addEventListener('resize', () => {
+      renderStickerOverlay();
+    });
   </script>
 </body>
 </html>

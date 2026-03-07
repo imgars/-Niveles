@@ -115,8 +115,8 @@ export const RESOLUTION_OPTIONS = [
   { id: 'fullhd', width: 1200, height: 375, name: 'Full HD (1200x375)', premium: true }
 ];
 
-const STANDARD_MAX_IMAGES = 1;
-const VIP_MAX_IMAGES = 5;
+const STANDARD_MAX_IMAGES = 3;
+const VIP_MAX_IMAGES = 3;
 const MAX_STICKERS = 10;
 const VIP_MAX_STICKERS = 20;
 
