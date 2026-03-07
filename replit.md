@@ -1,6 +1,19 @@
 # -Niveles
 
 ## Recent Changes
+- **Editor de Rankcards v2 - Mejoras Completas (Marzo 2026):**
+  - **Soporte móvil completo:** Touch events (touchstart/touchmove/touchend) en el canvas de dibujo para que funcione en dispositivos móviles. Interfaz responsive con pestañas deslizables, controles touch-friendly y hints para móvil.
+  - **Aislamiento de fuentes:** La tipografía seleccionada en el editor solo aplica al nombre de usuario en la rankcard del usuario. No afecta al leaderboard (usa Arial hardcoded) ni a rankcards de otros usuarios. Mensaje aclaratorio en la UI.
+  - **5 fondos prediseñados:** 3 estándar (Cielo Estrellado, Olas del Mar, Geométrico) y 2 VIP/Booster (Cyberpunk, Galaxia). Cada uno con costo extra (1,500 LC estándar, 2,500 LC VIP). Opcional - los usuarios pueden usar color sólido personalizado.
+  - **Más pinceles:** Estándar: Redondo, Cuadrado, Fino, Medio, Borrador, Cubo Relleno, Punteado, Caligrafía. VIP: Spray, Neón, Marcador, Brillos, Arcoíris, Pixel Art, Estrellas.
+  - **Borrador y cubo rellenador:** Borrador disponible para todos (movido de VIP a estándar). Cubo rellenador con flood fill algorithm.
+  - **Fix paleta Neón:** Los colores neón ahora también se aplican al color de dibujo del pincel (antes solo cambiaban el color de acento). Sección dedicada de colores neón para dibujo.
+  - **Resolución variable (VIP/Booster):** 3 opciones: Estándar (800x250), HD (1000x312), Full HD (1200x375). Costo extra de 2,000 LC.
+  - **Objetos decorativos (stickers):** 20 objetos estándar (corazón, estrella, flor, pico de Minecraft, cubo Minecraft, corazón Undertale, etc.) y 10 VIP (espada diamante, corona dorada, dragón, fénix, etc.). Se colocan tocando/haciendo clic en la vista previa. Costo: 300 LC por objeto.
+  - **Mejor posicionamiento de imágenes:** Sistema de drag & drop en la vista previa para mover imágenes en lugar de escribir coordenadas X/Y manualmente. Funciona con mouse y touch.
+  - **UI mejorada para móviles:** Pestañas organizadas (Dibujar, Colores, Fondos, Objetos, Imágenes, Texto, Ajustes VIP). Diseño responsive completo. Función de deshacer (undo) con historial.
+  - **Archivos modificados:** `utils/rankcardService.js`, `utils/cardGenerator.js`, `public/rankcard-editor.html`, `index.js`
+
 - **Fix Configuracion Page Blank (Febrero 2026):**
   - Fixed the Configuracion page in the admin panel showing completely blank/gray.
   - Root cause: `.toggle-slider` (maintenance toggle) had `position: absolute; inset: 0; background: #ccc` without a positioned parent, causing it to cover the entire viewport with a gray overlay.

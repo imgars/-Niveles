@@ -1,6 +1,19 @@
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
 import { CONFIG } from '../config.js';
 
+let _rankcardServiceCache = null;
+async function getRankcardServiceData() {
+  if (!_rankcardServiceCache) {
+    const mod = await import('./rankcardService.js');
+    _rankcardServiceCache = {
+      RESOLUTION_OPTIONS: mod.RESOLUTION_OPTIONS,
+      STANDARD_STICKERS: mod.STANDARD_STICKERS,
+      VIP_STICKERS: mod.VIP_STICKERS
+    };
+  }
+  return _rankcardServiceCache;
+}
+
 const CARD_WIDTH = 800;
 const CARD_HEIGHT = 250;
 
@@ -518,22 +531,186 @@ function drawPixelText(ctx, text, x, y, size, color) {
 }
 
 const FONT_MAP = {
-  arial: 'bold 28px Arial, sans-serif',
-  'sans-serif': 'bold 28px "Segoe UI", sans-serif',
-  georgia: 'bold 26px Georgia, serif',
-  times: 'bold 26px "Times New Roman", serif',
-  verdana: 'bold 26px Verdana, sans-serif',
-  'press-start': 'bold 24px "Press Start 2P", monospace',
-  monospace: 'bold 24px "Courier New", monospace',
-  impact: 'bold 26px Impact, sans-serif',
-  comic: 'bold 24px "Comic Sans MS", cursive',
-  fantasy: 'bold 24px fantasy, cursive',
-  bebas: 'bold 26px "Bebas Neue", Arial Black, sans-serif'
+  arial: { family: 'Arial, sans-serif', size: 28 },
+  'sans-serif': { family: '"Segoe UI", sans-serif', size: 28 },
+  georgia: { family: 'Georgia, serif', size: 26 },
+  times: { family: '"Times New Roman", serif', size: 26 },
+  verdana: { family: 'Verdana, sans-serif', size: 26 },
+  'press-start': { family: '"Press Start 2P", monospace', size: 24 },
+  monospace: { family: '"Courier New", monospace', size: 24 },
+  impact: { family: 'Impact, sans-serif', size: 26 },
+  comic: { family: '"Comic Sans MS", cursive', size: 24 },
+  fantasy: { family: 'fantasy, cursive', size: 24 },
+  bebas: { family: '"Bebas Neue", Arial Black, sans-serif', size: 26 }
 };
+
+function getFontString(fontId, sizeOverride = null) {
+  const f = FONT_MAP[fontId] || FONT_MAP.arial;
+  const size = sizeOverride || f.size;
+  return `bold ${size}px ${f.family}`;
+}
+
+function drawPresetBackground(ctx, w, h, bgId) {
+  switch (bgId) {
+    case 'stars': {
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#0B0D21');
+      grad.addColorStop(0.5, '#1A1A3E');
+      grad.addColorStop(1, '#0B0D21');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 0.9;
+      for (let i = 0; i < 80; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        const s = Math.random() * 3 + 1;
+        ctx.fillStyle = ['#FFFFFF', '#FFD700', '#ADD8E6', '#FFC0CB'][Math.floor(Math.random() * 4)];
+        ctx.beginPath();
+        ctx.arc(x, y, s, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'waves': {
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#006994');
+      grad.addColorStop(0.5, '#003B5C');
+      grad.addColorStop(1, '#001F3F');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 0.15;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 2;
+      for (let row = 0; row < 6; row++) {
+        ctx.beginPath();
+        for (let x = 0; x <= w; x += 5) {
+          const y = (h / 6) * row + Math.sin((x + row * 40) / 30) * 15 + 30;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'geometric': {
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, w, h);
+      const geoColors = ['#16213e', '#0f3460', '#e94560', '#533483'];
+      ctx.globalAlpha = 0.3;
+      for (let i = 0; i < 20; i++) {
+        ctx.fillStyle = geoColors[Math.floor(Math.random() * geoColors.length)];
+        const cx = Math.random() * w;
+        const cy = Math.random() * h;
+        const size = Math.random() * 60 + 20;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(Math.random() * Math.PI);
+        ctx.fillRect(-size / 2, -size / 2, size, size);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 0.1;
+      for (let i = 0; i < 15; i++) {
+        ctx.strokeStyle = '#e94560';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 40 + 10, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'cyberpunk': {
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#0a0a23');
+      grad.addColorStop(0.5, '#1a0a2e');
+      grad.addColorStop(1, '#0a0a23');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 0.15;
+      ctx.strokeStyle = '#FF00FF';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < w; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke();
+      }
+      for (let i = 0; i < h; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w, i); ctx.stroke();
+      }
+      ctx.globalAlpha = 0.5;
+      const neonGrad = ctx.createLinearGradient(0, h - 60, 0, h);
+      neonGrad.addColorStop(0, 'transparent');
+      neonGrad.addColorStop(1, 'rgba(255,0,255,0.3)');
+      ctx.fillStyle = neonGrad;
+      ctx.fillRect(0, h - 60, w, 60);
+      ctx.globalAlpha = 0.8;
+      for (let i = 0; i < 5; i++) {
+        ctx.fillStyle = ['#FF00FF', '#00FFFF'][i % 2];
+        const bw = Math.random() * 30 + 10;
+        const bh = Math.random() * 40 + 20;
+        const bx = Math.random() * w;
+        const by = h - bh - Math.random() * 40;
+        ctx.fillRect(bx, by, bw, bh);
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'galaxy': {
+      const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 1.5);
+      grad.addColorStop(0, '#1a0533');
+      grad.addColorStop(0.3, '#0d0221');
+      grad.addColorStop(0.6, '#150734');
+      grad.addColorStop(1, '#000000');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 0.6;
+      for (let i = 0; i < 120; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        const s = Math.random() * 2 + 0.5;
+        ctx.fillStyle = ['#FFFFFF', '#E0B0FF', '#ADD8E6', '#FFD700', '#FF69B4'][Math.floor(Math.random() * 5)];
+        ctx.beginPath();
+        ctx.arc(x, y, s, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 0.08;
+      const nebulaGrad = ctx.createRadialGradient(w * 0.3, h * 0.4, 0, w * 0.3, h * 0.4, 150);
+      nebulaGrad.addColorStop(0, '#FF00FF');
+      nebulaGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = nebulaGrad;
+      ctx.fillRect(0, 0, w, h);
+      const nebulaGrad2 = ctx.createRadialGradient(w * 0.7, h * 0.6, 0, w * 0.7, h * 0.6, 120);
+      nebulaGrad2.addColorStop(0, '#00FFFF');
+      nebulaGrad2.addColorStop(1, 'transparent');
+      ctx.fillStyle = nebulaGrad2;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 1;
+      break;
+    }
+  }
+}
+
+function drawStickerOnCanvas(ctx, sticker, allStickers) {
+  const stickerDef = allStickers.find(s => s.id === sticker.id);
+  if (!stickerDef) return;
+  const size = Math.round(28 * (sticker.scale || 1));
+  ctx.font = `${size}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(stickerDef.emoji, sticker.x, sticker.y);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
 
 export async function generateCustomRankCard(member, userData, progress, boostsText = '') {
   const custom = userData?.rankcard_custom || {};
-  const canvas = createCanvas(CARD_WIDTH, CARD_HEIGHT);
+  const svcData = await getRankcardServiceData();
+  const resOption = svcData.RESOLUTION_OPTIONS.find(r => r.id === (custom.resolution || 'standard')) || svcData.RESOLUTION_OPTIONS[0];
+  const cardW = resOption.width;
+  const cardH = resOption.height;
+  const scale = cardW / 800;
+
+  const canvas = createCanvas(cardW, cardH);
   const ctx = canvas.getContext('2d');
 
   const bgColor = custom.backgroundColor || '#36393F';
@@ -541,39 +718,35 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
   const textColor = custom.textColor || '#FFFFFF';
   const barColor = custom.barColor || accentColor;
 
-  const colors = {
-    gradient: [
-      { pos: 0, color: bgColor },
-      { pos: 0.5, color: shadeColor(bgColor, 0.9) },
-      { pos: 1, color: shadeColor(bgColor, 0.7) }
-    ],
-    border: accentColor,
-    accent: accentColor,
-    text: textColor,
-    textShadow: '#000000',
-    barBg: shadeColor(bgColor, 0.5),
-    barFill: [accentColor, shadeColor(accentColor, 1.2)],
-    stars: false
-  };
+  if (custom.backgroundId) {
+    drawPresetBackground(ctx, cardW, cardH, custom.backgroundId);
+  } else {
+    const colors = {
+      gradient: [
+        { pos: 0, color: bgColor },
+        { pos: 0.5, color: shadeColor(bgColor, 0.9) },
+        { pos: 1, color: shadeColor(bgColor, 0.7) }
+      ]
+    };
+    drawPixelatedGradientBackground(ctx, cardW, cardH, colors.gradient);
+  }
 
-  drawPixelatedGradientBackground(ctx, CARD_WIDTH, CARD_HEIGHT, colors.gradient);
   if (custom.useNeonPalette) {
-    drawNeonGlow(ctx, CARD_WIDTH, CARD_HEIGHT);
+    drawNeonGlow(ctx, cardW, cardH);
   }
 
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-  for (let i = 0; i < CARD_HEIGHT; i += 4) {
-    if (i % 8 === 0) ctx.fillRect(0, i, CARD_WIDTH, 2);
+  for (let i = 0; i < cardH; i += 4) {
+    if (i % 8 === 0) ctx.fillRect(0, i, cardW, 2);
   }
 
-  drawPixelBorder(ctx, 0, 0, CARD_WIDTH, CARD_HEIGHT, colors.border, 6);
-  drawPixelBorder(ctx, 8, 8, CARD_WIDTH - 16, CARD_HEIGHT - 16, 'rgba(0,0,0,0.3)', 2);
+  drawPixelBorder(ctx, 0, 0, cardW, cardH, accentColor, Math.round(6 * scale));
+  drawPixelBorder(ctx, Math.round(8 * scale), Math.round(8 * scale), cardW - Math.round(16 * scale), cardH - Math.round(16 * scale), 'rgba(0,0,0,0.3)', 2);
 
-  // Capa de dibujo del usuario (si existe)
   if (custom.drawLayer && typeof custom.drawLayer === 'string' && custom.drawLayer.startsWith('data:image/png;base64,')) {
     try {
       const drawImg = await loadImage(custom.drawLayer);
-      ctx.drawImage(drawImg, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+      ctx.drawImage(drawImg, 0, 0, cardW, cardH);
     } catch (e) {
       console.error('Error loading drawLayer:', e);
     }
@@ -585,7 +758,7 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
   for (const img of baseImages) {
     try {
       const image = await loadImage(img.url);
-      ctx.drawImage(image, img.x || 0, img.y || 0, img.width || 100, img.height || 100);
+      ctx.drawImage(image, (img.x || 0) * scale, (img.y || 0) * scale, (img.width || 100) * scale, (img.height || 100) * scale);
     } catch (e) {
       console.error('Error loading base image:', e);
     }
@@ -594,11 +767,11 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
   try {
     const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
     const avatar = await loadImage(avatarURL);
-    const avatarSize = 140;
-    const avatarX = 35;
-    const avatarY = (CARD_HEIGHT - avatarSize) / 2;
+    const avatarSize = Math.round(140 * scale);
+    const avatarX = Math.round(35 * scale);
+    const avatarY = Math.round((cardH - avatarSize) / 2);
 
-    ctx.fillStyle = colors.border;
+    ctx.fillStyle = accentColor;
     ctx.fillRect(avatarX - 6, avatarY - 6, avatarSize + 12, avatarSize + 12);
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(avatarX - 4, avatarY - 4, avatarSize + 8, avatarSize + 8);
@@ -610,70 +783,77 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
   for (const logo of logos) {
     try {
       const image = await loadImage(logo.url);
-      ctx.drawImage(image, logo.x || 0, logo.y || 0, logo.width || 50, logo.height || 50);
+      ctx.drawImage(image, (logo.x || 0) * scale, (logo.y || 0) * scale, (logo.width || 50) * scale, (logo.height || 50) * scale);
     } catch (e) {
       console.error('Error loading logo:', e);
     }
   }
 
-  const textX = 210;
+  const allStickers = [...svcData.STANDARD_STICKERS, ...svcData.VIP_STICKERS];
+  if (custom.stickers && custom.stickers.length > 0) {
+    for (const sticker of custom.stickers) {
+      drawStickerOnCanvas(ctx, { ...sticker, x: sticker.x * scale, y: sticker.y * scale, scale: (sticker.scale || 1) * scale }, allStickers);
+    }
+  }
+
+  const textX = Math.round(210 * scale);
   const shadowOffset = 2;
-  const fontStyle = FONT_MAP[custom.fontId] || FONT_MAP.arial;
+  const fontStyle = getFontString(custom.fontId, Math.round((FONT_MAP[custom.fontId]?.size || 28) * scale));
 
   ctx.font = fontStyle;
-  ctx.fillStyle = colors.textShadow;
-  ctx.fillText(member.user.username, textX + shadowOffset, 60 + shadowOffset);
+  ctx.fillStyle = '#000000';
+  ctx.fillText(member.user.username, textX + shadowOffset, Math.round(60 * scale) + shadowOffset);
   ctx.fillStyle = textColor;
-  ctx.fillText(member.user.username, textX, 60);
+  ctx.fillText(member.user.username, textX, Math.round(60 * scale));
 
-  ctx.font = 'bold 22px Arial, sans-serif';
-  ctx.fillStyle = colors.textShadow;
-  ctx.fillText(`NIVEL ${userData.level}`, textX + shadowOffset, 100 + shadowOffset);
+  ctx.font = `bold ${Math.round(22 * scale)}px Arial, sans-serif`;
+  ctx.fillStyle = '#000000';
+  ctx.fillText(`NIVEL ${userData.level}`, textX + shadowOffset, Math.round(100 * scale) + shadowOffset);
   ctx.fillStyle = accentColor;
-  ctx.fillText(`NIVEL ${userData.level}`, textX, 100);
+  ctx.fillText(`NIVEL ${userData.level}`, textX, Math.round(100 * scale));
 
   const xpText = `XP: ${Math.floor(progress.current)} / ${Math.floor(progress.needed)}`;
-  ctx.font = '18px Arial, sans-serif';
-  ctx.fillStyle = colors.textShadow;
-  ctx.fillText(xpText, textX + 1, 130 + 1);
+  ctx.font = `${Math.round(18 * scale)}px Arial, sans-serif`;
+  ctx.fillStyle = '#000000';
+  ctx.fillText(xpText, textX + 1, Math.round(130 * scale) + 1);
   ctx.fillStyle = textColor;
-  ctx.fillText(xpText, textX, 130);
+  ctx.fillText(xpText, textX, Math.round(130 * scale));
 
   const barX = textX;
-  const barY = 150;
-  const barWidth = 540;
-  const barHeight = 28;
+  const barY = Math.round(150 * scale);
+  const barWidth = Math.round(540 * scale);
+  const barHeight = Math.round(28 * scale);
 
-  ctx.fillStyle = colors.barBg;
+  ctx.fillStyle = shadeColor(bgColor, 0.5);
   ctx.fillRect(barX, barY, barWidth, barHeight);
   const progressWidth = Math.max(8, (progress.percentage / 100) * barWidth);
   const gradient = ctx.createLinearGradient(barX, 0, barX + progressWidth, 0);
-  gradient.addColorStop(0, colors.barFill[0]);
-  gradient.addColorStop(1, colors.barFill[1] || colors.barFill[0]);
+  gradient.addColorStop(0, barColor);
+  gradient.addColorStop(1, shadeColor(barColor, 1.2));
   ctx.fillStyle = gradient;
   ctx.fillRect(barX + 2, barY + 2, progressWidth - 4, barHeight - 4);
 
-  ctx.fillStyle = colors.border;
+  ctx.fillStyle = accentColor;
   ctx.fillRect(barX, barY, barWidth, 3);
   ctx.fillRect(barX, barY + barHeight - 3, barWidth, 3);
   ctx.fillRect(barX, barY, 3, barHeight);
   ctx.fillRect(barX + barWidth - 3, barY, 3, barHeight);
 
   ctx.fillStyle = textColor;
-  ctx.font = 'bold 14px Arial, sans-serif';
+  ctx.font = `bold ${Math.round(14 * scale)}px Arial, sans-serif`;
   const percentText = `${Math.floor(progress.percentage)}%`;
-  ctx.fillText(percentText, barX + (barWidth - ctx.measureText(percentText).width) / 2, barY + 19);
+  ctx.fillText(percentText, barX + (barWidth - ctx.measureText(percentText).width) / 2, barY + Math.round(19 * scale));
 
   if (boostsText && boostsText.trim() !== '') {
     ctx.fillStyle = '#00FF00';
-    ctx.fillText(`🚀 ${boostsText}`, textX, barY + barHeight + 25);
+    ctx.fillText(`🚀 ${boostsText}`, textX, barY + barHeight + Math.round(25 * scale));
   }
 
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(CARD_WIDTH - 130, CARD_HEIGHT - 35, 120, 25);
+  ctx.fillRect(cardW - Math.round(130 * scale), cardH - Math.round(35 * scale), Math.round(120 * scale), Math.round(25 * scale));
   ctx.fillStyle = accentColor;
-  ctx.font = 'bold 12px Arial, sans-serif';
-  ctx.fillText('CUSTOM', CARD_WIDTH - 125, CARD_HEIGHT - 17);
+  ctx.font = `bold ${Math.round(12 * scale)}px Arial, sans-serif`;
+  ctx.fillText('CUSTOM', cardW - Math.round(125 * scale), cardH - Math.round(17 * scale));
 
   return canvas.toBuffer('image/png');
 }

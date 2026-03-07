@@ -719,7 +719,7 @@ app.use('/api/rankcard', express.json());
 app.get('/api/rankcard/verify', async (req, res) => {
   try {
     const { token } = req.query;
-    const { verifyToken, checkVIPBoosterRoles, NEON_COLORS, STANDARD_FONTS, PREMIUM_FONTS, RANKCARD_BASE_COST, RANKCARD_IMAGE_EXTRA_COST, RANKCARD_PREMIUM_FONT_COST, getDrawColorsForRole, getBrushesForRole } = await import('./utils/rankcardService.js');
+    const { verifyToken, checkVIPBoosterRoles, NEON_COLORS, STANDARD_FONTS, PREMIUM_FONTS, RANKCARD_BASE_COST, RANKCARD_IMAGE_EXTRA_COST, RANKCARD_PREMIUM_FONT_COST, RANKCARD_BACKGROUND_COST, RANKCARD_VIP_BACKGROUND_COST, RANKCARD_STICKER_COST, RANKCARD_RESOLUTION_COST, getDrawColorsForRole, getBrushesForRole, getBackgroundsForRole, getStickersForRole, getResolutionsForRole } = await import('./utils/rankcardService.js');
     const { getEconomy } = await import('./utils/mongoSync.js');
 
     const verified = verifyToken(token);
@@ -739,6 +739,7 @@ app.get('/api/rankcard/verify', async (req, res) => {
     }
 
     const roles = checkVIPBoosterRoles(member);
+    const hasVIP = roles.isVIP || roles.isBooster;
     const userData = db.getUser(guildId, userId);
     const economy = await getEconomy(guildId, userId);
 
@@ -748,21 +749,29 @@ app.get('/api/rankcard/verify', async (req, res) => {
       avatar: member.user.displayAvatarURL({ format: 'png', size: 128 }),
       isVIP: roles.isVIP,
       isBooster: roles.isBooster,
-      hasVIPBenefits: roles.isVIP || roles.isBooster,
+      hasVIPBenefits: hasVIP,
       lagcoins: economy?.lagcoins || 0,
       rankcard_custom: userData?.rankcard_custom || null,
       options: {
         neonColors: NEON_COLORS,
         standardFonts: STANDARD_FONTS,
-        premiumFonts: roles.isVIP || roles.isBooster ? PREMIUM_FONTS : [],
-        maxImages: (roles.isVIP || roles.isBooster) ? 5 : 1,
-        drawColors: getDrawColorsForRole(roles.isVIP || roles.isBooster),
-        brushes: getBrushesForRole(roles.isVIP || roles.isBooster)
+        premiumFonts: hasVIP ? PREMIUM_FONTS : [],
+        maxImages: hasVIP ? 5 : 1,
+        drawColors: getDrawColorsForRole(hasVIP),
+        brushes: getBrushesForRole(hasVIP),
+        backgrounds: getBackgroundsForRole(hasVIP),
+        stickers: getStickersForRole(hasVIP),
+        resolutions: getResolutionsForRole(hasVIP),
+        maxStickers: hasVIP ? 20 : 10
       },
       costs: {
         base: RANKCARD_BASE_COST,
         perImageExtra: RANKCARD_IMAGE_EXTRA_COST,
-        premiumFont: RANKCARD_PREMIUM_FONT_COST
+        premiumFont: RANKCARD_PREMIUM_FONT_COST,
+        background: RANKCARD_BACKGROUND_COST,
+        vipBackground: RANKCARD_VIP_BACKGROUND_COST,
+        sticker: RANKCARD_STICKER_COST,
+        resolution: RANKCARD_RESOLUTION_COST
       }
     });
   } catch (error) {
