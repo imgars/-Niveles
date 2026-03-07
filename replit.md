@@ -1,6 +1,12 @@
 # -Niveles
 
 ## Recent Changes
+- **Fix Preview/Discord Consistency (Marzo 2026):**
+  - Replaced all `Math.random()` calls in `cardGenerator.js` with a seeded PRNG (`createSeededRandom`) based on user ID hash (`userSeedFromId`).
+  - Every background (stars, galaxy, geometric, cyberpunk, waves) and decorative effect (drawStars, drawNeonGlow, drawCupheadEffects, drawUndertaleEffects, drawFortniteEffects, themed card backgrounds) now produces identical results for the same user across renders.
+  - Web preview and Discord `/level` output now look the same since the seed is initialized at the start of `generateRankCard` and `generateCustomRankCard`.
+  - Module-level `_seededRand` variable is set per render call, used by all drawing functions.
+
 - **Editor de Rankcards v2 - Mejoras Completas (Marzo 2026):**
   - **Soporte móvil completo:** Touch events (touchstart/touchmove/touchend) en el canvas de dibujo para que funcione en dispositivos móviles. Interfaz responsive con pestañas deslizables, controles touch-friendly y hints para móvil.
   - **Aislamiento de fuentes:** La tipografía seleccionada en el editor solo aplica al nombre de usuario en la rankcard del usuario. No afecta al leaderboard (usa Arial hardcoded) ni a rankcards de otros usuarios. Mensaje aclaratorio en la UI.

@@ -1,6 +1,25 @@
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
 import { CONFIG } from '../config.js';
 
+function createSeededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 1664525 + 1013904223) & 0xFFFFFFFF;
+    return (s >>> 0) / 0xFFFFFFFF;
+  };
+}
+
+function userSeedFromId(userId) {
+  if (!userId) return 12345;
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = ((hash << 5) - hash) + userId.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+
 let _rankcardServiceCache = null;
 async function getRankcardServiceData() {
   if (!_rankcardServiceCache) {
@@ -65,7 +84,7 @@ export async function getAvailableThemes(member, level, purchasedCards = []) {
   return [...new Set(themes)];
 }
 
-export async function getCardTheme(member, level, selectedTheme = null, purchasedCards = []) {
+export async function getCardTheme(member, level, selectedTheme = null, purchasedCards = [], rand = null) {
   const userId = member.user.id;
   let roles;
   
@@ -86,7 +105,7 @@ export async function getCardTheme(member, level, selectedTheme = null, purchase
   
   if (userId === CONFIG.SPECIAL_USER_ID) {
     const themes = ['roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash', 'cuphead', 'undertale', 'fortnite'];
-    return themes[Math.floor(Math.random() * themes.length)];
+    return themes[Math.floor((rand || Math.random)() * themes.length)];
   }
   
   if (roles && roles.has(CONFIG.VIP_ROLE_ID)) {
@@ -358,7 +377,7 @@ function drawPixelBorder(ctx, x, y, width, height, color, thickness = 4) {
   ctx.fillRect(x + thickness, y + thickness, thickness / 2, height - thickness * 2);
 }
 
-function drawPixelatedGradientBackground(ctx, width, height, colors) {
+function drawPixelatedGradientBackground(ctx, width, height, colors, rand) {
   const pixelSize = 8;
   const rows = Math.ceil(height / pixelSize);
   const cols = Math.ceil(width / pixelSize);
@@ -377,7 +396,7 @@ function drawPixelatedGradientBackground(ctx, width, height, colors) {
       }
       if (!color) color = colors[colors.length - 1].color;
       
-      const noise = (Math.random() - 0.5) * 15;
+      const noise = (rand() - 0.5) * 15;
       const rgb = hexToRgb(color);
       const adjustedColor = `rgb(${Math.max(0, Math.min(255, rgb.r + noise))}, ${Math.max(0, Math.min(255, rgb.g + noise))}, ${Math.max(0, Math.min(255, rgb.b + noise))})`;
       
@@ -407,19 +426,19 @@ function interpolateColor(color1, color2, t) {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-function drawStars(ctx, width, height, count = 30) {
+function drawStars(ctx, width, height, rand, count = 30) {
   for (let i = 0; i < count; i++) {
-    const x = Math.random() * width;
-    const y = Math.random() * height;
-    const size = Math.random() * 3 + 1;
-    const brightness = Math.random() * 0.5 + 0.5;
+    const x = rand() * width;
+    const y = rand() * height;
+    const size = rand() * 3 + 1;
+    const brightness = rand() * 0.5 + 0.5;
     
     ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
     ctx.fillRect(Math.floor(x / 2) * 2, Math.floor(y / 2) * 2, size, size);
   }
 }
 
-function drawCupheadEffects(ctx, width, height) {
+function drawCupheadEffects(ctx, width, height, rand) {
   ctx.globalAlpha = 0.15;
   for (let i = 0; i < height; i += 3) {
     ctx.fillStyle = i % 6 === 0 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.05)';
@@ -427,10 +446,10 @@ function drawCupheadEffects(ctx, width, height) {
   }
   ctx.globalAlpha = 0.08;
   for (let i = 0; i < 200; i++) {
-    const x = Math.random() * width;
-    const y = Math.random() * height;
-    const size = Math.random() * 2 + 1;
-    ctx.fillStyle = Math.random() > 0.5 ? '#000000' : '#FFFFFF';
+    const x = rand() * width;
+    const y = rand() * height;
+    const size = rand() * 2 + 1;
+    ctx.fillStyle = rand() > 0.5 ? '#000000' : '#FFFFFF';
     ctx.fillRect(x, y, size, size);
   }
   ctx.globalAlpha = 0.1;
@@ -453,7 +472,7 @@ function drawCupheadEffects(ctx, width, height) {
   ctx.globalAlpha = 1;
 }
 
-function drawUndertaleEffects(ctx, width, height) {
+function drawUndertaleEffects(ctx, width, height, rand) {
   ctx.globalAlpha = 0.4;
   const heartX = width - 60;
   const heartY = 30;
@@ -468,8 +487,8 @@ function drawUndertaleEffects(ctx, width, height) {
 
   ctx.globalAlpha = 0.06;
   for (let i = 0; i < 60; i++) {
-    const x = Math.random() * width;
-    const y = Math.random() * height;
+    const x = rand() * width;
+    const y = rand() * height;
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(Math.floor(x / 4) * 4, Math.floor(y / 4) * 4, 4, 4);
   }
@@ -481,12 +500,12 @@ function drawUndertaleEffects(ctx, width, height) {
   ctx.globalAlpha = 1;
 }
 
-function drawFortniteEffects(ctx, width, height) {
+function drawFortniteEffects(ctx, width, height, rand) {
   ctx.globalAlpha = 0.2;
   for (let i = 0; i < 15; i++) {
-    const x = Math.random() * width;
-    const y = Math.random() * height;
-    const radius = Math.random() * 40 + 10;
+    const x = rand() * width;
+    const y = rand() * height;
+    const radius = rand() * 40 + 10;
     const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
     gradient.addColorStop(0, 'rgba(128, 0, 255, 0.3)');
     gradient.addColorStop(0.5, 'rgba(0, 102, 255, 0.15)');
@@ -497,8 +516,8 @@ function drawFortniteEffects(ctx, width, height) {
 
   ctx.globalAlpha = 0.15;
   for (let i = 0; i < 8; i++) {
-    const x1 = Math.random() * width;
-    const y1 = Math.random() * height;
+    const x1 = rand() * width;
+    const y1 = rand() * height;
     ctx.strokeStyle = '#00CCFF';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -506,8 +525,8 @@ function drawFortniteEffects(ctx, width, height) {
     let cx = x1;
     let cy = y1;
     for (let j = 0; j < 4; j++) {
-      cx += (Math.random() - 0.5) * 30;
-      cy += Math.random() * 20 + 5;
+      cx += (rand() - 0.5) * 30;
+      cy += rand() * 20 + 5;
       ctx.lineTo(cx, cy);
     }
     ctx.stroke();
@@ -515,9 +534,9 @@ function drawFortniteEffects(ctx, width, height) {
 
   ctx.globalAlpha = 0.08;
   for (let i = 0; i < 30; i++) {
-    const x = Math.random() * width;
-    const y = Math.random() * (height / 3);
-    const size = Math.random() * 3 + 1;
+    const x = rand() * width;
+    const y = rand() * (height / 3);
+    const size = rand() * 3 + 1;
     ctx.fillStyle = '#FFD700';
     ctx.fillRect(x, y, size, size);
   }
@@ -550,7 +569,7 @@ function getFontString(fontId, sizeOverride = null) {
   return `bold ${size}px ${f.family}`;
 }
 
-function drawPresetBackground(ctx, w, h, bgId) {
+function drawPresetBackground(ctx, w, h, bgId, rand) {
   switch (bgId) {
     case 'stars': {
       const grad = ctx.createLinearGradient(0, 0, 0, h);
@@ -561,10 +580,10 @@ function drawPresetBackground(ctx, w, h, bgId) {
       ctx.fillRect(0, 0, w, h);
       ctx.globalAlpha = 0.9;
       for (let i = 0; i < 80; i++) {
-        const x = Math.random() * w;
-        const y = Math.random() * h;
-        const s = Math.random() * 3 + 1;
-        ctx.fillStyle = ['#FFFFFF', '#FFD700', '#ADD8E6', '#FFC0CB'][Math.floor(Math.random() * 4)];
+        const x = rand() * w;
+        const y = rand() * h;
+        const s = rand() * 3 + 1;
+        ctx.fillStyle = ['#FFFFFF', '#FFD700', '#ADD8E6', '#FFC0CB'][Math.floor(rand() * 4)];
         ctx.beginPath();
         ctx.arc(x, y, s, 0, Math.PI * 2);
         ctx.fill();
@@ -600,13 +619,13 @@ function drawPresetBackground(ctx, w, h, bgId) {
       const geoColors = ['#16213e', '#0f3460', '#e94560', '#533483'];
       ctx.globalAlpha = 0.3;
       for (let i = 0; i < 20; i++) {
-        ctx.fillStyle = geoColors[Math.floor(Math.random() * geoColors.length)];
-        const cx = Math.random() * w;
-        const cy = Math.random() * h;
-        const size = Math.random() * 60 + 20;
+        ctx.fillStyle = geoColors[Math.floor(rand() * geoColors.length)];
+        const cx = rand() * w;
+        const cy = rand() * h;
+        const size = rand() * 60 + 20;
         ctx.save();
         ctx.translate(cx, cy);
-        ctx.rotate(Math.random() * Math.PI);
+        ctx.rotate(rand() * Math.PI);
         ctx.fillRect(-size / 2, -size / 2, size, size);
         ctx.restore();
       }
@@ -615,7 +634,7 @@ function drawPresetBackground(ctx, w, h, bgId) {
         ctx.strokeStyle = '#e94560';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 40 + 10, 0, Math.PI * 2);
+        ctx.arc(rand() * w, rand() * h, rand() * 40 + 10, 0, Math.PI * 2);
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
@@ -646,10 +665,10 @@ function drawPresetBackground(ctx, w, h, bgId) {
       ctx.globalAlpha = 0.8;
       for (let i = 0; i < 5; i++) {
         ctx.fillStyle = ['#FF00FF', '#00FFFF'][i % 2];
-        const bw = Math.random() * 30 + 10;
-        const bh = Math.random() * 40 + 20;
-        const bx = Math.random() * w;
-        const by = h - bh - Math.random() * 40;
+        const bw = rand() * 30 + 10;
+        const bh = rand() * 40 + 20;
+        const bx = rand() * w;
+        const by = h - bh - rand() * 40;
         ctx.fillRect(bx, by, bw, bh);
       }
       ctx.globalAlpha = 1;
@@ -665,10 +684,10 @@ function drawPresetBackground(ctx, w, h, bgId) {
       ctx.fillRect(0, 0, w, h);
       ctx.globalAlpha = 0.6;
       for (let i = 0; i < 120; i++) {
-        const x = Math.random() * w;
-        const y = Math.random() * h;
-        const s = Math.random() * 2 + 0.5;
-        ctx.fillStyle = ['#FFFFFF', '#E0B0FF', '#ADD8E6', '#FFD700', '#FF69B4'][Math.floor(Math.random() * 5)];
+        const x = rand() * w;
+        const y = rand() * h;
+        const s = rand() * 2 + 0.5;
+        ctx.fillStyle = ['#FFFFFF', '#E0B0FF', '#ADD8E6', '#FFD700', '#FF69B4'][Math.floor(rand() * 5)];
         ctx.beginPath();
         ctx.arc(x, y, s, 0, Math.PI * 2);
         ctx.fill();
@@ -751,6 +770,7 @@ function drawStickerOnCanvas(ctx, sticker, allStickers) {
 }
 
 export async function generateCustomRankCard(member, userData, progress, boostsText = '') {
+  const rand = createSeededRandom(userSeedFromId(member?.id || member?.user?.id || '0'));
   const custom = userData?.rankcard_custom || {};
   const svcData = await getRankcardServiceData();
   const resOption = svcData.RESOLUTION_OPTIONS.find(r => r.id === (custom.resolution || 'standard')) || svcData.RESOLUTION_OPTIONS[0];
@@ -767,7 +787,7 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
   const barColor = custom.barColor || accentColor;
 
   if (custom.backgroundId) {
-    drawPresetBackground(ctx, cardW, cardH, custom.backgroundId);
+    drawPresetBackground(ctx, cardW, cardH, custom.backgroundId, rand);
   } else {
     const colors = {
       gradient: [
@@ -776,11 +796,11 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
         { pos: 1, color: shadeColor(bgColor, 0.7) }
       ]
     };
-    drawPixelatedGradientBackground(ctx, cardW, cardH, colors.gradient);
+    drawPixelatedGradientBackground(ctx, cardW, cardH, colors.gradient, rand);
   }
 
   if (custom.useNeonPalette) {
-    drawNeonGlow(ctx, cardW, cardH);
+    drawNeonGlow(ctx, cardW, cardH, rand);
   }
 
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
@@ -925,12 +945,12 @@ function shadeColor(color, factor) {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-function drawNeonGlow(ctx, width, height) {
+function drawNeonGlow(ctx, width, height, rand) {
   ctx.globalAlpha = 0.3;
   for (let i = 0; i < 20; i++) {
-    const x = Math.random() * width;
-    const y = Math.random() * height;
-    ctx.fillStyle = ['#FF00FF', '#00FFFF', '#00FF00'][Math.floor(Math.random() * 3)];
+    const x = rand() * width;
+    const y = rand() * height;
+    ctx.fillStyle = ['#FF00FF', '#00FFFF', '#00FF00'][Math.floor(rand() * 3)];
     ctx.fillRect(x, y, 4, 4);
   }
   ctx.globalAlpha = 1;
@@ -941,28 +961,29 @@ export async function generateRankCard(member, userData, progress, boostsText = 
     return generateCustomRankCard(member, userData, progress, boostsText);
   }
 
+  const rand = createSeededRandom(userSeedFromId(member?.id || member?.user?.id || '0'));
   const canvas = createCanvas(CARD_WIDTH, CARD_HEIGHT);
   const ctx = canvas.getContext('2d');
   
-  const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme, userData.purchasedCards || []);
+  const theme = await getCardTheme(member, userData.level, userData.selectedCardTheme, userData.purchasedCards || [], rand);
   const colors = getPixelArtThemeColors(theme);
   
-  drawPixelatedGradientBackground(ctx, CARD_WIDTH, CARD_HEIGHT, colors.gradient);
+  drawPixelatedGradientBackground(ctx, CARD_WIDTH, CARD_HEIGHT, colors.gradient, rand);
   
   if (colors.stars) {
-    drawStars(ctx, CARD_WIDTH, CARD_HEIGHT);
+    drawStars(ctx, CARD_WIDTH, CARD_HEIGHT, rand);
   }
 
   if (colors.filmGrain) {
-    drawCupheadEffects(ctx, CARD_WIDTH, CARD_HEIGHT);
+    drawCupheadEffects(ctx, CARD_WIDTH, CARD_HEIGHT, rand);
   }
 
   if (colors.determination) {
-    drawUndertaleEffects(ctx, CARD_WIDTH, CARD_HEIGHT);
+    drawUndertaleEffects(ctx, CARD_WIDTH, CARD_HEIGHT, rand);
   }
 
   if (colors.storm) {
-    drawFortniteEffects(ctx, CARD_WIDTH, CARD_HEIGHT);
+    drawFortniteEffects(ctx, CARD_WIDTH, CARD_HEIGHT, rand);
   }
   
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
@@ -1274,6 +1295,7 @@ export async function generateLeaderboardImage(topUsers, guild, theme = 'discord
 }
 
 export async function generateMinecraftLeaderboard(topUsers, guild) {
+  const rand = createSeededRandom(42);
   const canvas = createCanvas(700, 760);
   const ctx = canvas.getContext('2d');
   
@@ -1285,7 +1307,7 @@ export async function generateMinecraftLeaderboard(topUsers, guild) {
   
   for (let y = 0; y < 760; y += pixelSize) {
     for (let x = 0; x < 700; x += pixelSize) {
-      ctx.fillStyle = dirtColors[Math.floor(Math.random() * dirtColors.length)];
+      ctx.fillStyle = dirtColors[Math.floor(rand() * dirtColors.length)];
       ctx.fillRect(x, y, pixelSize, pixelSize);
     }
   }
@@ -1388,6 +1410,7 @@ export async function generateMinecraftLeaderboard(topUsers, guild) {
 }
 
 export async function generatePokemonLeaderboard(topUsers, guild) {
+  const rand = createSeededRandom(43);
   const canvas = createCanvas(700, 760);
   const ctx = canvas.getContext('2d');
   
@@ -1396,7 +1419,7 @@ export async function generatePokemonLeaderboard(topUsers, guild) {
   
   for (let y = 0; y < 760; y += pixelSize) {
     for (let x = 0; x < 700; x += pixelSize) {
-      ctx.fillStyle = pokemonColors[Math.floor(Math.random() * pokemonColors.length)];
+      ctx.fillStyle = pokemonColors[Math.floor(rand() * pokemonColors.length)];
       ctx.fillRect(x, y, pixelSize, pixelSize);
     }
   }
@@ -1499,6 +1522,7 @@ export async function generatePokemonLeaderboard(topUsers, guild) {
 }
 
 export async function generateZeldaLeaderboard(topUsers, guild) {
+  const rand = createSeededRandom(44);
   const canvas = createCanvas(700, 760);
   const ctx = canvas.getContext('2d');
   
@@ -1507,7 +1531,7 @@ export async function generateZeldaLeaderboard(topUsers, guild) {
   
   for (let y = 0; y < 760; y += pixelSize) {
     for (let x = 0; x < 700; x += pixelSize) {
-      ctx.fillStyle = zeldaColors[Math.floor(Math.random() * zeldaColors.length)];
+      ctx.fillStyle = zeldaColors[Math.floor(rand() * zeldaColors.length)];
       ctx.fillRect(x, y, pixelSize, pixelSize);
     }
   }
@@ -1643,7 +1667,8 @@ export async function generateEconomyLeaderboardImage(leaderboard, client, type,
   
   const colors = typeColors[type] || typeColors['lagcoins'];
   
-  drawPixelatedGradientBackground(ctx, width, height, colors.gradient);
+  const rand = createSeededRandom(45);
+  drawPixelatedGradientBackground(ctx, width, height, colors.gradient, rand);
   
   ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
   for (let i = 0; i < height; i += 4) {
@@ -1756,8 +1781,9 @@ export async function generateProfileImage(member, profile, userData) {
   const ctx = canvas.getContext('2d');
   
   const colors = getPixelArtThemeColors('pixel');
+  const rand = createSeededRandom(userSeedFromId(member?.id || member?.user?.id || '0'));
   
-  drawPixelatedGradientBackground(ctx, width, height, colors.gradient);
+  drawPixelatedGradientBackground(ctx, width, height, colors.gradient, rand);
   
   ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
   for (let i = 0; i < height; i += 4) {
