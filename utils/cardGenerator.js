@@ -694,12 +694,60 @@ function drawStickerOnCanvas(ctx, sticker, allStickers) {
   const stickerDef = allStickers.find(s => s.id === sticker.id);
   if (!stickerDef) return;
   const size = Math.round(28 * (sticker.scale || 1));
-  ctx.font = `${size}px Arial`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(stickerDef.emoji, sticker.x, sticker.y);
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
+  const x = sticker.x;
+  const y = sticker.y;
+  const r = size / 2;
+
+  ctx.save();
+  const drawFns = {
+    'heart': () => { ctx.fillStyle = '#FF0000'; ctx.beginPath(); const topY = y - r * 0.4; ctx.moveTo(x, y + r * 0.8); ctx.bezierCurveTo(x - r * 1.2, y - r * 0.2, x - r * 0.8, topY - r * 0.6, x, topY + r * 0.2); ctx.bezierCurveTo(x + r * 0.8, topY - r * 0.6, x + r * 1.2, y - r * 0.2, x, y + r * 0.8); ctx.fill(); },
+    'star': () => { ctx.fillStyle = '#FFD700'; ctx.beginPath(); for (let i = 0; i < 5; i++) { const a = (i * 72 - 90) * Math.PI / 180; const a2 = ((i * 72) + 36 - 90) * Math.PI / 180; ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a)); ctx.lineTo(x + r * 0.4 * Math.cos(a2), y + r * 0.4 * Math.sin(a2)); } ctx.closePath(); ctx.fill(); },
+    'flower': () => { ctx.fillStyle = '#FF69B4'; for (let i = 0; i < 5; i++) { const a = (i * 72) * Math.PI / 180; ctx.beginPath(); ctx.arc(x + r * 0.5 * Math.cos(a), y + r * 0.5 * Math.sin(a), r * 0.4, 0, Math.PI * 2); ctx.fill(); } ctx.fillStyle = '#FFFF00'; ctx.beginPath(); ctx.arc(x, y, r * 0.3, 0, Math.PI * 2); ctx.fill(); },
+    'bone': () => { ctx.fillStyle = '#F5F5DC'; ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4); const bw = r * 0.3, bl = r * 1.2; ctx.fillRect(-bl, -bw / 2, bl * 2, bw); for (const [ex, ey] of [[-bl, -bw], [-bl, bw], [bl, -bw], [bl, bw]]) { ctx.beginPath(); ctx.arc(ex, ey, bw * 0.7, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); },
+    'fire': () => { ctx.fillStyle = '#FF4500'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.quadraticCurveTo(x + r, y - r * 0.3, x + r * 0.5, y + r); ctx.quadraticCurveTo(x, y + r * 0.5, x - r * 0.5, y + r); ctx.quadraticCurveTo(x - r, y - r * 0.3, x, y - r); ctx.fill(); ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.moveTo(x, y - r * 0.4); ctx.quadraticCurveTo(x + r * 0.5, y, x + r * 0.2, y + r * 0.6); ctx.quadraticCurveTo(x, y + r * 0.3, x - r * 0.2, y + r * 0.6); ctx.quadraticCurveTo(x - r * 0.5, y, x, y - r * 0.4); ctx.fill(); },
+    'lightning': () => { ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.moveTo(x + r * 0.2, y - r); ctx.lineTo(x - r * 0.4, y + r * 0.1); ctx.lineTo(x + r * 0.1, y + r * 0.1); ctx.lineTo(x - r * 0.2, y + r); ctx.lineTo(x + r * 0.5, y - r * 0.1); ctx.lineTo(x, y - r * 0.1); ctx.closePath(); ctx.fill(); },
+    'music': () => { ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(x - r * 0.3, y + r * 0.4, r * 0.3, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(x - r * 0.3 + r * 0.25, y - r * 0.6, r * 0.1, r); ctx.beginPath(); ctx.arc(x + r * 0.4, y + r * 0.2, r * 0.3, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(x + r * 0.4 + r * 0.25, y - r * 0.8, r * 0.1, r); ctx.fillRect(x - r * 0.05, y - r * 0.8, r * 0.8, r * 0.12); },
+    'moon': () => { ctx.fillStyle = '#FFFACD'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = ctx.canvas ? '#36393F' : '#000'; ctx.beginPath(); ctx.arc(x + r * 0.35, y - r * 0.15, r * 0.75, 0, Math.PI * 2); ctx.fill(); },
+    'sun': () => { ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(x, y, r * 0.5, 0, Math.PI * 2); ctx.fill(); for (let i = 0; i < 8; i++) { const a = (i * 45) * Math.PI / 180; ctx.beginPath(); ctx.moveTo(x + r * 0.55 * Math.cos(a), y + r * 0.55 * Math.sin(a)); ctx.lineTo(x + r * Math.cos(a - 0.15), y + r * Math.sin(a - 0.15)); ctx.lineTo(x + r * Math.cos(a + 0.15), y + r * Math.sin(a + 0.15)); ctx.closePath(); ctx.fill(); } },
+    'sparkle': () => { ctx.fillStyle = '#FFFFFF'; const drawSpark = (sx, sy, sr) => { ctx.beginPath(); ctx.moveTo(sx, sy - sr); ctx.lineTo(sx + sr * 0.2, sy - sr * 0.2); ctx.lineTo(sx + sr, sy); ctx.lineTo(sx + sr * 0.2, sy + sr * 0.2); ctx.lineTo(sx, sy + sr); ctx.lineTo(sx - sr * 0.2, sy + sr * 0.2); ctx.lineTo(sx - sr, sy); ctx.lineTo(sx - sr * 0.2, sy - sr * 0.2); ctx.closePath(); ctx.fill(); }; drawSpark(x, y, r); drawSpark(x + r * 0.7, y - r * 0.5, r * 0.4); },
+    'mc-pickaxe': () => { ctx.strokeStyle = '#8B4513'; ctx.lineWidth = Math.max(2, r * 0.15); ctx.beginPath(); ctx.moveTo(x - r * 0.7, y + r * 0.7); ctx.lineTo(x + r * 0.3, y - r * 0.3); ctx.stroke(); ctx.fillStyle = '#00CED1'; ctx.beginPath(); ctx.moveTo(x + r * 0.3, y - r * 0.3); ctx.lineTo(x + r * 0.8, y - r * 0.8); ctx.lineTo(x + r * 0.9, y - r * 0.3); ctx.lineTo(x + r * 0.5, y - r * 0.1); ctx.fill(); ctx.beginPath(); ctx.moveTo(x + r * 0.3, y - r * 0.3); ctx.lineTo(x - r * 0.1, y - r * 0.5); ctx.lineTo(x + r * 0.3, y - r * 0.9); ctx.lineTo(x + r * 0.8, y - r * 0.8); ctx.fill(); },
+    'mc-block': () => { ctx.fillStyle = '#8B4513'; ctx.fillRect(x - r, y - r, r * 2, r * 2); ctx.fillStyle = '#654321'; ctx.fillRect(x - r, y - r, r * 2, r * 0.15); ctx.fillRect(x - r, y + r * 0.85, r * 2, r * 0.15); ctx.strokeStyle = '#5C3317'; ctx.lineWidth = 1; ctx.strokeRect(x - r, y - r, r * 2, r * 2); },
+    'ut-heart': () => { ctx.fillStyle = '#FF0000'; ctx.beginPath(); const topY = y - r * 0.4; ctx.moveTo(x, y + r * 0.8); ctx.bezierCurveTo(x - r * 1.2, y - r * 0.2, x - r * 0.8, topY - r * 0.6, x, topY + r * 0.2); ctx.bezierCurveTo(x + r * 0.8, topY - r * 0.6, x + r * 1.2, y - r * 0.2, x, y + r * 0.8); ctx.fill(); ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = Math.max(1, r * 0.1); ctx.stroke(); },
+    'skull': () => { ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(x, y - r * 0.15, r * 0.8, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(x - r * 0.5, y + r * 0.3, r, r * 0.4); ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(x - r * 0.3, y - r * 0.2, r * 0.2, 0, Math.PI * 2); ctx.arc(x + r * 0.3, y - r * 0.2, r * 0.2, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(x - r * 0.15, y + r * 0.25); ctx.lineTo(x, y + r * 0.4); ctx.lineTo(x + r * 0.15, y + r * 0.25); ctx.closePath(); ctx.fill(); },
+    'crown-small': () => { ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.moveTo(x - r, y + r * 0.5); ctx.lineTo(x - r, y - r * 0.3); ctx.lineTo(x - r * 0.5, y + r * 0.1); ctx.lineTo(x, y - r * 0.6); ctx.lineTo(x + r * 0.5, y + r * 0.1); ctx.lineTo(x + r, y - r * 0.3); ctx.lineTo(x + r, y + r * 0.5); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#FF0000'; ctx.beginPath(); ctx.arc(x, y - r * 0.15, r * 0.12, 0, Math.PI * 2); ctx.fill(); },
+    'sword': () => { ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI / 4); ctx.fillStyle = '#C0C0C0'; ctx.fillRect(-r * 0.1, -r, r * 0.2, r * 1.4); ctx.beginPath(); ctx.moveTo(-r * 0.1, -r); ctx.lineTo(0, -r * 1.3); ctx.lineTo(r * 0.1, -r); ctx.fill(); ctx.fillStyle = '#8B4513'; ctx.fillRect(-r * 0.35, r * 0.4, r * 0.7, r * 0.15); ctx.fillRect(-r * 0.1, r * 0.4, r * 0.2, r * 0.5); ctx.restore(); },
+    'shield-small': () => { ctx.fillStyle = '#4169E1'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.quadraticCurveTo(x + r, y - r, x + r, y); ctx.quadraticCurveTo(x + r, y + r * 0.8, x, y + r); ctx.quadraticCurveTo(x - r, y + r * 0.8, x - r, y); ctx.quadraticCurveTo(x - r, y - r, x, y - r); ctx.fill(); ctx.strokeStyle = '#FFD700'; ctx.lineWidth = Math.max(1, r * 0.1); ctx.stroke(); ctx.fillStyle = '#FFD700'; ctx.beginPath(); for (let i = 0; i < 5; i++) { const a = (i * 72 - 90) * Math.PI / 180; const a2 = ((i * 72) + 36 - 90) * Math.PI / 180; ctx.lineTo(x + r * 0.35 * Math.cos(a), y + r * 0.35 * Math.sin(a)); ctx.lineTo(x + r * 0.15 * Math.cos(a2), y + r * 0.15 * Math.sin(a2)); } ctx.closePath(); ctx.fill(); },
+    'gem-small': () => { ctx.fillStyle = '#00BFFF'; ctx.beginPath(); ctx.moveTo(x, y - r * 0.8); ctx.lineTo(x + r * 0.8, y - r * 0.1); ctx.lineTo(x + r * 0.5, y + r * 0.8); ctx.lineTo(x - r * 0.5, y + r * 0.8); ctx.lineTo(x - r * 0.8, y - r * 0.1); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#87CEEB'; ctx.beginPath(); ctx.moveTo(x, y - r * 0.8); ctx.lineTo(x + r * 0.3, y - r * 0.1); ctx.lineTo(x, y + r * 0.8); ctx.lineTo(x - r * 0.3, y - r * 0.1); ctx.closePath(); ctx.fill(); },
+    'ghost': () => { ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(x, y - r * 0.2, r * 0.7, Math.PI, 0); ctx.lineTo(x + r * 0.7, y + r * 0.6); for (let i = 0; i < 3; i++) { const bx = x + r * 0.7 - (i * r * 0.47); ctx.quadraticCurveTo(bx - r * 0.12, y + r * (i % 2 === 0 ? 0.9 : 0.4), bx - r * 0.47, y + r * 0.6); } ctx.closePath(); ctx.fill(); ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(x - r * 0.2, y - r * 0.25, r * 0.12, 0, Math.PI * 2); ctx.arc(x + r * 0.2, y - r * 0.25, r * 0.12, 0, Math.PI * 2); ctx.fill(); },
+    'rocket': () => { ctx.save(); ctx.translate(x, y); ctx.fillStyle = '#E0E0E0'; ctx.beginPath(); ctx.moveTo(0, -r); ctx.quadraticCurveTo(r * 0.5, -r * 0.5, r * 0.4, r * 0.4); ctx.lineTo(-r * 0.4, r * 0.4); ctx.quadraticCurveTo(-r * 0.5, -r * 0.5, 0, -r); ctx.fill(); ctx.fillStyle = '#FF4500'; ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 0.2); ctx.lineTo(-r * 0.7, r * 0.6); ctx.lineTo(-r * 0.3, r * 0.4); ctx.fill(); ctx.beginPath(); ctx.moveTo(r * 0.4, r * 0.2); ctx.lineTo(r * 0.7, r * 0.6); ctx.lineTo(r * 0.3, r * 0.4); ctx.fill(); ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.moveTo(-r * 0.15, r * 0.4); ctx.lineTo(0, r * 0.9); ctx.lineTo(r * 0.15, r * 0.4); ctx.fill(); ctx.fillStyle = '#00BFFF'; ctx.beginPath(); ctx.arc(0, -r * 0.2, r * 0.18, 0, Math.PI * 2); ctx.fill(); ctx.restore(); },
+    'vip-diamond-sword': () => { ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI / 4); ctx.fillStyle = '#00CED1'; ctx.fillRect(-r * 0.12, -r * 1.1, r * 0.24, r * 1.5); ctx.beginPath(); ctx.moveTo(-r * 0.12, -r * 1.1); ctx.lineTo(0, -r * 1.4); ctx.lineTo(r * 0.12, -r * 1.1); ctx.fill(); ctx.fillStyle = '#FFD700'; ctx.fillRect(-r * 0.4, r * 0.4, r * 0.8, r * 0.12); ctx.fillStyle = '#8B4513'; ctx.fillRect(-r * 0.1, r * 0.4, r * 0.2, r * 0.5); ctx.restore(); },
+    'vip-crown-gold': () => { ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.moveTo(x - r, y + r * 0.5); ctx.lineTo(x - r, y - r * 0.3); ctx.lineTo(x - r * 0.5, y + r * 0.1); ctx.lineTo(x, y - r * 0.6); ctx.lineTo(x + r * 0.5, y + r * 0.1); ctx.lineTo(x + r, y - r * 0.3); ctx.lineTo(x + r, y + r * 0.5); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#DAA520'; ctx.lineWidth = Math.max(1, r * 0.06); ctx.stroke(); for (const [px, py] of [[x - r * 0.65, y - r * 0.15], [x, y - r * 0.45], [x + r * 0.65, y - r * 0.15]]) { ctx.fillStyle = '#FF0000'; ctx.beginPath(); ctx.arc(px, py, r * 0.12, 0, Math.PI * 2); ctx.fill(); } },
+    'vip-neon-star': () => { ctx.shadowColor = '#00FF00'; ctx.shadowBlur = r * 0.8; ctx.fillStyle = '#00FF00'; ctx.beginPath(); for (let i = 0; i < 5; i++) { const a = (i * 72 - 90) * Math.PI / 180; const a2 = ((i * 72) + 36 - 90) * Math.PI / 180; ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a)); ctx.lineTo(x + r * 0.4 * Math.cos(a2), y + r * 0.4 * Math.sin(a2)); } ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0; },
+    'vip-dragon': () => { ctx.fillStyle = '#228B22'; ctx.beginPath(); ctx.arc(x, y - r * 0.1, r * 0.6, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(x - r * 0.3, y - r * 0.6); ctx.lineTo(x - r * 0.7, y - r); ctx.lineTo(x - r * 0.1, y - r * 0.5); ctx.fill(); ctx.beginPath(); ctx.moveTo(x + r * 0.3, y - r * 0.6); ctx.lineTo(x + r * 0.7, y - r); ctx.lineTo(x + r * 0.1, y - r * 0.5); ctx.fill(); ctx.fillStyle = '#FF4500'; ctx.beginPath(); ctx.arc(x - r * 0.2, y - r * 0.2, r * 0.1, 0, Math.PI * 2); ctx.arc(x + r * 0.2, y - r * 0.2, r * 0.1, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#FF6347'; ctx.beginPath(); ctx.moveTo(x - r * 0.1, y + r * 0.3); ctx.lineTo(x, y + r * 0.8); ctx.lineTo(x + r * 0.1, y + r * 0.3); ctx.fill(); },
+    'vip-phoenix': () => { ctx.fillStyle = '#FF4500'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.quadraticCurveTo(x + r, y - r * 0.3, x + r * 0.6, y + r * 0.3); ctx.quadraticCurveTo(x + r * 1.2, y + r, x + r * 0.4, y + r); ctx.lineTo(x, y + r * 0.5); ctx.lineTo(x - r * 0.4, y + r); ctx.quadraticCurveTo(x - r * 1.2, y + r, x - r * 0.6, y + r * 0.3); ctx.quadraticCurveTo(x - r, y - r * 0.3, x, y - r); ctx.fill(); ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.moveTo(x, y - r * 0.5); ctx.quadraticCurveTo(x + r * 0.5, y, x + r * 0.3, y + r * 0.5); ctx.lineTo(x, y + r * 0.2); ctx.lineTo(x - r * 0.3, y + r * 0.5); ctx.quadraticCurveTo(x - r * 0.5, y, x, y - r * 0.5); ctx.fill(); },
+    'vip-magic': () => { ctx.fillStyle = '#FFD700'; ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI / 6); const w = r * 0.12; ctx.fillRect(-w, -r * 1.2, w * 2, r * 2.4); ctx.restore(); ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); const sr = r * 0.5; for (let i = 0; i < 5; i++) { const a = (i * 72 - 90) * Math.PI / 180; const a2 = ((i * 72) + 36 - 90) * Math.PI / 180; ctx.lineTo(x - r * 0.4 + sr * Math.cos(a), y - r * 0.8 + sr * Math.sin(a)); ctx.lineTo(x - r * 0.4 + sr * 0.4 * Math.cos(a2), y - r * 0.8 + sr * 0.4 * Math.sin(a2)); } ctx.closePath(); ctx.fill(); },
+    'vip-crystal': () => { ctx.fillStyle = '#9932CC'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.6, y); ctx.lineTo(x + r * 0.4, y + r); ctx.lineTo(x - r * 0.4, y + r); ctx.lineTo(x - r * 0.6, y); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#BA55D3'; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.15, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.15, y); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#DDA0DD'; ctx.lineWidth = Math.max(1, r * 0.05); ctx.stroke(); },
+    'vip-thunder': () => { ctx.fillStyle = '#1C1C3A'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.moveTo(x + r * 0.15, y - r * 0.7); ctx.lineTo(x - r * 0.35, y + r * 0.05); ctx.lineTo(x + r * 0.05, y + r * 0.05); ctx.lineTo(x - r * 0.15, y + r * 0.7); ctx.lineTo(x + r * 0.4, y - r * 0.05); ctx.lineTo(x, y - r * 0.05); ctx.closePath(); ctx.fill(); },
+    'vip-galaxy': () => { ctx.fillStyle = '#0D0D2B'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); const colors = ['#FFFFFF', '#FFD700', '#87CEEB', '#FF69B4']; for (let i = 0; i < 12; i++) { ctx.fillStyle = colors[i % colors.length]; const sx = x + (Math.sin(i * 2.3) * r * 0.7); const sy = y + (Math.cos(i * 3.1) * r * 0.7); ctx.beginPath(); ctx.arc(sx, sy, Math.max(1, r * 0.06), 0, Math.PI * 2); ctx.fill(); } ctx.strokeStyle = '#8A2BE2'; ctx.lineWidth = Math.max(1, r * 0.06); ctx.beginPath(); ctx.ellipse(x, y, r * 0.7, r * 0.3, Math.PI / 6, 0, Math.PI * 2); ctx.stroke(); },
+    'vip-rainbow': () => { const rColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#8B00FF']; for (let i = 0; i < 7; i++) { ctx.strokeStyle = rColors[i]; ctx.lineWidth = Math.max(1, r * 0.12); ctx.beginPath(); ctx.arc(x, y + r * 0.3, r * (1 - i * 0.1), Math.PI, 0); ctx.stroke(); } }
+  };
+
+  const fn = drawFns[stickerDef.id];
+  if (fn) {
+    fn();
+  } else {
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = (i * 72 - 90) * Math.PI / 180;
+      const a2 = ((i * 72) + 36 - 90) * Math.PI / 180;
+      ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a));
+      ctx.lineTo(x + r * 0.4 * Math.cos(a2), y + r * 0.4 * Math.sin(a2));
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 export async function generateCustomRankCard(member, userData, progress, boostsText = '') {
@@ -757,7 +805,12 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
 
   for (const img of baseImages) {
     try {
-      const image = await loadImage(img.url);
+      let imgSource = img.url;
+      if (typeof imgSource === 'string' && imgSource.startsWith('data:image/')) {
+        const b64Data = imgSource.split(',')[1];
+        if (b64Data) imgSource = Buffer.from(b64Data, 'base64');
+      }
+      const image = await loadImage(imgSource);
       ctx.drawImage(image, (img.x || 0) * scale, (img.y || 0) * scale, (img.width || 100) * scale, (img.height || 100) * scale);
     } catch (e) {
       console.error('Error loading base image:', e);
@@ -782,7 +835,12 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
 
   for (const logo of logos) {
     try {
-      const image = await loadImage(logo.url);
+      let imgSource = logo.url;
+      if (typeof imgSource === 'string' && imgSource.startsWith('data:image/')) {
+        const b64Data = imgSource.split(',')[1];
+        if (b64Data) imgSource = Buffer.from(b64Data, 'base64');
+      }
+      const image = await loadImage(imgSource);
       ctx.drawImage(image, (logo.x || 0) * scale, (logo.y || 0) * scale, (logo.width || 50) * scale, (logo.height || 50) * scale);
     } catch (e) {
       console.error('Error loading logo:', e);

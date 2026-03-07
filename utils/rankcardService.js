@@ -245,8 +245,16 @@ export function validateRankcardConfig(config, { isVIP, isBooster }) {
     };
   }
 
-  const validUrl = (url) => {
+  const MAX_IMAGE_BASE64 = 3000000;
+  const validImageData = (url) => {
     if (typeof url !== 'string') return false;
+    if (url.startsWith('data:image/')) {
+      const validTypes = ['data:image/png;base64,', 'data:image/jpeg;base64,', 'data:image/gif;base64,', 'data:image/webp;base64,'];
+      const hasValidType = validTypes.some(t => url.startsWith(t));
+      if (!hasValidType) return false;
+      const b64Part = url.split(',')[1] || '';
+      return b64Part.length <= MAX_IMAGE_BASE64;
+    }
     try {
       const u = new URL(url);
       return ['https:', 'http:'].includes(u.protocol) && u.hostname.endsWith('cdn.discordapp.com');
@@ -259,7 +267,7 @@ export function validateRankcardConfig(config, { isVIP, isBooster }) {
   const maxDimH = 375;
 
   sanitized.baseImages = baseImages
-    .filter(img => img && img.url && validUrl(img.url))
+    .filter(img => img && img.url && validImageData(img.url))
     .slice(0, maxImages)
     .map(img => ({
       url: img.url,
@@ -270,7 +278,7 @@ export function validateRankcardConfig(config, { isVIP, isBooster }) {
     }));
 
   sanitized.logos = logos
-    .filter(img => img && img.url && validUrl(img.url))
+    .filter(img => img && img.url && validImageData(img.url))
     .slice(0, maxImages - sanitized.baseImages.length)
     .map(img => ({
       url: img.url,

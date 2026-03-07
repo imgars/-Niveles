@@ -714,7 +714,7 @@ app.get('/api/diff', async (req, res) => {
 });
 
 // --- API Rankcard Personalizable ---
-app.use('/api/rankcard', express.json());
+app.use('/api/rankcard', express.json({ limit: '10mb' }));
 
 app.get('/api/rankcard/verify', async (req, res) => {
   try {
