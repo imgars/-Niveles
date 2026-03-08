@@ -89,6 +89,7 @@ const PAGE_TITLES = {
     powerups: 'Power-ups y Boosts',
     economia: 'Gestion de Economia',
     'sistemas-avanzados': 'Control Avanzado de Sistemas',
+    'staff-commands': 'Comandos de Staff',
     estadisticas: 'Estadisticas',
     'audit-log': 'Audit Log',
     logs: 'Logs en Tiempo Real',
@@ -1383,6 +1384,91 @@ function renderShopItems(items) {
         </div>`).join('');
 }
 
+const CATEGORY_LABELS = { niveles: 'Niveles', economia: 'Economia', sistemas: 'Sistemas' };
+const CATEGORY_COLORS = { niveles: '#5865F2', economia: '#F39C12', sistemas: '#E74C3C' };
+let _staffCmdsData = {};
+let _staffCmdFilter = 'all';
+
+async function loadStaffCommands() {
+    try {
+        const data = await fetchAPI('/api/admin/staff-commands');
+        _staffCmdsData = data.commands || {};
+        renderStaffCommands();
+    } catch (error) {
+        console.error('Error loading staff commands:', error);
+        document.getElementById('staffCommandsGrid').innerHTML = '<p class="error-text">Error cargando comandos</p>';
+    }
+}
+
+function renderStaffCommands() {
+    const grid = document.getElementById('staffCommandsGrid');
+    const entries = Object.entries(_staffCmdsData).filter(([k, cmd]) => _staffCmdFilter === 'all' || cmd.category === _staffCmdFilter);
+
+    if (entries.length === 0) {
+        grid.innerHTML = '<p class="loading-text">No hay comandos en esta categoria</p>';
+        return;
+    }
+
+    grid.innerHTML = entries.map(([key, cmd]) => `
+        <div class="staff-cmd-card ${cmd.enabled ? 'enabled' : 'disabled'}" data-category="${cmd.category}">
+            <div class="staff-cmd-header">
+                <div class="staff-cmd-info">
+                    <code class="staff-cmd-name">${escHtml(cmd.name)}</code>
+                    <span class="staff-cmd-cat" style="background:${CATEGORY_COLORS[cmd.category] || '#666'}">${CATEGORY_LABELS[cmd.category] || cmd.category}</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" ${cmd.enabled ? 'checked' : ''} onchange="toggleStaffCommand('${key}', this.checked)">
+                    <span class="toggle-slider-sm"></span>
+                </label>
+            </div>
+            <p class="staff-cmd-desc">${escHtml(cmd.description)}</p>
+            <div class="staff-cmd-usage"><code>${escHtml(cmd.usage)}</code></div>
+            <div class="staff-cmd-actions">
+                <button class="btn-sm btn-outline" onclick="editStaffCommandDesc('${key}')">Editar descripcion</button>
+                ${cmd.modifiedBy ? '<span class="staff-cmd-meta">Modificado por ' + escHtml(cmd.modifiedBy) + '</span>' : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterStaffCmds(filter, btn) {
+    _staffCmdFilter = filter;
+    document.querySelectorAll('.staff-cmd-filters .btn-filter').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderStaffCommands();
+}
+
+async function toggleStaffCommand(key, enabled) {
+    try {
+        const data = await postAPI('/api/admin/staff-commands/toggle', { command: key, enabled });
+        _staffCmdsData = data.commands || {};
+        showNotification(`Comando ${enabled ? 'activado' : 'desactivado'}`, enabled ? 'success' : 'warning');
+        renderStaffCommands();
+    } catch (error) {
+        showNotification('Error cambiando comando', 'error');
+        loadStaffCommands();
+    }
+}
+
+async function editStaffCommandDesc(key) {
+    const cmd = _staffCmdsData[key];
+    if (!cmd) return;
+    const newDesc = prompt('Nueva descripcion para ' + cmd.name + ':', cmd.description);
+    if (newDesc === null || newDesc === cmd.description) return;
+    try {
+        const response = await fetchAPI('/api/admin/staff-commands/update', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command: key, description: newDesc })
+        });
+        _staffCmdsData = response.commands || {};
+        showNotification('Descripcion actualizada', 'success');
+        renderStaffCommands();
+    } catch (error) {
+        showNotification('Error actualizando descripcion', 'error');
+    }
+}
+
 function loadPageData(page) {
     switch (page) {
         case 'dashboard': loadDashboardData(); break;
@@ -1396,6 +1482,7 @@ function loadPageData(page) {
         case 'powerups': loadPowerupsData(); break;
         case 'economia': loadEconomyData(); break;
         case 'sistemas-avanzados': loadAdvancedSystems(); break;
+        case 'staff-commands': loadStaffCommands(); break;
         case 'estadisticas': loadStatisticsData(); break;
         case 'audit-log': loadAuditLog(1); break;
         case 'logs': loadLogsData(1); break;

@@ -5,7 +5,7 @@ import { calculateLevel, getXPProgress, getRandomXP, calculateBoostMultiplier, a
 import { generateRankCard } from './utils/cardGenerator.js';
 import { initializeNightBoost, getNightBoostMultiplier } from './utils/timeBoost.js';
 import { isStaff } from './utils/helpers.js';
-import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, saveQuestionToMongo, getQuestionsFromMongo, answerQuestionInMongo, getAllStreaksFromMongo, getUserMissions, updateMissionProgress, getEconomy, addLagcoins } from './utils/mongoSync.js';
+import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, getAllStreaksFromMongo, getUserMissions, updateMissionProgress, getEconomy, addLagcoins } from './utils/mongoSync.js';
 import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFromMongo, getLogsFromMongo, getAlerts, exportLogs, getSystemsList, SYSTEMS } from './utils/activityLogger.js';
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
 import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
@@ -358,65 +358,6 @@ app.get('/api/boosts', (req, res) => {
   } catch (error) {
     console.error('Error getting boosts:', error);
     res.status(500).json({ error: 'Error al obtener boosts' });
-  }
-});
-
-// API para Preguntas y Respuestas
-app.get('/api/questions', async (req, res) => {
-  try {
-    const questions = await getQuestionsFromMongo();
-    res.json(questions || []);
-  } catch (error) {
-    console.error('Error getting questions:', error);
-    res.status(500).json({ error: 'Error al obtener preguntas' });
-  }
-});
-
-app.post('/api/questions', express.json(), async (req, res) => {
-  try {
-    const { question, askerName } = req.body;
-    
-    if (!question || !askerName) {
-      return res.status(400).json({ error: 'Pregunta y nombre requeridos' });
-    }
-    
-    if (question.length > 500) {
-      return res.status(400).json({ error: 'La pregunta es muy larga (máx 500 caracteres)' });
-    }
-    
-    const savedQuestion = await saveQuestionToMongo({
-      question,
-      askerName,
-      answered: false
-    });
-    
-    res.json(savedQuestion);
-  } catch (error) {
-    console.error('Error saving question:', error);
-    res.status(500).json({ error: 'Error al guardar pregunta' });
-  }
-});
-
-app.post('/api/questions/:id/answer', express.json(), async (req, res) => {
-  try {
-    const { answer, password } = req.body;
-    const { id } = req.params;
-    
-    // Validar contraseña (usa env var o una clave simple)
-    const adminPassword = process.env.ADMIN_PASSWORD || 'cambiar-esto';
-    if (password !== adminPassword) {
-      return res.status(403).json({ error: 'Contraseña incorrecta' });
-    }
-    
-    if (!answer || answer.length > 1000) {
-      return res.status(400).json({ error: 'Respuesta inválida' });
-    }
-    
-    const updatedQuestion = await answerQuestionInMongo(id, answer);
-    res.json(updatedQuestion);
-  } catch (error) {
-    console.error('Error answering question:', error);
-    res.status(500).json({ error: 'Error al responder pregunta' });
   }
 });
 
@@ -1987,6 +1928,7 @@ client.on('interactionCreate', async (interaction) => {
       const userData = db.getUser(interaction.guildId, interaction.user.id);
       
       const THEME_NAMES = {
+        custom: '🎨 Personalizada',
         pixel: '🎮 Pixel Art',
         ocean: '🌊 Océano',
         zelda: '⚔️ Zelda',
@@ -1997,6 +1939,10 @@ client.on('interactionCreate', async (interaction) => {
         minecraft: '⛏️ Minecraft',
         fnaf: '🐻 FNAF'
       };
+      
+      if (selected === 'custom' && (!userData.rankcard_custom || typeof userData.rankcard_custom !== 'object')) {
+        return interaction.reply({ content: '❌ No tienes una tarjeta personalizada creada.', flags: 64 });
+      }
       
       userData.selectedCardTheme = selected;
       db.saveUser(interaction.guildId, interaction.user.id, userData);
@@ -2162,6 +2108,10 @@ client.on('interactionCreate', async (interaction) => {
   
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
+
+  if (!db.isStaffCommandEnabled(interaction.commandName)) {
+    return interaction.reply({ content: '❌ Este comando esta desactivado por un administrador desde el panel.', flags: 64 });
+  }
 
   // Log de auditoría para comandos slash (en segundo plano para no bloquear el comando)
   const options = interaction.options.data.map(opt => `${opt.name}: ${opt.value}`).join(', ') || 'Sin opciones';
@@ -3750,6 +3700,51 @@ app.post('/api/admin/systems/advanced', verifyAdminToken, express.json(), (req, 
     res.json({ success: true, systems: updated });
   } catch (error) {
     console.error('Error en systems advanced update:', error);
+    res.status(500).json({ message: 'Error del servidor' });
+  }
+});
+
+// ===== STAFF COMMANDS MANAGEMENT =====
+app.get('/api/admin/staff-commands', verifyAdminToken, (req, res) => {
+  try {
+    const commands = db.getStaffCommands();
+    res.json({ commands });
+  } catch (error) {
+    console.error('Error fetching staff commands:', error);
+    res.status(500).json({ message: 'Error del servidor' });
+  }
+});
+
+app.post('/api/admin/staff-commands/toggle', verifyAdminToken, express.json(), (req, res) => {
+  try {
+    const { command, enabled } = req.body;
+    if (!command) return res.status(400).json({ message: 'command requerido' });
+
+    const adminName = req.adminUser?.username || 'Admin';
+    db.setStaffCommand(command, { enabled, adminName });
+    db.logAdminAction(adminName, enabled ? 'staff_command_enabled' : 'staff_command_disabled', { command });
+
+    const commands = db.getStaffCommands();
+    res.json({ success: true, commands });
+  } catch (error) {
+    console.error('Error toggling staff command:', error);
+    res.status(500).json({ message: 'Error del servidor' });
+  }
+});
+
+app.put('/api/admin/staff-commands/update', verifyAdminToken, express.json(), (req, res) => {
+  try {
+    const { command, description } = req.body;
+    if (!command) return res.status(400).json({ message: 'command requerido' });
+
+    const adminName = req.adminUser?.username || 'Admin';
+    db.setStaffCommand(command, { description, adminName });
+    db.logAdminAction(adminName, 'staff_command_updated', { command, description });
+
+    const commands = db.getStaffCommands();
+    res.json({ success: true, commands });
+  } catch (error) {
+    console.error('Error updating staff command:', error);
     res.status(500).json({ message: 'Error del servidor' });
   }
 });

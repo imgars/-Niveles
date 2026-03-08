@@ -30,10 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
             loadLeaderboard();
         }
         
-        if (sectionId === 'preguntas') {
-            loadQuestions();
-        }
-        
         if (sectionId === 'estadisticas') {
             // Resetear búsqueda al entrar a la sección
             document.getElementById('stats-username-input').value = '';
@@ -66,159 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Cargar preguntas
-    async function loadQuestions() {
-        try {
-            const response = await fetch('/api/questions');
-            const questions = await response.json();
-            
-            const questionsList = document.getElementById('questions-list');
-            questionsList.innerHTML = '';
-            
-            if (questions.length === 0) {
-                questionsList.innerHTML = '<div class="no-answered">No hay preguntas aún. ¡Sé el primero!</div>';
-                return;
-            }
-            
-            questions.forEach(q => {
-                const card = document.createElement('div');
-                card.className = `question-card ${q.answered ? 'answered' : 'unanswered'}`;
-                
-                const date = new Date(q.createdAt).toLocaleDateString('es-ES');
-                
-                card.innerHTML = `
-                    <div class="question-header">
-                        <span class="asker-name">${q.askerName}</span>
-                        <span class="question-date">${date}</span>
-                    </div>
-                    <div class="question-text">${q.question}</div>
-                    ${q.answered ? `
-                        <div class="answer-section">
-                            <span class="answer-label">Respuesta:</span>
-                            <div class="answer-text">${q.answer}</div>
-                        </div>
-                    ` : `
-                        <div class="no-answered">Pendiente de respuesta...</div>
-                        <button type="button" class="answer-button" data-question-id="${q._id}">Responder</button>
-                    `}
-                `;
-                
-                questionsList.appendChild(card);
-                
-                // Agregar event listener al botón de responder
-                if (!q.answered) {
-                    const answerBtn = card.querySelector('.answer-button');
-                    answerBtn.addEventListener('click', () => openAnswerModal(q));
-                }
-            });
-        } catch (error) {
-            console.error('Error loading questions:', error);
-        }
-    }
-    
-    // Abrir modal de respuesta
-    function openAnswerModal(question) {
-        const modal = document.getElementById('answer-modal');
-        const preview = document.getElementById('answer-question-preview');
-        
-        preview.innerHTML = `
-            <div class="preview-asker">${question.askerName}</div>
-            <div class="preview-text">${question.question}</div>
-        `;
-        
-        // Guardar ID de la pregunta en el formulario
-        document.getElementById('answer-form').dataset.questionId = question._id;
-        
-        modal.classList.add('show');
-    }
-    
-    // Cerrar modal de respuesta
-    function closeAnswerModal() {
-        const modal = document.getElementById('answer-modal');
-        modal.classList.remove('show');
-        document.getElementById('answer-form').reset();
-        document.getElementById('answer-message').className = 'form-message';
-    }
-    
-    // Evento para cerrar modal
-    document.querySelector('.answer-modal-close').addEventListener('click', closeAnswerModal);
-    
-    document.getElementById('answer-modal').addEventListener('click', (e) => {
-        if (e.target.id === 'answer-modal') closeAnswerModal();
-    });
-    
-    // Manejar envío de respuesta
-    const answerForm = document.getElementById('answer-form');
-    answerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const questionId = answerForm.dataset.questionId;
-        const answerText = document.getElementById('answer-text').value;
-        const password = document.getElementById('admin-password').value;
-        const messageDiv = document.getElementById('answer-message');
-        
-        try {
-            const response = await fetch(`/api/questions/${questionId}/answer`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ answer: answerText, password })
-            });
-            
-            if (response.ok) {
-                messageDiv.textContent = '✅ Respuesta enviada correctamente!';
-                messageDiv.className = 'form-message success';
-                setTimeout(() => {
-                    closeAnswerModal();
-                    loadQuestions();
-                }, 1500);
-            } else {
-                const error = await response.json();
-                messageDiv.textContent = '❌ ' + error.error;
-                messageDiv.className = 'form-message error';
-            }
-        } catch (error) {
-            messageDiv.textContent = '❌ Error al enviar respuesta';
-            messageDiv.className = 'form-message error';
-        }
-    });
-    
-    // Manejar formulario de preguntas
-    const questionForm = document.getElementById('question-form');
-    if (questionForm) {
-        questionForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const askerName = document.getElementById('asker-name').value.trim();
-            const questionText = document.getElementById('question-text').value.trim();
-            const messageDiv = document.getElementById('form-message');
-            
-            if (!askerName || !questionText) return;
-            
-            try {
-                const response = await fetch('/api/questions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: questionText, askerName })
-                });
-                
-                if (response.ok) {
-                    messageDiv.textContent = '✅ Pregunta enviada correctamente!';
-                    messageDiv.className = 'form-message success';
-                    questionForm.reset();
-                    setTimeout(() => messageDiv.className = 'form-message', 3000);
-                    loadQuestions();
-                } else {
-                    const error = await response.json();
-                    messageDiv.textContent = '❌ ' + error.error;
-                    messageDiv.className = 'form-message error';
-                }
-            } catch (error) {
-                messageDiv.textContent = '❌ Error al enviar pregunta';
-                messageDiv.className = 'form-message error';
-            }
-        });
-    }
-
     const hash = window.location.hash.slice(1);
     if (hash && document.getElementById(hash)) {
         showSection(hash);
@@ -236,10 +79,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     async function loadLeaderboard() {
-        const podiumEl = document.getElementById('lb-podium');
         const listEl = document.getElementById('lb-list');
 
-        podiumEl.innerHTML = '<div class="lb-podium-loading"><div class="loading-spinner"></div><span>Cargando podio...</span></div>';
         listEl.innerHTML = '<div class="lb-list-loading"><div class="loading-spinner"></div><span>Cargando leaderboard...</span></div>';
 
         try {
@@ -256,7 +97,6 @@ document.addEventListener('DOMContentLoaded', function() {
             renderLeaderboard();
         } catch (error) {
             console.error('Error loading leaderboard:', error);
-            podiumEl.innerHTML = '';
             listEl.innerHTML = '<div class="lb-list-loading"><span style="color: #FF6B6B;">Error al cargar el leaderboard</span></div>';
         }
     }
@@ -274,57 +114,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderLeaderboard() {
-        const podiumEl = document.getElementById('lb-podium');
         const listEl = document.getElementById('lb-list');
-        const isSearching = document.getElementById('search-user').value.trim() !== '';
 
         if (filteredData.length === 0) {
-            podiumEl.innerHTML = '';
             listEl.innerHTML = '<div class="lb-list-loading"><span>No se encontraron usuarios</span></div>';
             updatePagination();
             return;
         }
 
-        if (currentPage === 1 && !isSearching) {
-            const top3 = filteredData.slice(0, 3);
-            const classes = ['gold', 'silver', 'bronze'];
-            const medals = ['👑', '', ''];
-
-            podiumEl.innerHTML = top3.map((user, i) => {
-                const displayName = user.displayName || user.username || 'Usuario ' + user.userId.slice(-4);
-                const avatarUrl = user.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
-                const crown = i === 0 ? '<div class="lb-crown">👑</div>' : '';
-                return '<div class="lb-podium-card ' + classes[i] + '" data-user=\'' + buildUserDataAttr(user, i + 1) + '\'>' +
-                    '<div class="lb-podium-rank">' + (i + 1) + '</div>' +
-                    crown +
-                    '<img src="' + avatarUrl + '" alt="" class="lb-podium-avatar" onerror="this.src=\'https://cdn.discordapp.com/embed/avatars/0.png\'">' +
-                    '<div class="lb-podium-name">' + escapeHtml(displayName) + '</div>' +
-                    '<div class="lb-podium-level">Nivel ' + user.level + '</div>' +
-                    '<div class="lb-podium-xp">' + formatNumber(user.totalXp) + ' XP</div>' +
-                '</div>';
-            }).join('');
-
-            podiumEl.querySelectorAll('.lb-podium-card').forEach(card => {
-                card.addEventListener('click', function() {
-                    try { showUserModal(JSON.parse(this.dataset.user)); } catch(e) {}
-                });
-            });
-            podiumEl.style.display = 'flex';
-        } else {
-            podiumEl.innerHTML = '';
-            podiumEl.style.display = 'none';
-        }
-
-        const hasPodium = currentPage === 1 && !isSearching;
-        const podiumCount = hasPodium ? Math.min(3, filteredData.length) : 0;
-        let listStart, listEnd;
-        if (isSearching) {
-            listStart = (currentPage - 1) * itemsPerPage;
-            listEnd = listStart + itemsPerPage;
-        } else {
-            listStart = podiumCount + (currentPage - 1) * itemsPerPage;
-            listEnd = listStart + itemsPerPage;
-        }
+        const listStart = (currentPage - 1) * itemsPerPage;
+        const listEnd = listStart + itemsPerPage;
         const pageData = filteredData.slice(listStart, listEnd);
 
         if (pageData.length === 0 && currentPage === 1) {
@@ -333,13 +132,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        const medalClasses = { 1: 'gold', 2: 'silver', 3: 'bronze' };
+        const medalIcons = { 1: '👑', 2: '🥈', 3: '🥉' };
+
         listEl.innerHTML = pageData.map((user, index) => {
             const rank = listStart + index + 1;
             const displayName = user.displayName || user.username || 'Usuario ' + user.userId.slice(-4);
             const avatarUrl = user.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
+            const rowClass = medalClasses[rank] ? ' ' + medalClasses[rank] : '';
+            const rankDisplay = medalIcons[rank] ? medalIcons[rank] + ' #' + rank : '#' + rank;
 
-            return '<div class="lb-row" data-user=\'' + buildUserDataAttr(user, rank) + '\'>' +
-                '<div class="lb-row-rank">#' + rank + '</div>' +
+            return '<div class="lb-row' + rowClass + '" data-user=\'' + buildUserDataAttr(user, rank) + '\'>' +
+                '<div class="lb-row-rank">' + rankDisplay + '</div>' +
                 '<div class="lb-row-user">' +
                     '<img src="' + avatarUrl + '" alt="" class="lb-row-avatar" onerror="this.src=\'https://cdn.discordapp.com/embed/avatars/0.png\'">' +
                     '<span class="lb-row-name">' + escapeHtml(displayName) + '</span>' +
@@ -359,16 +163,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updatePagination() {
-        const isSearching = document.getElementById('search-user').value.trim() !== '';
         const dataLen = filteredData.length;
-        let totalPages;
-        if (isSearching) {
-            totalPages = Math.ceil(dataLen / itemsPerPage);
-        } else {
-            const podiumCount = Math.min(3, dataLen);
-            const remaining = Math.max(0, dataLen - podiumCount);
-            totalPages = remaining > 0 ? Math.ceil(remaining / itemsPerPage) : (dataLen > 0 ? 1 : 0);
-        }
+        const totalPages = Math.max(1, Math.ceil(dataLen / itemsPerPage));
         const pageInfo = document.getElementById('page-info');
         const prevBtn = document.getElementById('prev-page');
         const nextBtn = document.getElementById('next-page');

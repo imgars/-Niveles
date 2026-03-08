@@ -34,6 +34,7 @@
                 <a href="#powerups" class="nav-link" data-page="powerups"><span>⚡</span> Power-ups</a>
                 <a href="#economia" class="nav-link" data-page="economia"><span>💰</span> Economia</a>
                 <a href="#sistemas-avanzados" class="nav-link" data-page="sistemas-avanzados"><span>🎛️</span> Control Sistemas</a>
+                <a href="#staff-commands" class="nav-link" data-page="staff-commands"><span>🔧</span> Comandos Staff</a>
 
                 <div class="nav-group-label">Administracion</div>
                 <a href="#usuarios" class="nav-link" data-page="usuarios"><span>👥</span> Gestion Usuarios</a>
@@ -678,6 +679,25 @@
                         <p class="section-desc">Activa o desactiva sistemas del bot con razon, programacion de reactivacion y overrides por canal.</p>
                         <div id="systemsGrid" class="systems-advanced-grid">
                             <p class="loading-text">Cargando sistemas...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="staff-commands-page" class="page">
+                    <div class="section-content">
+                        <div class="page-header-actions">
+                            <h3>Comandos de Staff</h3>
+                            <button class="btn-secondary" onclick="loadStaffCommands()">Actualizar</button>
+                        </div>
+                        <p class="section-desc">Gestiona los comandos de staff: activa, desactiva y modifica cada comando.</p>
+                        <div class="staff-cmd-filters" style="margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap;">
+                            <button class="btn-filter active" data-filter="all" onclick="filterStaffCmds('all',this)">Todos</button>
+                            <button class="btn-filter" data-filter="niveles" onclick="filterStaffCmds('niveles',this)">Niveles</button>
+                            <button class="btn-filter" data-filter="economia" onclick="filterStaffCmds('economia',this)">Economia</button>
+                            <button class="btn-filter" data-filter="sistemas" onclick="filterStaffCmds('sistemas',this)">Sistemas</button>
+                        </div>
+                        <div id="staffCommandsGrid" class="staff-commands-grid">
+                            <p class="loading-text">Cargando comandos...</p>
                         </div>
                     </div>
                 </div>

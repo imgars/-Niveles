@@ -1,6 +1,15 @@
 # -Niveles
 
 ## Recent Changes
+- **Dashboard & Admin Panel Overhaul (Marzo 2026):**
+  - **Leaderboard simplificado:** Eliminado el podio exagerado del top 3. Ahora los 3 primeros usuarios se muestran como filas normales pero con colores personalizados: dorado (#FFD700), plateado (#C0C0C0) y bronce (#CD7F32). Incluyen medallas emoji.
+  - **Comandos de Staff movidos al Admin Panel:** Eliminadas las 3 secciones de comandos de staff (Niveles, Economia, Sistemas) del dashboard publico. Creada nueva pagina "Comandos Staff" en el panel admin con: vista de todos los comandos por categoria, toggles para activar/desactivar cada comando, edicion de descripciones, filtros por categoria, y log de auditoria.
+  - **Backend staff commands:** Nuevos endpoints API: `GET /api/admin/staff-commands`, `POST /api/admin/staff-commands/toggle`, `PUT /api/admin/staff-commands/update`. Estado almacenado en `data/staff_commands.json`. Los comandos desactivados desde el panel se bloquean en Discord con mensaje de error.
+  - **Metodos DB:** `getStaffCommands()`, `setStaffCommand()`, `isStaffCommandEnabled()` en `utils/database.js`.
+  - **Sistema de preguntas eliminado:** Quitada la seccion "Preguntas Frecuentes" completa del dashboard (formulario, lista, modal de respuesta). Eliminados los 3 endpoints API (`/api/questions`). Eliminado CSS y JS asociado.
+  - **Rankcard select con custom:** El comando `/rankcard select` ahora muestra la opcion "Personalizada" cuando el usuario tiene una rankcard custom. Permite alternar entre la rankcard personalizada y los temas predefinidos. `generateRankCard` ahora respeta `selectedCardTheme` en vez de auto-aplicar la custom.
+  - **Archivos modificados:** `public/index.html`, `public/js/main.js`, `public/css/style.css`, `public/admin/dashboard.html`, `public/admin/js/admin.js`, `public/admin/css/admin.css`, `index.js`, `utils/database.js`, `utils/cardGenerator.js`, `commands/rankcard.js`
+
 - **Fix Preview/Discord Consistency (Marzo 2026):**
   - Replaced all `Math.random()` calls in `cardGenerator.js` with a seeded PRNG (`createSeededRandom`) based on user ID hash (`userSeedFromId`).
   - Every background (stars, galaxy, geometric, cyberpunk, waves) and decorative effect (drawStars, drawNeonGlow, drawCupheadEffects, drawUndertaleEffects, drawFortniteEffects, themed card backgrounds) now produces identical results for the same user across renders.

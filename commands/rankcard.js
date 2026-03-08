@@ -84,25 +84,37 @@ export default {
         const purchasedCards = userData.purchasedCards || [];
         const available = await getAvailableThemes(member, userData.level, purchasedCards);
 
-        if (available.length === 1) {
+        const hasCustomCard = userData.rankcard_custom && typeof userData.rankcard_custom === 'object';
+
+        if (available.length === 1 && !hasCustomCard) {
           return interaction.reply({
             content: `❌ Solo tienes 1 tema disponible: ${THEME_NAMES[available[0]]}`,
             flags: 64
           });
         }
 
+        const options = available.map(theme =>
+          new StringSelectMenuOptionBuilder()
+            .setLabel(THEME_NAMES[theme] || theme)
+            .setValue(theme)
+            .setDescription(`Cambia a tema ${THEME_NAMES[theme] || theme}`)
+            .setDefault(userData.selectedCardTheme === theme && userData.selectedCardTheme !== 'custom')
+        );
+
+        if (hasCustomCard) {
+          options.unshift(
+            new StringSelectMenuOptionBuilder()
+              .setLabel('🎨 Personalizada')
+              .setValue('custom')
+              .setDescription('Usa tu tarjeta personalizada')
+              .setDefault(!userData.selectedCardTheme || userData.selectedCardTheme === 'custom')
+          );
+        }
+
         const select = new StringSelectMenuBuilder()
           .setCustomId('rankcard_theme_select')
           .setPlaceholder('Elige tu tema de tarjeta')
-          .addOptions(
-            available.map(theme =>
-              new StringSelectMenuOptionBuilder()
-                .setLabel(THEME_NAMES[theme] || theme)
-                .setValue(theme)
-                .setDescription(`Cambia a tema ${THEME_NAMES[theme]}`)
-                .setDefault(userData.selectedCardTheme === theme)
-            )
-          );
+          .addOptions(options);
 
         const row = new ActionRowBuilder().addComponents(select);
 
@@ -111,7 +123,7 @@ export default {
           .setTitle('🎨 Selecciona tu Tarjeta de Rango')
           .setDescription(`Tienes ${available.length} temas disponibles`)
           .addFields(
-            { name: 'Seleccionado', value: `${THEME_NAMES[userData.selectedCardTheme || 'automático']}` }
+            { name: 'Seleccionado', value: `${userData.selectedCardTheme === 'custom' ? '🎨 Personalizada' : (THEME_NAMES[userData.selectedCardTheme] || 'automático')}` }
           );
 
         return interaction.reply({ embeds: [embed], components: [row], flags: 64 });

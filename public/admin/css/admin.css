@@ -3930,3 +3930,125 @@ input:checked + .toggle-slider-sm:before { transform: translateX(22px); }
 .filter-select option {
     background: #2c2f33;
 }
+
+.staff-commands-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+.staff-cmd-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 18px;
+    transition: all 0.2s;
+}
+
+.staff-cmd-card.enabled {
+    border-left: 4px solid #43b581;
+}
+
+.staff-cmd-card.disabled {
+    border-left: 4px solid #f04747;
+    opacity: 0.7;
+}
+
+.staff-cmd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.staff-cmd-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.staff-cmd-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(88, 101, 242, 0.2);
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.staff-cmd-cat {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.staff-cmd-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    margin: 0 0 8px 0;
+}
+
+.staff-cmd-usage {
+    margin-bottom: 10px;
+}
+
+.staff-cmd-usage code {
+    font-size: 11px;
+    background: rgba(0,0,0,0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: rgba(255,255,255,0.5);
+}
+
+.staff-cmd-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.staff-cmd-meta {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+}
+
+.btn-filter {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.6);
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.btn-filter.active,
+.btn-filter:hover {
+    background: rgba(88, 101, 242, 0.3);
+    border-color: #5865F2;
+    color: #fff;
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.6);
+    transition: all 0.2s;
+}
+
+.btn-outline:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}

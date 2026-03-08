@@ -958,7 +958,9 @@ function drawNeonGlow(ctx, width, height, rand) {
 
 export async function generateRankCard(member, userData, progress, boostsText = '') {
   if (userData?.rankcard_custom && typeof userData.rankcard_custom === 'object') {
-    return generateCustomRankCard(member, userData, progress, boostsText);
+    if (!userData.selectedCardTheme || userData.selectedCardTheme === 'custom') {
+      return generateCustomRankCard(member, userData, progress, boostsText);
+    }
   }
 
   const rand = createSeededRandom(userSeedFromId(member?.id || member?.user?.id || '0'));

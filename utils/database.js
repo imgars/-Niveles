@@ -10,6 +10,7 @@ const SYSTEMS_FILE = path.join(DATA_DIR, 'systems.json');
 const AUDIT_FILE = path.join(DATA_DIR, 'audit.json');
 const ALERTS_FILE = path.join(DATA_DIR, 'alerts.json');
 const SYSTEMS_ADVANCED_FILE = path.join(DATA_DIR, 'systems_advanced.json');
+const STAFF_COMMANDS_FILE = path.join(DATA_DIR, 'staff_commands.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -25,6 +26,7 @@ class Database {
     this.audit = this.loadFile(AUDIT_FILE, []);
     this.alerts = this.loadFile(ALERTS_FILE, []);
     this.systemsAdvanced = this.loadFile(SYSTEMS_ADVANCED_FILE, {});
+    this.staffCommands = this.loadFile(STAFF_COMMANDS_FILE, {});
     this.settings = { maintenanceMode: false };
     this.mongoSync = null;
     this._commandStats = {};
@@ -576,6 +578,60 @@ class Database {
     }
 
     if (changed) this.saveFile(SYSTEMS_ADVANCED_FILE, this.systemsAdvanced);
+  }
+
+  getStaffCommands() {
+    const STAFF_COMMANDS_META = {
+      addlevel: { name: '/addlevel', category: 'niveles', description: 'Anadir niveles a un usuario', usage: '/addlevel <usuario> <cantidad>' },
+      removelevel: { name: '/removelevel', category: 'niveles', description: 'Quitar niveles a un usuario', usage: '/removelevel <usuario> <cantidad>' },
+      setlevel: { name: '/setlevel', category: 'niveles', description: 'Establecer nivel exacto', usage: '/setlevel <usuario> <nivel>' },
+      xp: { name: '/xp', category: 'niveles', description: 'Gestionar XP de usuarios', usage: '/xp add/remove/reset' },
+      boost: { name: '/boost', category: 'niveles', description: 'Anadir boost a usuario/canal', usage: '/boost add' },
+      globalboost: { name: '/globalboost', category: 'niveles', description: 'Activar boost global', usage: '/globalboost' },
+      removeglobalboost: { name: '/removeglobalboost', category: 'niveles', description: 'Quitar boost global', usage: '/removeglobalboost' },
+      banxp: { name: '/banxp', category: 'niveles', description: 'Banear de ganar XP', usage: '/banxp user/channel' },
+      unbanxp: { name: '/unbanxp', category: 'niveles', description: 'Desbanear de XP', usage: '/unbanxp user/channel' },
+      resettemporada: { name: '/resettemporada', category: 'niveles', description: 'Resetear toda la XP del servidor', usage: '/resettemporada' },
+      clearlevelroles: { name: '/clearlevelroles', category: 'niveles', description: 'Quitar todos los roles de nivel', usage: '/clearlevelroles' },
+      addcoins: { name: '/addcoins', category: 'economia', description: 'Anadir Lagcoins a un usuario', usage: '/addcoins <usuario> <cantidad>' },
+      removecoins: { name: '/removecoins', category: 'economia', description: 'Quitar Lagcoins a un usuario', usage: '/removecoins <usuario> <cantidad>' },
+      setcoins: { name: '/setcoins', category: 'economia', description: 'Establecer Lagcoins exactos', usage: '/setcoins <usuario> <cantidad>' },
+      giveitem: { name: '/giveitem', category: 'economia', description: 'Dar un item a un usuario', usage: '/giveitem <usuario> <item>' },
+      removeitem: { name: '/removeitem', category: 'economia', description: 'Quitar un item a un usuario', usage: '/removeitem <usuario> <item>' },
+      embed: { name: '/embed', category: 'economia', description: 'Crear embed personalizado', usage: '/embed' },
+      mensaje: { name: '/mensaje', category: 'economia', description: 'Enviar mensaje plano', usage: '/mensaje <texto>' },
+      sistema: { name: '/sistema', category: 'sistemas', description: 'Activar/desactivar sistemas y ver estado', usage: '/sistema toggle|status' }
+    };
+
+    const result = {};
+    for (const [key, meta] of Object.entries(STAFF_COMMANDS_META)) {
+      const saved = this.staffCommands[key] || {};
+      result[key] = {
+        ...meta,
+        enabled: saved.enabled !== false,
+        description: saved.description || meta.description,
+        modifiedAt: saved.modifiedAt || null,
+        modifiedBy: saved.modifiedBy || null
+      };
+    }
+    return result;
+  }
+
+  setStaffCommand(commandKey, options) {
+    if (!this.staffCommands[commandKey]) this.staffCommands[commandKey] = {};
+    const cmd = this.staffCommands[commandKey];
+
+    if (options.enabled !== undefined) cmd.enabled = options.enabled;
+    if (options.description !== undefined) cmd.description = options.description;
+    cmd.modifiedAt = Date.now();
+    cmd.modifiedBy = options.adminName || 'Admin';
+
+    this.saveFile(STAFF_COMMANDS_FILE, this.staffCommands);
+  }
+
+  isStaffCommandEnabled(commandKey) {
+    const saved = this.staffCommands[commandKey];
+    return saved ? saved.enabled !== false : true;
   }
 
   logAdminAction(adminName, action, details = {}) {
