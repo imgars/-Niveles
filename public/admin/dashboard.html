@@ -206,6 +206,13 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="login-history-section">
+                            <h2>Inicios de Sesion</h2>
+                            <div id="loginHistoryList" class="login-history-list">
+                                <p style="color: #999;">Cargando...</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -693,8 +700,14 @@
                         <div class="staff-cmd-filters" style="margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap;">
                             <button class="btn-filter active" data-filter="all" onclick="filterStaffCmds('all',this)">Todos</button>
                             <button class="btn-filter" data-filter="niveles" onclick="filterStaffCmds('niveles',this)">Niveles</button>
+                            <button class="btn-filter" data-filter="staff-niveles" onclick="filterStaffCmds('staff-niveles',this)">Staff Niveles</button>
                             <button class="btn-filter" data-filter="economia" onclick="filterStaffCmds('economia',this)">Economia</button>
-                            <button class="btn-filter" data-filter="sistemas" onclick="filterStaffCmds('sistemas',this)">Sistemas</button>
+                            <button class="btn-filter" data-filter="staff-economia" onclick="filterStaffCmds('staff-economia',this)">Staff Economia</button>
+                            <button class="btn-filter" data-filter="casino" onclick="filterStaffCmds('casino',this)">Casino</button>
+                            <button class="btn-filter" data-filter="minijuegos" onclick="filterStaffCmds('minijuegos',this)">Minijuegos</button>
+                            <button class="btn-filter" data-filter="utilidad" onclick="filterStaffCmds('utilidad',this)">Utilidad</button>
+                            <button class="btn-filter" data-filter="social" onclick="filterStaffCmds('social',this)">Social</button>
+                            <button class="btn-filter" data-filter="staff-sistemas" onclick="filterStaffCmds('staff-sistemas',this)">Staff Sistemas</button>
                         </div>
                         <div id="staffCommandsGrid" class="staff-commands-grid">
                             <p class="loading-text">Cargando comandos...</p>

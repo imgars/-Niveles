@@ -11,6 +11,7 @@ const AUDIT_FILE = path.join(DATA_DIR, 'audit.json');
 const ALERTS_FILE = path.join(DATA_DIR, 'alerts.json');
 const SYSTEMS_ADVANCED_FILE = path.join(DATA_DIR, 'systems_advanced.json');
 const STAFF_COMMANDS_FILE = path.join(DATA_DIR, 'staff_commands.json');
+const LOGIN_HISTORY_FILE = path.join(DATA_DIR, 'login_history.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -27,6 +28,7 @@ class Database {
     this.alerts = this.loadFile(ALERTS_FILE, []);
     this.systemsAdvanced = this.loadFile(SYSTEMS_ADVANCED_FILE, {});
     this.staffCommands = this.loadFile(STAFF_COMMANDS_FILE, {});
+    this.loginHistory = this.loadFile(LOGIN_HISTORY_FILE, []);
     this.settings = { maintenanceMode: false };
     this.mongoSync = null;
     this._commandStats = {};
@@ -582,25 +584,87 @@ class Database {
 
   getStaffCommands() {
     const STAFF_COMMANDS_META = {
-      addlevel: { name: '/addlevel', category: 'niveles', description: 'Anadir niveles a un usuario', usage: '/addlevel <usuario> <cantidad>' },
-      removelevel: { name: '/removelevel', category: 'niveles', description: 'Quitar niveles a un usuario', usage: '/removelevel <usuario> <cantidad>' },
-      setlevel: { name: '/setlevel', category: 'niveles', description: 'Establecer nivel exacto', usage: '/setlevel <usuario> <nivel>' },
-      xp: { name: '/xp', category: 'niveles', description: 'Gestionar XP de usuarios', usage: '/xp add/remove/reset' },
-      boost: { name: '/boost', category: 'niveles', description: 'Anadir boost a usuario/canal', usage: '/boost add' },
-      globalboost: { name: '/globalboost', category: 'niveles', description: 'Activar boost global', usage: '/globalboost' },
-      removeglobalboost: { name: '/removeglobalboost', category: 'niveles', description: 'Quitar boost global', usage: '/removeglobalboost' },
-      banxp: { name: '/banxp', category: 'niveles', description: 'Banear de ganar XP', usage: '/banxp user/channel' },
-      unbanxp: { name: '/unbanxp', category: 'niveles', description: 'Desbanear de XP', usage: '/unbanxp user/channel' },
-      resettemporada: { name: '/resettemporada', category: 'niveles', description: 'Resetear toda la XP del servidor', usage: '/resettemporada' },
-      clearlevelroles: { name: '/clearlevelroles', category: 'niveles', description: 'Quitar todos los roles de nivel', usage: '/clearlevelroles' },
-      addcoins: { name: '/addcoins', category: 'economia', description: 'Anadir Lagcoins a un usuario', usage: '/addcoins <usuario> <cantidad>' },
-      removecoins: { name: '/removecoins', category: 'economia', description: 'Quitar Lagcoins a un usuario', usage: '/removecoins <usuario> <cantidad>' },
-      setcoins: { name: '/setcoins', category: 'economia', description: 'Establecer Lagcoins exactos', usage: '/setcoins <usuario> <cantidad>' },
-      giveitem: { name: '/giveitem', category: 'economia', description: 'Dar un item a un usuario', usage: '/giveitem <usuario> <item>' },
-      removeitem: { name: '/removeitem', category: 'economia', description: 'Quitar un item a un usuario', usage: '/removeitem <usuario> <item>' },
-      embed: { name: '/embed', category: 'economia', description: 'Crear embed personalizado', usage: '/embed' },
-      mensaje: { name: '/mensaje', category: 'economia', description: 'Enviar mensaje plano', usage: '/mensaje <texto>' },
-      sistema: { name: '/sistema', category: 'sistemas', description: 'Activar/desactivar sistemas y ver estado', usage: '/sistema toggle|status' }
+      level: { name: '/level', category: 'niveles', description: 'Ver tarjeta de nivel', usage: '/level [usuario]' },
+      rank: { name: '/rank', category: 'niveles', description: 'Ver tarjeta de rango', usage: '/rank [usuario]' },
+      nivel: { name: '/nivel', category: 'niveles', description: 'Ver nivel de un usuario', usage: '/nivel [usuario]' },
+      lb: { name: '/lb', category: 'niveles', description: 'Leaderboard de XP', usage: '/lb' },
+      leaderboard: { name: '/leaderboard', category: 'niveles', description: 'Leaderboard completo', usage: '/leaderboard' },
+      addlevel: { name: '/addlevel', category: 'staff-niveles', description: 'Anadir niveles a un usuario', usage: '/addlevel <usuario> <cantidad>' },
+      removelevel: { name: '/removelevel', category: 'staff-niveles', description: 'Quitar niveles a un usuario', usage: '/removelevel <usuario> <cantidad>' },
+      setlevel: { name: '/setlevel', category: 'staff-niveles', description: 'Establecer nivel exacto', usage: '/setlevel <usuario> <nivel>' },
+      xp: { name: '/xp', category: 'staff-niveles', description: 'Gestionar XP de usuarios', usage: '/xp add/remove/reset' },
+      boost: { name: '/boost', category: 'staff-niveles', description: 'Anadir boost a usuario/canal', usage: '/boost add/list/status' },
+      globalboost: { name: '/globalboost', category: 'staff-niveles', description: 'Activar boost global', usage: '/globalboost' },
+      removeglobalboost: { name: '/removeglobalboost', category: 'staff-niveles', description: 'Quitar boost global', usage: '/removeglobalboost' },
+      banxp: { name: '/banxp', category: 'staff-niveles', description: 'Banear de ganar XP', usage: '/banxp user/channel' },
+      unbanxp: { name: '/unbanxp', category: 'staff-niveles', description: 'Desbanear de XP', usage: '/unbanxp user/channel' },
+      resettemporada: { name: '/resettemporada', category: 'staff-niveles', description: 'Resetear toda la XP del servidor', usage: '/resettemporada' },
+      clearlevelroles: { name: '/clearlevelroles', category: 'staff-niveles', description: 'Quitar todos los roles de nivel', usage: '/clearlevelroles' },
+      powerups: { name: '/powerups', category: 'niveles', description: 'Ver y comprar power-ups', usage: '/powerups activos/tienda/comprar' },
+      rankcard: { name: '/rankcard', category: 'niveles', description: 'Gestionar tarjeta de rango', usage: '/rankcard select/link' },
+      rewards: { name: '/rewards', category: 'niveles', description: 'Ver recompensas por nivel', usage: '/rewards' },
+      estadisticas: { name: '/estadisticas', category: 'niveles', description: 'Ver estadisticas del servidor', usage: '/estadisticas' },
+      cooldowns: { name: '/cooldowns', category: 'niveles', description: 'Ver tiempos de espera', usage: '/cooldowns' },
+      racha: { name: '/racha', category: 'niveles', description: 'Ver racha de actividad', usage: '/racha' },
+      balance: { name: '/balance', category: 'economia', description: 'Ver saldo de Lagcoins', usage: '/balance [usuario]' },
+      bank: { name: '/bank', category: 'economia', description: 'Operaciones bancarias', usage: '/bank depositar/retirar/ver/expandir' },
+      daily: { name: '/daily', category: 'economia', description: 'Recompensa diaria', usage: '/daily' },
+      depositar: { name: '/depositar', category: 'economia', description: 'Depositar Lagcoins al banco', usage: '/depositar <cantidad>' },
+      retirar: { name: '/retirar', category: 'economia', description: 'Retirar Lagcoins del banco', usage: '/retirar <cantidad>' },
+      work: { name: '/work', category: 'economia', description: 'Trabajar para ganar Lagcoins', usage: '/work' },
+      trabajar: { name: '/trabajar', category: 'economia', description: 'Trabajar (alias)', usage: '/trabajar' },
+      bored: { name: '/bored', category: 'economia', description: 'Actividad cuando estas aburrido', usage: '/bored' },
+      shop: { name: '/shop', category: 'economia', description: 'Ver y comprar en la tienda', usage: '/shop [item]' },
+      tienda: { name: '/tienda', category: 'economia', description: 'Ver tienda (alias)', usage: '/tienda' },
+      inventario: { name: '/inventario', category: 'economia', description: 'Ver inventario', usage: '/inventario [usuario]' },
+      gift: { name: '/gift', category: 'economia', description: 'Regalar items, coins o XP', usage: '/gift item/lagcoins/xp' },
+      trade: { name: '/trade', category: 'economia', description: 'Intercambiar con otro usuario', usage: '/trade' },
+      economy: { name: '/economy', category: 'economia', description: 'Ver resumen economico', usage: '/economy' },
+      lbeconomia: { name: '/lbeconomia', category: 'economia', description: 'Leaderboard de economia', usage: '/lbeconomia' },
+      impuestos: { name: '/impuestos', category: 'economia', description: 'Ver impuestos', usage: '/impuestos' },
+      seguro: { name: '/seguro', category: 'economia', description: 'Gestionar seguros', usage: '/seguro activar/desactivar/estado' },
+      rob: { name: '/rob', category: 'economia', description: 'Robar a otro usuario', usage: '/rob <usuario>' },
+      robar: { name: '/robar', category: 'economia', description: 'Robar a otro usuario (alias)', usage: '/robar <victima>' },
+      robar_banco: { name: '/robar_banco', category: 'economia', description: 'Asaltar el banco', usage: '/robar_banco' },
+      subasta: { name: '/subasta', category: 'economia', description: 'Sistema de subastas', usage: '/subasta' },
+      nacionalidad: { name: '/nacionalidad', category: 'economia', description: 'Gestionar nacionalidad', usage: '/nacionalidad obtener/ver/viajar/paises' },
+      addcoins: { name: '/addcoins', category: 'staff-economia', description: 'Anadir Lagcoins a un usuario', usage: '/addcoins <usuario> <cantidad>' },
+      removecoins: { name: '/removecoins', category: 'staff-economia', description: 'Quitar Lagcoins a un usuario', usage: '/removecoins <usuario> <cantidad>' },
+      setcoins: { name: '/setcoins', category: 'staff-economia', description: 'Establecer Lagcoins exactos', usage: '/setcoins <usuario> <cantidad>' },
+      addbankcoins: { name: '/addbankcoins', category: 'staff-economia', description: 'Anadir coins al banco', usage: '/addbankcoins <usuario> <cantidad>' },
+      removebankcoins: { name: '/removebankcoins', category: 'staff-economia', description: 'Quitar coins del banco', usage: '/removebankcoins <usuario> <cantidad>' },
+      giveitem: { name: '/giveitem', category: 'staff-economia', description: 'Dar un item a un usuario', usage: '/giveitem <usuario> <item>' },
+      removeitem: { name: '/removeitem', category: 'staff-economia', description: 'Quitar un item a un usuario', usage: '/removeitem <usuario> <item>' },
+      staffeconomy: { name: '/staffeconomy', category: 'staff-economia', description: 'Herramientas de staff para economia', usage: '/staffeconomy daritem/quitaritem/darpowerup/...' },
+      resettempeconomy: { name: '/resettempeconomy', category: 'staff-economia', description: 'Resetear economia temporal', usage: '/resettempeconomy' },
+      blackjack: { name: '/blackjack', category: 'casino', description: 'Jugar blackjack', usage: '/blackjack <apuesta>' },
+      slots: { name: '/slots', category: 'casino', description: 'Jugar tragamonedas', usage: '/slots <apuesta>' },
+      coinflip: { name: '/coinflip', category: 'casino', description: 'Lanzar moneda', usage: '/coinflip' },
+      dice: { name: '/dice', category: 'casino', description: 'Lanzar dados', usage: '/dice' },
+      casino_juegos: { name: '/casino_juegos', category: 'casino', description: 'Juegos de casino extendidos', usage: '/casino_juegos' },
+      casinomulti: { name: '/casinomulti', category: 'casino', description: 'Casino multijugador', usage: '/casinomulti carreras/duelo/poker/ruleta' },
+      minigame: { name: '/minigame', category: 'minijuegos', description: 'Minijuegos interactivos', usage: '/minigame trivia/rps/roulette' },
+      '8ball': { name: '/8ball', category: 'minijuegos', description: 'Bola magica 8', usage: '/8ball <pregunta>' },
+      gamecard: { name: '/gamecard', category: 'minijuegos', description: 'Game cards coleccionables', usage: '/gamecard profile/generate' },
+      tradecard: { name: '/tradecard', category: 'minijuegos', description: 'Intercambiar game cards', usage: '/tradecard' },
+      giftcard: { name: '/giftcard', category: 'minijuegos', description: 'Regalar game cards', usage: '/giftcard <usuario> <tarjeta>' },
+      mision: { name: '/mision', category: 'minijuegos', description: 'Ver y completar misiones', usage: '/mision' },
+      help: { name: '/help', category: 'utilidad', description: 'Ver todos los comandos', usage: '/help [categoria]' },
+      info: { name: '/info', category: 'utilidad', description: 'Informacion del bot', usage: '/info' },
+      perfil: { name: '/perfil', category: 'utilidad', description: 'Ver perfil de usuario', usage: '/perfil [usuario]' },
+      afk: { name: '/afk', category: 'utilidad', description: 'Establecer estado AFK', usage: '/afk' },
+      jumbo: { name: '/jumbo', category: 'utilidad', description: 'Ampliar un emoji', usage: '/jumbo' },
+      marry: { name: '/marry', category: 'social', description: 'Casarse con alguien', usage: '/marry' },
+      divorce: { name: '/divorce', category: 'social', description: 'Divorciarse', usage: '/divorce' },
+      react: { name: '/react', category: 'social', description: 'Reacciones anime', usage: '/react hug/kiss/pat/ship/kill' },
+      pingrole: { name: '/pingrole', category: 'social', description: 'Mencionar un rol', usage: '/pingrole <rol> <mensaje>' },
+      embed: { name: '/embed', category: 'staff-sistemas', description: 'Crear embed personalizado', usage: '/embed' },
+      mensaje: { name: '/mensaje', category: 'staff-sistemas', description: 'Enviar mensaje plano', usage: '/mensaje <texto>' },
+      sistema: { name: '/sistema', category: 'staff-sistemas', description: 'Activar/desactivar sistemas', usage: '/sistema toggle|status' },
+      admin: { name: '/admin', category: 'staff-sistemas', description: 'Panel de abuso administrativo', usage: '/admin' },
+      inactividad: { name: '/inactividad', category: 'staff-sistemas', description: 'Gestionar inactividad', usage: '/inactividad set/remove' },
+      mantenimientopagina: { name: '/mantenimientopagina', category: 'staff-sistemas', description: 'Modo mantenimiento web', usage: '/mantenimientopagina' },
+      eliminarrankcards: { name: '/eliminarrankcards', category: 'staff-sistemas', description: 'Eliminar rankcards de usuario', usage: '/eliminarrankcards' }
     };
 
     const result = {};
@@ -632,6 +696,23 @@ class Database {
   isStaffCommandEnabled(commandKey) {
     const saved = this.staffCommands[commandKey];
     return saved ? saved.enabled !== false : true;
+  }
+
+  addLoginRecord(username, role, ip) {
+    this.loginHistory.unshift({
+      username,
+      role: role || 'Admin',
+      ip: ip || 'unknown',
+      timestamp: Date.now()
+    });
+    if (this.loginHistory.length > 100) {
+      this.loginHistory = this.loginHistory.slice(0, 100);
+    }
+    this.saveFile(LOGIN_HISTORY_FILE, this.loginHistory);
+  }
+
+  getLoginHistory(limit = 20) {
+    return this.loginHistory.slice(0, limit);
   }
 
   logAdminAction(adminName, action, details = {}) {

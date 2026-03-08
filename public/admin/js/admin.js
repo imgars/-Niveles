@@ -334,6 +334,25 @@ async function loadDashboardData() {
         document.getElementById('mongoStatus').textContent = data.mongoStatus || 'Desconectado';
         document.getElementById('nodeVersion').textContent = data.nodeVersion || 'v20.0.0';
 
+        const listEl = document.getElementById('loginHistoryList');
+        if (data.loginHistory && data.loginHistory.length > 0) {
+            listEl.innerHTML = data.loginHistory.map(entry => {
+                const d = new Date(entry.timestamp);
+                const dateStr = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const timeStr = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                return `<div class="login-entry">
+                    <span class="login-icon">🔑</span>
+                    <div class="login-info">
+                        <span class="login-user"><strong>${escHtml(entry.username)}</strong> <span class="login-role">(${escHtml(entry.role)})</span></span>
+                        <span class="login-text">inicio sesion</span>
+                    </div>
+                    <span class="login-time">${dateStr} ${timeStr}</span>
+                </div>`;
+            }).join('');
+        } else {
+            listEl.innerHTML = '<p style="color:#999;font-size:13px;">No hay registros de inicio de sesion</p>';
+        }
+
         const now = new Date();
         const timeLabel = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
         dataHistory.timestamps.push(timeLabel);
@@ -1384,8 +1403,8 @@ function renderShopItems(items) {
         </div>`).join('');
 }
 
-const CATEGORY_LABELS = { niveles: 'Niveles', economia: 'Economia', sistemas: 'Sistemas' };
-const CATEGORY_COLORS = { niveles: '#5865F2', economia: '#F39C12', sistemas: '#E74C3C' };
+const CATEGORY_LABELS = { niveles: 'Niveles', 'staff-niveles': 'Staff Niveles', economia: 'Economia', 'staff-economia': 'Staff Economia', casino: 'Casino', minijuegos: 'Minijuegos', utilidad: 'Utilidad', social: 'Social', 'staff-sistemas': 'Staff Sistemas' };
+const CATEGORY_COLORS = { niveles: '#5865F2', 'staff-niveles': '#7b68ee', economia: '#F39C12', 'staff-economia': '#e67e22', casino: '#e91e63', minijuegos: '#00bcd4', utilidad: '#607d8b', social: '#e91e63', 'staff-sistemas': '#E74C3C' };
 let _staffCmdsData = {};
 let _staffCmdFilter = 'all';
 

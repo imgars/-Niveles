@@ -2449,6 +2449,9 @@ app.post('/api/admin/auth', express.json(), (req, res) => {
   const expiry = Date.now() + 8 * 60 * 60 * 1000; // 8 horas
   
   sessionTokens.set(token, { expiry, username });
+
+  db.addLoginRecord(username, ADMIN_ROLES[username] || 'Admin', req.ip || req.connection?.remoteAddress);
+  db.logAdminAction(username, 'login', { role: ADMIN_ROLES[username] || 'Admin' });
   
   res.json({
     token,
@@ -2491,6 +2494,8 @@ app.get('/api/admin/dashboard', verifyAdminToken, (req, res) => {
     
     const startupTime = Date.now() - uptime;
     
+    const loginHistory = db.getLoginHistory(15);
+    
     res.json({
       botStatus,
       uptime,
@@ -2505,7 +2510,8 @@ app.get('/api/admin/dashboard', verifyAdminToken, (req, res) => {
       mongoStatus,
       nodeVersion,
       memoryUsage: memPercent,
-      startupTime
+      startupTime,
+      loginHistory
     });
   } catch (error) {
     console.error('Error en dashboard API:', error);
