@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google/genai": "^1.42.0",
+    "@google/genai": "^1.44.0",
     "@napi-rs/canvas": "^0.1.96",
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
@@ -27,7 +27,7 @@
     "fs": "^0.0.1-security",
     "moment-timezone": "^0.5.48",
     "mongodb": "^7.1.0",
-    "mongoose": "^9.2.1",
+    "mongoose": "^9.2.4",
     "node-cron": "^3.0.3",
     "p-limit": "^7.3.0",
     "p-retry": "^7.1.1",
