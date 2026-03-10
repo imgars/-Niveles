@@ -150,6 +150,37 @@ nationalitySchema.index({ guildId: 1, userId: 1 }, { unique: true });
 
 const Nationality = mongoose.model('Nationality', nationalitySchema);
 
+const marketplaceListingSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  authorId: String,
+  authorName: String,
+  guildId: String,
+  title: String,
+  description: String,
+  price: Number,
+  config: mongoose.Schema.Types.Mixed,
+  previewBase64: String,
+  sales: { type: Number, default: 0 },
+  buyers: [mongoose.Schema.Types.Mixed],
+  rating: { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+  createdAt: { type: Number, default: () => Date.now() }
+}, { timestamps: true });
+
+const MarketplaceListing = mongoose.model('MarketplaceListing', marketplaceListingSchema);
+
+const designHistorySchema = new mongoose.Schema({
+  guildId: String,
+  userId: String,
+  historyId: { type: String, required: true },
+  config: mongoose.Schema.Types.Mixed,
+  savedAt: { type: Number, default: () => Date.now() }
+}, { timestamps: true });
+
+designHistorySchema.index({ guildId: 1, userId: 1 });
+
+const DesignHistory = mongoose.model('DesignHistory', designHistorySchema);
+
 let isConnected = false;
 
 export async function connectMongoDB() {
@@ -839,5 +870,123 @@ export async function getAllNationalitiesFromMongo(guildId = null) {
   } catch (error) {
     console.error('Error obteniendo nacionalidades:', error.message);
     return [];
+  }
+}
+
+export async function getMarketplaceListingsFromMongo({ page = 1, limit = 20, sortBy = 'newest', guildId = null } = {}) {
+  if (!isConnected) return null;
+  try {
+    const query = { active: true };
+    if (guildId) query.guildId = guildId;
+    let listings = await MarketplaceListing.find(query).lean();
+    if (sortBy === 'newest') listings.sort((a, b) => b.createdAt - a.createdAt);
+    else if (sortBy === 'popular') listings.sort((a, b) => b.sales - a.sales);
+    else if (sortBy === 'cheapest') listings.sort((a, b) => a.price - b.price);
+    else if (sortBy === 'expensive') listings.sort((a, b) => b.price - a.price);
+    const total = listings.length;
+    const start = (page - 1) * limit;
+    return { listings: listings.slice(start, start + limit), total, page, totalPages: Math.ceil(total / limit) };
+  } catch (error) {
+    console.error('Error obteniendo marketplace de MongoDB:', error.message);
+    return null;
+  }
+}
+
+export async function getMarketplaceListingByIdFromMongo(listingId) {
+  if (!isConnected) return null;
+  try {
+    return await MarketplaceListing.findOne({ id: listingId, active: true }).lean();
+  } catch (error) {
+    console.error('Error obteniendo listing de MongoDB:', error.message);
+    return null;
+  }
+}
+
+export async function getUserMarketplaceListingsFromMongo(userId, guildId = null) {
+  if (!isConnected) return null;
+  try {
+    const query = { authorId: userId, active: true };
+    if (guildId) query.guildId = guildId;
+    return await MarketplaceListing.find(query).lean();
+  } catch (error) {
+    console.error('Error obteniendo listings del usuario de MongoDB:', error.message);
+    return null;
+  }
+}
+
+export async function addMarketplaceListingToMongo(listing) {
+  if (!isConnected) return null;
+  try {
+    const doc = await MarketplaceListing.create(listing);
+    return doc.toObject();
+  } catch (error) {
+    console.error('Error agregando listing a MongoDB:', error.message);
+    return null;
+  }
+}
+
+export async function buyMarketplaceListingOnMongo(listingId) {
+  if (!isConnected) return null;
+  try {
+    const listing = await MarketplaceListing.findOneAndUpdate(
+      { id: listingId, active: true },
+      { $inc: { sales: 1 } },
+      { new: true }
+    ).lean();
+    return listing;
+  } catch (error) {
+    console.error('Error comprando listing en MongoDB:', error.message);
+    return null;
+  }
+}
+
+export async function removeMarketplaceListingOnMongo(listingId, userId) {
+  if (!isConnected) return false;
+  try {
+    const result = await MarketplaceListing.updateOne(
+      { id: listingId, authorId: userId },
+      { $set: { active: false } }
+    );
+    return result.modifiedCount > 0;
+  } catch (error) {
+    console.error('Error removiendo listing de MongoDB:', error.message);
+    return false;
+  }
+}
+
+export async function saveDesignHistoryToMongo(guildId, userId, config) {
+  if (!isConnected) return;
+  try {
+    const historyId = `hist_${Date.now()}`;
+    await DesignHistory.create({ guildId, userId, historyId, config, savedAt: Date.now() });
+    const userHistory = await DesignHistory.find({ guildId, userId }).sort({ savedAt: -1 }).limit(6).lean();
+    if (userHistory.length > 5) {
+      const toDelete = userHistory.slice(5).map(h => h._id);
+      await DesignHistory.deleteMany({ _id: { $in: toDelete } });
+    }
+  } catch (error) {
+    console.error('Error guardando design history en MongoDB:', error.message);
+  }
+}
+
+export async function getDesignHistoryFromMongo(guildId, userId) {
+  if (!isConnected) return null;
+  try {
+    const history = await DesignHistory.find({ guildId, userId }).sort({ savedAt: -1 }).limit(5).lean();
+    return history.map(h => ({ id: h.historyId, config: h.config, savedAt: h.savedAt }));
+  } catch (error) {
+    console.error('Error obteniendo design history de MongoDB:', error.message);
+    return null;
+  }
+}
+
+export async function restoreDesignFromMongo(guildId, userId, historyId) {
+  if (!isConnected) return null;
+  try {
+    const entry = await DesignHistory.findOne({ guildId, userId, historyId }).lean();
+    return entry ? entry.config : null;
+  } catch (error) {
+    console.error('Error restaurando design de MongoDB:', error.message);
+    return null;
   }
 }
