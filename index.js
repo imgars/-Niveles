@@ -660,7 +660,7 @@ app.use('/api/rankcard', express.json({ limit: '10mb' }));
 app.get('/api/rankcard/verify', async (req, res) => {
   try {
     const { token } = req.query;
-    const { verifyToken, checkVIPBoosterRoles, NEON_COLORS, STANDARD_FONTS, PREMIUM_FONTS, RANKCARD_BASE_COST, RANKCARD_IMAGE_EXTRA_COST, RANKCARD_PREMIUM_FONT_COST, RANKCARD_BACKGROUND_COST, RANKCARD_VIP_BACKGROUND_COST, RANKCARD_STICKER_COST, RANKCARD_RESOLUTION_COST, getDrawColorsForRole, getBrushesForRole, getBackgroundsForRole, getStickersForRole, getResolutionsForRole } = await import('./utils/rankcardService.js');
+    const { verifyToken, checkVIPBoosterRoles, NEON_COLORS, STANDARD_FONTS, PREMIUM_FONTS, RANKCARD_BASE_COST, RANKCARD_IMAGE_EXTRA_COST, RANKCARD_PREMIUM_FONT_COST, RANKCARD_BACKGROUND_COST, RANKCARD_VIP_BACKGROUND_COST, RANKCARD_STICKER_COST, RANKCARD_RESOLUTION_COST, RANKCARD_FRAME_COST, RANKCARD_VIP_FRAME_COST, RANKCARD_GRADIENT_COST, RANKCARD_ANIMATION_COST, RANKCARD_TEXT_EFFECT_COST, MARKETPLACE_COMMISSION, getDrawColorsForRole, getBrushesForRole, getBackgroundsForRole, getStickersForRole, getResolutionsForRole, getFramesForRole, getTextEffectsForRole, getAnimationTypes, getGradientDirections, getLayerOrderDefault } = await import('./utils/rankcardService.js');
     const { getEconomy } = await import('./utils/mongoSync.js');
 
     const verified = verifyToken(token);
@@ -686,6 +686,7 @@ app.get('/api/rankcard/verify', async (req, res) => {
 
     res.json({
       userId,
+      guildId,
       username: member.user.username,
       avatar: member.user.displayAvatarURL({ format: 'png', size: 128 }),
       isVIP: roles.isVIP,
@@ -693,6 +694,7 @@ app.get('/api/rankcard/verify', async (req, res) => {
       hasVIPBenefits: hasVIP,
       lagcoins: economy?.lagcoins || 0,
       rankcard_custom: userData?.rankcard_custom || null,
+      designHistory: db.getDesignHistory(guildId, userId).map(h => ({ id: h.id, savedAt: h.savedAt, hasGradient: !!h.config?.gradient, hasFrame: !!h.config?.frameId, animated: !!h.config?.animated })),
       options: {
         neonColors: NEON_COLORS,
         standardFonts: STANDARD_FONTS,
@@ -703,7 +705,12 @@ app.get('/api/rankcard/verify', async (req, res) => {
         backgrounds: getBackgroundsForRole(hasVIP),
         stickers: getStickersForRole(hasVIP),
         resolutions: getResolutionsForRole(hasVIP),
-        maxStickers: hasVIP ? 20 : 10
+        maxStickers: hasVIP ? 20 : 10,
+        frames: getFramesForRole(hasVIP),
+        textEffects: getTextEffectsForRole(hasVIP),
+        animations: getAnimationTypes(),
+        gradientDirections: getGradientDirections(),
+        layerOrderDefault: getLayerOrderDefault()
       },
       costs: {
         base: RANKCARD_BASE_COST,
@@ -712,7 +719,13 @@ app.get('/api/rankcard/verify', async (req, res) => {
         background: RANKCARD_BACKGROUND_COST,
         vipBackground: RANKCARD_VIP_BACKGROUND_COST,
         sticker: RANKCARD_STICKER_COST,
-        resolution: RANKCARD_RESOLUTION_COST
+        resolution: RANKCARD_RESOLUTION_COST,
+        frame: RANKCARD_FRAME_COST,
+        vipFrame: RANKCARD_VIP_FRAME_COST,
+        gradient: RANKCARD_GRADIENT_COST,
+        animation: RANKCARD_ANIMATION_COST,
+        textEffect: RANKCARD_TEXT_EFFECT_COST,
+        marketplaceCommission: MARKETPLACE_COMMISSION
       }
     });
   } catch (error) {
@@ -777,7 +790,8 @@ app.post('/api/rankcard/preview', express.json(), async (req, res) => {
     const progress = getXPProgress(userData.totalXp || 0, userData.level || 0);
 
     const cardBuffer = await generateCustomRankCard(member, { ...userData, rankcard_custom: validation.sanitized }, progress);
-    res.set('Content-Type', 'image/png');
+    const isAnimated = validation.sanitized.animated && validation.sanitized.animations?.length > 0;
+    res.set('Content-Type', isAnimated ? 'image/gif' : 'image/png');
     res.send(cardBuffer);
   } catch (error) {
     console.error('Error en /api/rankcard/preview:', error);
@@ -827,6 +841,9 @@ app.post('/api/rankcard/purchase', async (req, res) => {
     }
 
     const userData = db.getUser(guildId, userId);
+    if (userData.rankcard_custom) {
+      db.saveDesignToHistory(guildId, userId, userData.rankcard_custom);
+    }
     userData.rankcard_custom = validation.sanitized;
     db.saveUser(guildId, userId, userData);
 
@@ -838,6 +855,191 @@ app.post('/api/rankcard/purchase', async (req, res) => {
   } catch (error) {
     console.error('Error en /api/rankcard/purchase:', error);
     res.status(500).json({ error: 'Error al procesar compra' });
+  }
+});
+
+app.get('/api/rankcard/marketplace', async (req, res) => {
+  try {
+    const { page = 1, sortBy = 'newest', limit = 20, guildId } = req.query;
+    const result = db.getMarketplaceListings({ page: parseInt(page), limit: parseInt(limit), sortBy, guildId: guildId || null });
+    const sanitized = result.listings.map(l => ({
+      id: l.id,
+      authorId: l.authorId,
+      authorName: l.authorName,
+      title: l.title,
+      description: l.description,
+      price: l.price,
+      sales: l.sales,
+      previewBase64: l.previewBase64,
+      createdAt: l.createdAt
+    }));
+    res.json({ listings: sanitized, total: result.total, page: result.page, totalPages: result.totalPages });
+  } catch (error) {
+    console.error('Error en /api/rankcard/marketplace:', error);
+    res.status(500).json({ error: 'Error al obtener marketplace' });
+  }
+});
+
+app.post('/api/rankcard/marketplace/publish', async (req, res) => {
+  try {
+    const { token, title, description, price } = req.body;
+    const { verifyToken } = await import('./utils/rankcardService.js');
+    const verified = verifyToken(token);
+    if (!verified) return res.status(401).json({ error: 'Token inválido o expirado' });
+
+    const { userId, guildId } = verified;
+    const userData = db.getUser(guildId, userId);
+    if (!userData.rankcard_custom) {
+      return res.status(400).json({ error: 'No tienes una rankcard personalizada para publicar' });
+    }
+
+    const existingListings = db.getUserMarketplaceListings(userId, guildId);
+    if (existingListings.length >= 5) {
+      return res.status(400).json({ error: 'Máximo 5 publicaciones activas por usuario' });
+    }
+
+    const parsedPrice = Math.floor(Number(price));
+    if (!parsedPrice || parsedPrice < 500 || parsedPrice > 500000) {
+      return res.status(400).json({ error: 'Precio debe ser entre 500 y 500,000 LC' });
+    }
+
+    const member = await client.guilds.cache.get(guildId)?.members.fetch(userId).catch(() => null);
+    const authorName = member?.user?.username || 'Desconocido';
+
+    let previewBase64 = null;
+    try {
+      const { generateCustomRankCard } = await import('./utils/cardGenerator.js');
+      const { getXPProgress } = await import('./utils/xpSystem.js');
+      const progress = getXPProgress(userData.totalXp || 0, userData.level || 0);
+      const cardBuffer = await generateCustomRankCard(member || { user: { username: authorName, id: userId, displayAvatarURL: () => '' } }, userData, progress);
+      previewBase64 = cardBuffer.toString('base64').substring(0, 200000);
+    } catch (e) {
+      console.error('Error generating preview for marketplace:', e);
+    }
+
+    const configCopy = JSON.parse(JSON.stringify(userData.rankcard_custom));
+    delete configCopy.drawLayer;
+
+    const listing = db.addMarketplaceListing({
+      authorId: userId,
+      authorName,
+      guildId,
+      title,
+      description,
+      price: parsedPrice,
+      config: configCopy,
+      previewBase64
+    });
+
+    res.json({ success: true, listing: { id: listing.id, title: listing.title, price: listing.price } });
+  } catch (error) {
+    console.error('Error en /api/rankcard/marketplace/publish:', error);
+    res.status(500).json({ error: 'Error al publicar' });
+  }
+});
+
+app.post('/api/rankcard/marketplace/buy', async (req, res) => {
+  try {
+    const { token, listingId } = req.body;
+    const { verifyToken, MARKETPLACE_COMMISSION: COMMISSION } = await import('./utils/rankcardService.js');
+    const { getEconomy, removeLagcoins, addLagcoins } = await import('./utils/mongoSync.js');
+
+    const verified = verifyToken(token);
+    if (!verified) return res.status(401).json({ error: 'Token inválido o expirado' });
+
+    const { userId, guildId } = verified;
+    const listing = db.getMarketplaceListingById(listingId);
+    if (!listing) return res.status(404).json({ error: 'Publicación no encontrada' });
+    if (listing.guildId && listing.guildId !== verified.guildId) return res.status(403).json({ error: 'Esta publicación pertenece a otro servidor' });
+    if (listing.authorId === userId) return res.status(400).json({ error: 'No puedes comprar tu propia publicación' });
+
+    const economy = await getEconomy(guildId, userId);
+    const balance = economy?.lagcoins || 0;
+    if (balance < listing.price) {
+      return res.status(402).json({ error: 'Lagcoins insuficientes', required: listing.price, balance });
+    }
+
+    const removeResult = await removeLagcoins(guildId, userId, listing.price, 'marketplace_purchase');
+    if (!removeResult) return res.status(402).json({ error: 'No se pudo procesar el pago' });
+
+    const commission = Math.floor(listing.price * COMMISSION);
+    const authorEarnings = listing.price - commission;
+    await addLagcoins(guildId, listing.authorId, authorEarnings, 'marketplace_sale');
+
+    db.buyMarketplaceListing(listingId, userId);
+
+    const userData = db.getUser(guildId, userId);
+    if (userData.rankcard_custom) {
+      db.saveDesignToHistory(guildId, userId, userData.rankcard_custom);
+    }
+    userData.rankcard_custom = { ...listing.config };
+    db.saveUser(guildId, userId, userData);
+
+    res.json({
+      success: true,
+      newBalance: removeResult.lagcoins,
+      authorEarnings,
+      commission,
+      message: `Plantilla "${listing.title}" comprada por ${listing.price} LC. Autor recibió ${authorEarnings} LC (comisión 15%: ${commission} LC)`
+    });
+  } catch (error) {
+    console.error('Error en /api/rankcard/marketplace/buy:', error);
+    res.status(500).json({ error: 'Error al comprar' });
+  }
+});
+
+app.delete('/api/rankcard/marketplace/:id', async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { verifyToken } = await import('./utils/rankcardService.js');
+    const verified = verifyToken(token);
+    if (!verified) return res.status(401).json({ error: 'Token inválido o expirado' });
+
+    const removed = db.removeMarketplaceListing(req.params.id, verified.userId);
+    if (!removed) return res.status(404).json({ error: 'Publicación no encontrada o no eres el autor' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error eliminando publicación:', error);
+    res.status(500).json({ error: 'Error al eliminar' });
+  }
+});
+
+app.get('/api/rankcard/history', async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { verifyToken } = await import('./utils/rankcardService.js');
+    const verified = verifyToken(token);
+    if (!verified) return res.status(401).json({ error: 'Token inválido o expirado' });
+
+    const history = db.getDesignHistory(verified.guildId, verified.userId);
+    res.json({ history: history.map(h => ({ id: h.id, savedAt: h.savedAt, hasGradient: !!h.config?.gradient, hasFrame: !!h.config?.frameId, animated: !!h.config?.animated })) });
+  } catch (error) {
+    console.error('Error obteniendo historial:', error);
+    res.status(500).json({ error: 'Error al obtener historial' });
+  }
+});
+
+app.post('/api/rankcard/history/restore', async (req, res) => {
+  try {
+    const { token, historyId } = req.body;
+    const { verifyToken } = await import('./utils/rankcardService.js');
+    const verified = verifyToken(token);
+    if (!verified) return res.status(401).json({ error: 'Token inválido o expirado' });
+
+    const config = db.restoreDesignFromHistory(verified.guildId, verified.userId, historyId);
+    if (!config) return res.status(404).json({ error: 'Diseño no encontrado en historial' });
+
+    const userData = db.getUser(verified.guildId, verified.userId);
+    if (userData.rankcard_custom) {
+      db.saveDesignToHistory(verified.guildId, verified.userId, userData.rankcard_custom);
+    }
+    userData.rankcard_custom = config;
+    db.saveUser(verified.guildId, verified.userId, userData);
+
+    res.json({ success: true, config, message: 'Diseño restaurado correctamente' });
+  } catch (error) {
+    console.error('Error restaurando diseño:', error);
+    res.status(500).json({ error: 'Error al restaurar diseño' });
   }
 });
 

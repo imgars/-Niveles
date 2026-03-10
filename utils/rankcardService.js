@@ -8,6 +8,12 @@ export const RANKCARD_BACKGROUND_COST = 1500;
 export const RANKCARD_VIP_BACKGROUND_COST = 2500;
 export const RANKCARD_STICKER_COST = 300;
 export const RANKCARD_RESOLUTION_COST = 2000;
+export const RANKCARD_FRAME_COST = 1000;
+export const RANKCARD_VIP_FRAME_COST = 2000;
+export const RANKCARD_GRADIENT_COST = 800;
+export const RANKCARD_ANIMATION_COST = 3000;
+export const RANKCARD_TEXT_EFFECT_COST = 500;
+export const MARKETPLACE_COMMISSION = 0.15;
 
 export const NEON_COLORS = [
   '#FF00FF', '#00FFFF', '#00FF00', '#FFFF00', '#FF6600',
@@ -115,6 +121,52 @@ export const RESOLUTION_OPTIONS = [
   { id: 'fullhd', width: 1200, height: 375, name: 'Full HD (1200x375)', premium: true }
 ];
 
+export const STANDARD_FRAMES = [
+  { id: 'pixel-simple', name: 'Pixel Simple', premium: false, cost: RANKCARD_FRAME_COST },
+  { id: 'rounded', name: 'Redondeado', premium: false, cost: RANKCARD_FRAME_COST },
+  { id: 'double-line', name: 'Doble Línea', premium: false, cost: RANKCARD_FRAME_COST },
+  { id: 'dotted-border', name: 'Punteado', premium: false, cost: RANKCARD_FRAME_COST },
+  { id: 'corner-deco', name: 'Esquinas Decoradas', premium: false, cost: RANKCARD_FRAME_COST }
+];
+
+export const VIP_FRAMES = [
+  { id: 'golden', name: 'Dorado', premium: true, cost: RANKCARD_VIP_FRAME_COST },
+  { id: 'neon-frame', name: 'Neón', premium: true, cost: RANKCARD_VIP_FRAME_COST },
+  { id: 'fire-frame', name: 'Fuego', premium: true, cost: RANKCARD_VIP_FRAME_COST },
+  { id: 'diamond', name: 'Diamante', premium: true, cost: RANKCARD_VIP_FRAME_COST },
+  { id: 'galaxy-frame', name: 'Galaxia', premium: true, cost: RANKCARD_VIP_FRAME_COST },
+  { id: 'rainbow-frame', name: 'Arcoíris', premium: true, cost: RANKCARD_VIP_FRAME_COST }
+];
+
+export const TEXT_EFFECTS = [
+  { id: 'none', name: 'Sin efecto', premium: false },
+  { id: 'shadow', name: 'Sombra', premium: false },
+  { id: 'outline', name: 'Contorno', premium: false },
+  { id: 'glow', name: 'Brillo', premium: true },
+  { id: 'gradient-text', name: 'Gradiente', premium: true },
+  { id: 'pixel-shadow', name: 'Sombra Pixel', premium: false }
+];
+
+export const GRADIENT_DIRECTIONS = [
+  { id: 'horizontal', name: 'Horizontal' },
+  { id: 'vertical', name: 'Vertical' },
+  { id: 'diagonal', name: 'Diagonal' },
+  { id: 'radial', name: 'Radial' }
+];
+
+export const LAYER_ORDER_DEFAULT = ['background', 'drawLayer', 'images', 'stickers', 'avatar', 'text'];
+
+export const ANIMATION_TYPES = [
+  { id: 'pulse-bar', name: 'Barra Pulsante', description: 'La barra de XP pulsa suavemente' },
+  { id: 'floating-particles', name: 'Partículas Flotantes', description: 'Partículas que flotan por la tarjeta' },
+  { id: 'glow-text', name: 'Texto Brillante', description: 'El nombre brilla con efecto pulsante' },
+  { id: 'shimmer', name: 'Destello', description: 'Efecto de destello que recorre la tarjeta' },
+  { id: 'rainbow-bar', name: 'Barra Arcoíris', description: 'La barra de XP cambia de color' },
+  { id: 'sparkle', name: 'Chispas', description: 'Chispas brillantes aparecen y desaparecen' },
+  { id: 'wave', name: 'Onda', description: 'Efecto de onda en el fondo' },
+  { id: 'breathing', name: 'Respiración', description: 'El borde pulsa como respirando' }
+];
+
 const STANDARD_MAX_IMAGES = 3;
 const VIP_MAX_IMAGES = 3;
 const MAX_STICKERS = 10;
@@ -152,7 +204,15 @@ export function validateRankcardConfig(config, { isVIP, isBooster }) {
     baseImages: [],
     logos: [],
     stickers: [],
-    drawLayer: null
+    drawLayer: null,
+    frameId: null,
+    gradient: null,
+    barGradient: null,
+    textEffect: 'none',
+    textSize: 'normal',
+    layerOrder: [...LAYER_ORDER_DEFAULT],
+    animations: [],
+    animated: false
   };
 
   const MAX_DRAW_LAYER_BASE64 = 800000;
@@ -288,6 +348,71 @@ export function validateRankcardConfig(config, { isVIP, isBooster }) {
       height: Math.max(20, Math.min(200, Number(img.height) || 50))
     }));
 
+  if (config.frameId) {
+    const allFrames = [...STANDARD_FRAMES, ...VIP_FRAMES];
+    const selectedFrame = allFrames.find(f => f.id === config.frameId);
+    if (selectedFrame) {
+      if (selectedFrame.premium && !hasVIP) {
+        return { valid: false, error: 'Este marco requiere rol VIP o Booster' };
+      }
+      sanitized.frameId = config.frameId;
+    }
+  }
+
+  if (config.gradient && typeof config.gradient === 'object') {
+    const hexRegex2 = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    const dir = GRADIENT_DIRECTIONS.find(d => d.id === config.gradient.direction);
+    if (dir && hexRegex2.test(config.gradient.color1) && hexRegex2.test(config.gradient.color2)) {
+      sanitized.gradient = {
+        color1: config.gradient.color1,
+        color2: config.gradient.color2,
+        color3: (config.gradient.color3 && hexRegex2.test(config.gradient.color3)) ? config.gradient.color3 : null,
+        direction: dir.id
+      };
+    }
+  }
+
+  if (config.barGradient && typeof config.barGradient === 'object') {
+    const hexRegex3 = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    if (hexRegex3.test(config.barGradient.color1) && hexRegex3.test(config.barGradient.color2)) {
+      sanitized.barGradient = {
+        color1: config.barGradient.color1,
+        color2: config.barGradient.color2
+      };
+    }
+  }
+
+  if (config.textEffect) {
+    const effect = TEXT_EFFECTS.find(e => e.id === config.textEffect);
+    if (effect) {
+      if (effect.premium && !hasVIP) {
+        return { valid: false, error: 'Este efecto de texto requiere rol VIP o Booster' };
+      }
+      sanitized.textEffect = config.textEffect;
+    }
+  }
+
+  const validTextSizes = ['small', 'normal', 'large'];
+  if (config.textSize && validTextSizes.includes(config.textSize)) {
+    sanitized.textSize = config.textSize;
+  }
+
+  if (Array.isArray(config.layerOrder) && config.layerOrder.length === LAYER_ORDER_DEFAULT.length) {
+    const allValid = config.layerOrder.every(l => LAYER_ORDER_DEFAULT.includes(l));
+    const noDupes = new Set(config.layerOrder).size === config.layerOrder.length;
+    if (allValid && noDupes) {
+      sanitized.layerOrder = config.layerOrder;
+    }
+  }
+
+  if (Array.isArray(config.animations) && config.animations.length > 0) {
+    const validAnimIds = ANIMATION_TYPES.map(a => a.id);
+    sanitized.animations = config.animations
+      .filter(a => validAnimIds.includes(a))
+      .slice(0, 3);
+    sanitized.animated = sanitized.animations.length > 0;
+  }
+
   return { valid: true, sanitized };
 }
 
@@ -318,6 +443,29 @@ export function getResolutionsForRole(hasVIP) {
   return RESOLUTION_OPTIONS.filter(r => !r.premium);
 }
 
+export function getFramesForRole(hasVIP) {
+  const list = [...STANDARD_FRAMES];
+  if (hasVIP) list.push(...VIP_FRAMES);
+  return list;
+}
+
+export function getTextEffectsForRole(hasVIP) {
+  if (hasVIP) return [...TEXT_EFFECTS];
+  return TEXT_EFFECTS.filter(e => !e.premium);
+}
+
+export function getAnimationTypes() {
+  return [...ANIMATION_TYPES];
+}
+
+export function getGradientDirections() {
+  return [...GRADIENT_DIRECTIONS];
+}
+
+export function getLayerOrderDefault() {
+  return [...LAYER_ORDER_DEFAULT];
+}
+
 export function calculateRankcardCost(config, { isVIP, isBooster }) {
   let total = RANKCARD_BASE_COST;
   const hasVIP = hasVIPBenefits(isVIP, isBooster);
@@ -345,6 +493,28 @@ export function calculateRankcardCost(config, { isVIP, isBooster }) {
 
   if (config.resolution && config.resolution !== 'standard') {
     total += RANKCARD_RESOLUTION_COST;
+  }
+
+  if (config.frameId) {
+    const allFrames = [...STANDARD_FRAMES, ...VIP_FRAMES];
+    const frame = allFrames.find(f => f.id === config.frameId);
+    if (frame) total += frame.cost;
+  }
+
+  if (config.gradient) {
+    total += RANKCARD_GRADIENT_COST;
+  }
+
+  if (config.barGradient) {
+    total += Math.round(RANKCARD_GRADIENT_COST / 2);
+  }
+
+  if (config.textEffect && config.textEffect !== 'none') {
+    total += RANKCARD_TEXT_EFFECT_COST;
+  }
+
+  if (config.animated && config.animations && config.animations.length > 0) {
+    total += RANKCARD_ANIMATION_COST;
   }
 
   return total;

@@ -12,6 +12,8 @@ const ALERTS_FILE = path.join(DATA_DIR, 'alerts.json');
 const SYSTEMS_ADVANCED_FILE = path.join(DATA_DIR, 'systems_advanced.json');
 const STAFF_COMMANDS_FILE = path.join(DATA_DIR, 'staff_commands.json');
 const LOGIN_HISTORY_FILE = path.join(DATA_DIR, 'login_history.json');
+const MARKETPLACE_FILE = path.join(DATA_DIR, 'rankcard_marketplace.json');
+const DESIGN_HISTORY_FILE = path.join(DATA_DIR, 'design_history.json');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -29,6 +31,8 @@ class Database {
     this.systemsAdvanced = this.loadFile(SYSTEMS_ADVANCED_FILE, {});
     this.staffCommands = this.loadFile(STAFF_COMMANDS_FILE, {});
     this.loginHistory = this.loadFile(LOGIN_HISTORY_FILE, []);
+    this.marketplace = this.loadFile(MARKETPLACE_FILE, []);
+    this.designHistory = this.loadFile(DESIGN_HISTORY_FILE, {});
     this.settings = { maintenanceMode: false };
     this.mongoSync = null;
     this._commandStats = {};
@@ -791,6 +795,91 @@ class Database {
     return Object.entries(this._commandStats)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
+  }
+
+  getMarketplaceListings({ page = 1, limit = 20, sortBy = 'newest', guildId = null } = {}) {
+    let listings = this.marketplace.filter(l => l.active && (!guildId || l.guildId === guildId));
+    if (sortBy === 'newest') listings.sort((a, b) => b.createdAt - a.createdAt);
+    else if (sortBy === 'popular') listings.sort((a, b) => b.sales - a.sales);
+    else if (sortBy === 'cheapest') listings.sort((a, b) => a.price - b.price);
+    else if (sortBy === 'expensive') listings.sort((a, b) => b.price - a.price);
+    const total = listings.length;
+    const start = (page - 1) * limit;
+    return { listings: listings.slice(start, start + limit), total, page, totalPages: Math.ceil(total / limit) };
+  }
+
+  getMarketplaceListingById(listingId) {
+    return this.marketplace.find(l => l.id === listingId && l.active);
+  }
+
+  getUserMarketplaceListings(userId, guildId = null) {
+    return this.marketplace.filter(l => l.authorId === userId && l.active && (!guildId || l.guildId === guildId));
+  }
+
+  addMarketplaceListing({ authorId, authorName, guildId, title, description, price, config, previewBase64 }) {
+    const listing = {
+      id: `mkt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      authorId,
+      authorName,
+      guildId: guildId || null,
+      title: (title || 'Sin título').substring(0, 50),
+      description: (description || '').substring(0, 200),
+      price: Math.max(500, Math.min(500000, Math.floor(price))),
+      config,
+      previewBase64: previewBase64 || null,
+      sales: 0,
+      buyers: [],
+      rating: 0,
+      active: true,
+      createdAt: Date.now()
+    };
+    this.marketplace.push(listing);
+    this.saveFile(MARKETPLACE_FILE, this.marketplace);
+    return listing;
+  }
+
+  buyMarketplaceListing(listingId, buyerId) {
+    const listing = this.marketplace.find(l => l.id === listingId && l.active);
+    if (!listing) return null;
+    listing.sales++;
+    if (!listing.buyers) listing.buyers = [];
+    listing.buyers.push({ userId: buyerId, boughtAt: Date.now() });
+    this.saveFile(MARKETPLACE_FILE, this.marketplace);
+    return listing;
+  }
+
+  removeMarketplaceListing(listingId, userId) {
+    const idx = this.marketplace.findIndex(l => l.id === listingId && l.authorId === userId);
+    if (idx === -1) return false;
+    this.marketplace[idx].active = false;
+    this.saveFile(MARKETPLACE_FILE, this.marketplace);
+    return true;
+  }
+
+  getDesignHistory(guildId, userId) {
+    const key = `${guildId}-${userId}`;
+    return this.designHistory[key] || [];
+  }
+
+  saveDesignToHistory(guildId, userId, config) {
+    const key = `${guildId}-${userId}`;
+    if (!this.designHistory[key]) this.designHistory[key] = [];
+    this.designHistory[key].unshift({
+      id: `hist_${Date.now()}`,
+      config: JSON.parse(JSON.stringify(config)),
+      savedAt: Date.now()
+    });
+    if (this.designHistory[key].length > 5) {
+      this.designHistory[key] = this.designHistory[key].slice(0, 5);
+    }
+    this.saveFile(DESIGN_HISTORY_FILE, this.designHistory);
+  }
+
+  restoreDesignFromHistory(guildId, userId, historyId) {
+    const key = `${guildId}-${userId}`;
+    const history = this.designHistory[key] || [];
+    const entry = history.find(h => h.id === historyId);
+    return entry ? entry.config : null;
   }
 
   getTimeSeriesData(days = 7) {

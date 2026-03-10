@@ -27,7 +27,12 @@ async function getRankcardServiceData() {
     _rankcardServiceCache = {
       RESOLUTION_OPTIONS: mod.RESOLUTION_OPTIONS,
       STANDARD_STICKERS: mod.STANDARD_STICKERS,
-      VIP_STICKERS: mod.VIP_STICKERS
+      VIP_STICKERS: mod.VIP_STICKERS,
+      STANDARD_FRAMES: mod.STANDARD_FRAMES,
+      VIP_FRAMES: mod.VIP_FRAMES,
+      LAYER_ORDER_DEFAULT: mod.LAYER_ORDER_DEFAULT,
+      TEXT_EFFECTS: mod.TEXT_EFFECTS,
+      ANIMATION_TYPES: mod.ANIMATION_TYPES
     };
   }
   return _rankcardServiceCache;
@@ -777,163 +782,333 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
   const cardW = resOption.width;
   const cardH = resOption.height;
   const scale = cardW / 800;
-
-  const canvas = createCanvas(cardW, cardH);
-  const ctx = canvas.getContext('2d');
+  const textSizeMul = getTextSizeMultiplier(custom.textSize || 'normal');
+  const textEffect = custom.textEffect || 'none';
 
   const bgColor = custom.backgroundColor || '#36393F';
   const accentColor = custom.accentColor || '#5865F2';
   const textColor = custom.textColor || '#FFFFFF';
   const barColor = custom.barColor || accentColor;
+  const layerOrder = custom.layerOrder || svcData.LAYER_ORDER_DEFAULT || ['background', 'drawLayer', 'images', 'stickers', 'avatar', 'text'];
 
-  if (custom.backgroundId) {
-    drawPresetBackground(ctx, cardW, cardH, custom.backgroundId, rand);
-  } else {
-    const colors = {
-      gradient: [
-        { pos: 0, color: bgColor },
-        { pos: 0.5, color: shadeColor(bgColor, 0.9) },
-        { pos: 1, color: shadeColor(bgColor, 0.7) }
-      ]
+  const isAnimated = custom.animated && custom.animations && custom.animations.length > 0;
+  const frameCount = isAnimated ? 20 : 1;
+  const allFrameBuffers = [];
+
+  for (let frameIdx = 0; frameIdx < frameCount; frameIdx++) {
+    const animProgress = frameCount > 1 ? frameIdx / frameCount : 0;
+    const canvas = createCanvas(cardW, cardH);
+    const ctx = canvas.getContext('2d');
+
+    const layerFns = {
+      background: () => {
+        if (custom.gradient) {
+          drawCustomGradientBackground(ctx, cardW, cardH, custom.gradient);
+        } else if (custom.backgroundId) {
+          drawPresetBackground(ctx, cardW, cardH, custom.backgroundId, rand);
+        } else {
+          const colors = {
+            gradient: [
+              { pos: 0, color: bgColor },
+              { pos: 0.5, color: shadeColor(bgColor, 0.9) },
+              { pos: 1, color: shadeColor(bgColor, 0.7) }
+            ]
+          };
+          drawPixelatedGradientBackground(ctx, cardW, cardH, colors.gradient, rand);
+        }
+        if (custom.useNeonPalette) drawNeonGlow(ctx, cardW, cardH, rand);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        for (let i = 0; i < cardH; i += 4) {
+          if (i % 8 === 0) ctx.fillRect(0, i, cardW, 2);
+        }
+        if (isAnimated && custom.animations.includes('wave')) {
+          ctx.fillStyle = 'rgba(255,255,255,0.04)';
+          for (let x = 0; x < cardW; x += 4) {
+            const waveY = Math.sin((x / cardW) * Math.PI * 4 + animProgress * Math.PI * 2) * 15 * scale;
+            ctx.fillRect(x, cardH / 2 + waveY, 4, cardH / 2 - waveY);
+          }
+        }
+        if (isAnimated && custom.animations.includes('floating-particles')) {
+          ctx.globalAlpha = 0.4 + Math.sin(animProgress * Math.PI * 2) * 0.2;
+          for (let i = 0; i < 15; i++) {
+            const px = ((rand() * cardW) + animProgress * 60 * (i % 3 + 1)) % cardW;
+            const py = ((rand() * cardH) - animProgress * 40 * (i % 2 + 1) + cardH * 2) % cardH;
+            const ps = 2 + rand() * 3;
+            ctx.fillStyle = [accentColor, textColor, '#FFD700', '#00FFFF'][Math.floor(rand() * 4)];
+            ctx.fillRect(Math.round(px), Math.round(py), Math.round(ps), Math.round(ps));
+          }
+          ctx.globalAlpha = 1;
+        }
+      },
+      drawLayer: async () => {
+        if (custom.drawLayer && typeof custom.drawLayer === 'string' && custom.drawLayer.startsWith('data:image/png;base64,')) {
+          try {
+            const drawImg = await loadImage(custom.drawLayer);
+            ctx.drawImage(drawImg, 0, 0, cardW, cardH);
+          } catch (e) {
+            console.error('Error loading drawLayer:', e);
+          }
+        }
+      },
+      images: async () => {
+        const baseImages = custom.baseImages || [];
+        const logos = custom.logos || [];
+        for (const img of baseImages) {
+          try {
+            let imgSource = img.url;
+            if (typeof imgSource === 'string' && imgSource.startsWith('data:image/')) {
+              const b64Data = imgSource.split(',')[1];
+              if (b64Data) imgSource = Buffer.from(b64Data, 'base64');
+            }
+            const image = await loadImage(imgSource);
+            ctx.drawImage(image, (img.x || 0) * scale, (img.y || 0) * scale, (img.width || 100) * scale, (img.height || 100) * scale);
+          } catch (e) { console.error('Error loading base image:', e); }
+        }
+        for (const logo of logos) {
+          try {
+            let imgSource = logo.url;
+            if (typeof imgSource === 'string' && imgSource.startsWith('data:image/')) {
+              const b64Data = imgSource.split(',')[1];
+              if (b64Data) imgSource = Buffer.from(b64Data, 'base64');
+            }
+            const image = await loadImage(imgSource);
+            ctx.drawImage(image, (logo.x || 0) * scale, (logo.y || 0) * scale, (logo.width || 50) * scale, (logo.height || 50) * scale);
+          } catch (e) { console.error('Error loading logo:', e); }
+        }
+      },
+      stickers: () => {
+        const allStickers = [...svcData.STANDARD_STICKERS, ...svcData.VIP_STICKERS];
+        if (custom.stickers && custom.stickers.length > 0) {
+          for (const sticker of custom.stickers) {
+            const stickerScale = (sticker.scale || 1) * scale;
+            let sx = sticker.x * scale, sy = sticker.y * scale;
+            if (isAnimated && custom.animations.includes('sparkle')) {
+              sx += Math.sin(animProgress * Math.PI * 2 + sticker.x) * 2;
+              sy += Math.cos(animProgress * Math.PI * 2 + sticker.y) * 2;
+            }
+            drawStickerOnCanvas(ctx, { ...sticker, x: sx, y: sy, scale: stickerScale }, allStickers);
+          }
+        }
+      },
+      avatar: async () => {
+        try {
+          const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
+          const avatar = await loadImage(avatarURL);
+          const avatarSize = Math.round(140 * scale);
+          const avatarX = Math.round(35 * scale);
+          const avatarY = Math.round((cardH - avatarSize) / 2);
+          ctx.fillStyle = accentColor;
+          let borderExtra = 6;
+          if (isAnimated && custom.animations.includes('breathing')) {
+            borderExtra = 6 + Math.sin(animProgress * Math.PI * 2) * 2;
+          }
+          ctx.fillRect(avatarX - borderExtra, avatarY - borderExtra, avatarSize + borderExtra * 2, avatarSize + borderExtra * 2);
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(avatarX - 4, avatarY - 4, avatarSize + 8, avatarSize + 8);
+          ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+        } catch (e) { console.error('Error loading avatar:', e); }
+      },
+      text: () => {
+        const textX = Math.round(210 * scale);
+        const baseFontSize = Math.round((FONT_MAP[custom.fontId]?.size || 28) * scale * textSizeMul);
+        const fontStyle = getFontString(custom.fontId, baseFontSize);
+
+        ctx.font = fontStyle;
+        let nameGlowAlpha = 1;
+        if (isAnimated && custom.animations.includes('glow-text')) {
+          nameGlowAlpha = 0.7 + Math.sin(animProgress * Math.PI * 2) * 0.3;
+          ctx.globalAlpha = nameGlowAlpha;
+          ctx.shadowBlur = 10 + Math.sin(animProgress * Math.PI * 2) * 8;
+          ctx.shadowColor = accentColor;
+        }
+        drawTextWithEffect(ctx, member.user.username, textX, Math.round(60 * scale * textSizeMul), textColor, accentColor, textEffect, baseFontSize);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+
+        ctx.font = `bold ${Math.round(22 * scale * textSizeMul)}px Arial, sans-serif`;
+        drawTextWithEffect(ctx, `NIVEL ${userData.level}`, textX, Math.round(100 * scale), accentColor, textColor, textEffect === 'none' ? 'shadow' : textEffect, Math.round(22 * scale));
+
+        const xpText = `XP: ${Math.floor(progress.current)} / ${Math.floor(progress.needed)}`;
+        ctx.font = `${Math.round(18 * scale)}px Arial, sans-serif`;
+        ctx.fillStyle = '#000000';
+        ctx.fillText(xpText, textX + 1, Math.round(130 * scale) + 1);
+        ctx.fillStyle = textColor;
+        ctx.fillText(xpText, textX, Math.round(130 * scale));
+
+        const barX = textX;
+        const barY = Math.round(150 * scale);
+        const barWidth = Math.round(540 * scale);
+        const barHeight = Math.round(28 * scale);
+
+        ctx.fillStyle = shadeColor(bgColor, 0.5);
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+
+        let barProg = progress.percentage / 100;
+        if (isAnimated && custom.animations.includes('pulse-bar')) {
+          barProg = Math.min(1, barProg * (0.9 + Math.sin(animProgress * Math.PI * 2) * 0.1));
+        }
+        const progressWidth = Math.max(8, barProg * barWidth);
+
+        if (custom.barGradient) {
+          const bg = ctx.createLinearGradient(barX, 0, barX + progressWidth, 0);
+          bg.addColorStop(0, custom.barGradient.color1);
+          bg.addColorStop(1, custom.barGradient.color2);
+          ctx.fillStyle = bg;
+        } else if (isAnimated && custom.animations.includes('rainbow-bar')) {
+          const hueShift = animProgress * 360;
+          const bg = ctx.createLinearGradient(barX, 0, barX + progressWidth, 0);
+          bg.addColorStop(0, `hsl(${hueShift % 360}, 100%, 50%)`);
+          bg.addColorStop(0.5, `hsl(${(hueShift + 120) % 360}, 100%, 50%)`);
+          bg.addColorStop(1, `hsl(${(hueShift + 240) % 360}, 100%, 50%)`);
+          ctx.fillStyle = bg;
+        } else {
+          const gradient = ctx.createLinearGradient(barX, 0, barX + progressWidth, 0);
+          gradient.addColorStop(0, barColor);
+          gradient.addColorStop(1, shadeColor(barColor, 1.2));
+          ctx.fillStyle = gradient;
+        }
+        ctx.fillRect(barX + 2, barY + 2, progressWidth - 4, barHeight - 4);
+
+        if (isAnimated && custom.animations.includes('shimmer')) {
+          const shimmerX = barX + animProgress * barWidth;
+          const shimmerW = Math.round(30 * scale);
+          ctx.globalAlpha = 0.3;
+          const sg = ctx.createLinearGradient(shimmerX - shimmerW, 0, shimmerX + shimmerW, 0);
+          sg.addColorStop(0, 'rgba(255,255,255,0)');
+          sg.addColorStop(0.5, 'rgba(255,255,255,1)');
+          sg.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = sg;
+          ctx.fillRect(barX + 2, barY + 2, progressWidth - 4, barHeight - 4);
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.fillStyle = accentColor;
+        ctx.fillRect(barX, barY, barWidth, 3);
+        ctx.fillRect(barX, barY + barHeight - 3, barWidth, 3);
+        ctx.fillRect(barX, barY, 3, barHeight);
+        ctx.fillRect(barX + barWidth - 3, barY, 3, barHeight);
+
+        ctx.fillStyle = textColor;
+        ctx.font = `bold ${Math.round(14 * scale)}px Arial, sans-serif`;
+        const percentText = `${Math.floor(progress.percentage)}%`;
+        ctx.fillText(percentText, barX + (barWidth - ctx.measureText(percentText).width) / 2, barY + Math.round(19 * scale));
+
+        if (boostsText && boostsText.trim() !== '') {
+          ctx.fillStyle = '#00FF00';
+          ctx.fillText(`🚀 ${boostsText}`, textX, barY + barHeight + Math.round(25 * scale));
+        }
+
+        if (isAnimated && custom.animations.includes('sparkle')) {
+          ctx.globalAlpha = 0.5 + Math.sin(animProgress * Math.PI * 4) * 0.5;
+          ctx.fillStyle = '#FFD700';
+          for (let i = 0; i < 8; i++) {
+            const spx = textX + rand() * barWidth;
+            const spy = Math.round(20 * scale) + rand() * (barY + barHeight);
+            ctx.fillRect(Math.round(spx), Math.round(spy), 3, 3);
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(cardW - Math.round(130 * scale), cardH - Math.round(35 * scale), Math.round(120 * scale), Math.round(25 * scale));
+        ctx.fillStyle = accentColor;
+        ctx.font = `bold ${Math.round(12 * scale)}px Arial, sans-serif`;
+        ctx.fillText(isAnimated ? '✨ CUSTOM' : 'CUSTOM', cardW - Math.round(125 * scale), cardH - Math.round(17 * scale));
+      }
     };
-    drawPixelatedGradientBackground(ctx, cardW, cardH, colors.gradient, rand);
+
+    for (const layer of layerOrder) {
+      if (layerFns[layer]) await layerFns[layer]();
+    }
+
+    if (custom.frameId) {
+      drawFrame(ctx, cardW, cardH, custom.frameId, accentColor, scale);
+    } else {
+      drawPixelBorder(ctx, 0, 0, cardW, cardH, accentColor, Math.round(6 * scale));
+      drawPixelBorder(ctx, Math.round(8 * scale), Math.round(8 * scale), cardW - Math.round(16 * scale), cardH - Math.round(16 * scale), 'rgba(0,0,0,0.3)', 2);
+    }
+
+    if (isAnimated && custom.animations.includes('breathing')) {
+      const breathAlpha = 0.1 + Math.sin(animProgress * Math.PI * 2) * 0.05;
+      ctx.strokeStyle = accentColor;
+      ctx.globalAlpha = breathAlpha;
+      ctx.lineWidth = Math.round(3 * scale);
+      ctx.strokeRect(Math.round(3 * scale), Math.round(3 * scale), cardW - Math.round(6 * scale), cardH - Math.round(6 * scale));
+      ctx.globalAlpha = 1;
+    }
+
+    allFrameBuffers.push(canvas.toBuffer('image/png'));
   }
 
-  if (custom.useNeonPalette) {
-    drawNeonGlow(ctx, cardW, cardH, rand);
-  }
-
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-  for (let i = 0; i < cardH; i += 4) {
-    if (i % 8 === 0) ctx.fillRect(0, i, cardW, 2);
-  }
-
-  drawPixelBorder(ctx, 0, 0, cardW, cardH, accentColor, Math.round(6 * scale));
-  drawPixelBorder(ctx, Math.round(8 * scale), Math.round(8 * scale), cardW - Math.round(16 * scale), cardH - Math.round(16 * scale), 'rgba(0,0,0,0.3)', 2);
-
-  if (custom.drawLayer && typeof custom.drawLayer === 'string' && custom.drawLayer.startsWith('data:image/png;base64,')) {
+  if (isAnimated && allFrameBuffers.length > 1) {
     try {
-      const drawImg = await loadImage(custom.drawLayer);
-      ctx.drawImage(drawImg, 0, 0, cardW, cardH);
+      return await createAnimatedGif(allFrameBuffers, cardW, cardH, 80);
     } catch (e) {
-      console.error('Error loading drawLayer:', e);
+      console.error('Error creating GIF, falling back to static:', e);
+      return allFrameBuffers[0];
     }
   }
 
-  const baseImages = custom.baseImages || [];
-  const logos = custom.logos || [];
+  return allFrameBuffers[0];
+}
 
-  for (const img of baseImages) {
-    try {
-      let imgSource = img.url;
-      if (typeof imgSource === 'string' && imgSource.startsWith('data:image/')) {
-        const b64Data = imgSource.split(',')[1];
-        if (b64Data) imgSource = Buffer.from(b64Data, 'base64');
-      }
-      const image = await loadImage(imgSource);
-      ctx.drawImage(image, (img.x || 0) * scale, (img.y || 0) * scale, (img.width || 100) * scale, (img.height || 100) * scale);
-    } catch (e) {
-      console.error('Error loading base image:', e);
+async function createAnimatedGif(frameBuffers, width, height, delay) {
+  const { GIFEncoder } = await import('gifenc').catch(() => ({ GIFEncoder: null }));
+  if (!GIFEncoder) {
+    return frameBuffers[0];
+  }
+
+  const gif = GIFEncoder();
+  for (const frameBuf of frameBuffers) {
+    const img = await loadImage(frameBuf);
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const { data } = imageData;
+    const palette = extractPalette(data, 256);
+    const index = applyPalette(data, palette);
+    gif.writeFrame(index, width, height, { palette, delay, dispose: 2 });
+  }
+  gif.finish();
+  return Buffer.from(gif.bytes());
+}
+
+function extractPalette(data, maxColors) {
+  const colorMap = new Map();
+  for (let i = 0; i < data.length; i += 4) {
+    const key = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+    colorMap.set(key, (colorMap.get(key) || 0) + 1);
+  }
+  const sorted = [...colorMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, maxColors);
+  const palette = [];
+  for (const [key] of sorted) {
+    palette.push((key >> 16) & 0xff, (key >> 8) & 0xff, key & 0xff);
+  }
+  while (palette.length < maxColors * 3) {
+    palette.push(0, 0, 0);
+  }
+  return palette;
+}
+
+function applyPalette(data, palette) {
+  const numPixels = data.length / 4;
+  const index = new Uint8Array(numPixels);
+  const numColors = palette.length / 3;
+  for (let i = 0; i < numPixels; i++) {
+    const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+    let bestIdx = 0, bestDist = Infinity;
+    for (let c = 0; c < numColors; c++) {
+      const dr = r - palette[c * 3];
+      const dg = g - palette[c * 3 + 1];
+      const db = b - palette[c * 3 + 2];
+      const dist = dr * dr + dg * dg + db * db;
+      if (dist < bestDist) { bestDist = dist; bestIdx = c; }
+      if (dist === 0) break;
     }
+    index[i] = bestIdx;
   }
-
-  try {
-    const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
-    const avatar = await loadImage(avatarURL);
-    const avatarSize = Math.round(140 * scale);
-    const avatarX = Math.round(35 * scale);
-    const avatarY = Math.round((cardH - avatarSize) / 2);
-
-    ctx.fillStyle = accentColor;
-    ctx.fillRect(avatarX - 6, avatarY - 6, avatarSize + 12, avatarSize + 12);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(avatarX - 4, avatarY - 4, avatarSize + 8, avatarSize + 8);
-    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
-  } catch (e) {
-    console.error('Error loading avatar:', e);
-  }
-
-  for (const logo of logos) {
-    try {
-      let imgSource = logo.url;
-      if (typeof imgSource === 'string' && imgSource.startsWith('data:image/')) {
-        const b64Data = imgSource.split(',')[1];
-        if (b64Data) imgSource = Buffer.from(b64Data, 'base64');
-      }
-      const image = await loadImage(imgSource);
-      ctx.drawImage(image, (logo.x || 0) * scale, (logo.y || 0) * scale, (logo.width || 50) * scale, (logo.height || 50) * scale);
-    } catch (e) {
-      console.error('Error loading logo:', e);
-    }
-  }
-
-  const allStickers = [...svcData.STANDARD_STICKERS, ...svcData.VIP_STICKERS];
-  if (custom.stickers && custom.stickers.length > 0) {
-    for (const sticker of custom.stickers) {
-      drawStickerOnCanvas(ctx, { ...sticker, x: sticker.x * scale, y: sticker.y * scale, scale: (sticker.scale || 1) * scale }, allStickers);
-    }
-  }
-
-  const textX = Math.round(210 * scale);
-  const shadowOffset = 2;
-  const fontStyle = getFontString(custom.fontId, Math.round((FONT_MAP[custom.fontId]?.size || 28) * scale));
-
-  ctx.font = fontStyle;
-  ctx.fillStyle = '#000000';
-  ctx.fillText(member.user.username, textX + shadowOffset, Math.round(60 * scale) + shadowOffset);
-  ctx.fillStyle = textColor;
-  ctx.fillText(member.user.username, textX, Math.round(60 * scale));
-
-  ctx.font = `bold ${Math.round(22 * scale)}px Arial, sans-serif`;
-  ctx.fillStyle = '#000000';
-  ctx.fillText(`NIVEL ${userData.level}`, textX + shadowOffset, Math.round(100 * scale) + shadowOffset);
-  ctx.fillStyle = accentColor;
-  ctx.fillText(`NIVEL ${userData.level}`, textX, Math.round(100 * scale));
-
-  const xpText = `XP: ${Math.floor(progress.current)} / ${Math.floor(progress.needed)}`;
-  ctx.font = `${Math.round(18 * scale)}px Arial, sans-serif`;
-  ctx.fillStyle = '#000000';
-  ctx.fillText(xpText, textX + 1, Math.round(130 * scale) + 1);
-  ctx.fillStyle = textColor;
-  ctx.fillText(xpText, textX, Math.round(130 * scale));
-
-  const barX = textX;
-  const barY = Math.round(150 * scale);
-  const barWidth = Math.round(540 * scale);
-  const barHeight = Math.round(28 * scale);
-
-  ctx.fillStyle = shadeColor(bgColor, 0.5);
-  ctx.fillRect(barX, barY, barWidth, barHeight);
-  const progressWidth = Math.max(8, (progress.percentage / 100) * barWidth);
-  const gradient = ctx.createLinearGradient(barX, 0, barX + progressWidth, 0);
-  gradient.addColorStop(0, barColor);
-  gradient.addColorStop(1, shadeColor(barColor, 1.2));
-  ctx.fillStyle = gradient;
-  ctx.fillRect(barX + 2, barY + 2, progressWidth - 4, barHeight - 4);
-
-  ctx.fillStyle = accentColor;
-  ctx.fillRect(barX, barY, barWidth, 3);
-  ctx.fillRect(barX, barY + barHeight - 3, barWidth, 3);
-  ctx.fillRect(barX, barY, 3, barHeight);
-  ctx.fillRect(barX + barWidth - 3, barY, 3, barHeight);
-
-  ctx.fillStyle = textColor;
-  ctx.font = `bold ${Math.round(14 * scale)}px Arial, sans-serif`;
-  const percentText = `${Math.floor(progress.percentage)}%`;
-  ctx.fillText(percentText, barX + (barWidth - ctx.measureText(percentText).width) / 2, barY + Math.round(19 * scale));
-
-  if (boostsText && boostsText.trim() !== '') {
-    ctx.fillStyle = '#00FF00';
-    ctx.fillText(`🚀 ${boostsText}`, textX, barY + barHeight + Math.round(25 * scale));
-  }
-
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(cardW - Math.round(130 * scale), cardH - Math.round(35 * scale), Math.round(120 * scale), Math.round(25 * scale));
-  ctx.fillStyle = accentColor;
-  ctx.font = `bold ${Math.round(12 * scale)}px Arial, sans-serif`;
-  ctx.fillText('CUSTOM', cardW - Math.round(125 * scale), cardH - Math.round(17 * scale));
-
-  return canvas.toBuffer('image/png');
+  return index;
 }
 
 function shadeColor(color, factor) {
@@ -954,6 +1129,236 @@ function drawNeonGlow(ctx, width, height, rand) {
     ctx.fillRect(x, y, 4, 4);
   }
   ctx.globalAlpha = 1;
+}
+
+function drawCustomGradientBackground(ctx, w, h, gradient) {
+  let grd;
+  const { color1, color2, color3, direction } = gradient;
+  if (direction === 'horizontal') {
+    grd = ctx.createLinearGradient(0, 0, w, 0);
+  } else if (direction === 'vertical') {
+    grd = ctx.createLinearGradient(0, 0, 0, h);
+  } else if (direction === 'diagonal') {
+    grd = ctx.createLinearGradient(0, 0, w, h);
+  } else {
+    grd = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) / 2);
+  }
+  grd.addColorStop(0, color1);
+  if (color3) {
+    grd.addColorStop(0.5, color2);
+    grd.addColorStop(1, color3);
+  } else {
+    grd.addColorStop(1, color2);
+  }
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function drawFrame(ctx, w, h, frameId, accentColor, scale) {
+  const s = scale;
+  const thickness = Math.round(6 * s);
+  switch (frameId) {
+    case 'pixel-simple':
+      drawPixelBorder(ctx, 0, 0, w, h, accentColor, thickness);
+      break;
+    case 'rounded': {
+      const r = Math.round(16 * s);
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = thickness;
+      ctx.beginPath();
+      ctx.roundRect(thickness / 2, thickness / 2, w - thickness, h - thickness, r);
+      ctx.stroke();
+      ctx.strokeStyle = shadeColor(accentColor, 0.6);
+      ctx.lineWidth = Math.round(2 * s);
+      ctx.beginPath();
+      ctx.roundRect(thickness + 2, thickness + 2, w - thickness * 2 - 4, h - thickness * 2 - 4, r - 4);
+      ctx.stroke();
+      break;
+    }
+    case 'double-line': {
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = Math.round(3 * s);
+      ctx.strokeRect(Math.round(3 * s), Math.round(3 * s), w - Math.round(6 * s), h - Math.round(6 * s));
+      ctx.strokeStyle = shadeColor(accentColor, 0.7);
+      ctx.lineWidth = Math.round(2 * s);
+      ctx.strokeRect(Math.round(10 * s), Math.round(10 * s), w - Math.round(20 * s), h - Math.round(20 * s));
+      break;
+    }
+    case 'dotted-border': {
+      ctx.setLineDash([Math.round(6 * s), Math.round(4 * s)]);
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = Math.round(4 * s);
+      ctx.strokeRect(Math.round(4 * s), Math.round(4 * s), w - Math.round(8 * s), h - Math.round(8 * s));
+      ctx.setLineDash([]);
+      break;
+    }
+    case 'corner-deco': {
+      drawPixelBorder(ctx, 0, 0, w, h, accentColor, thickness);
+      const cs = Math.round(20 * s);
+      const corners = [[0, 0], [w - cs, 0], [0, h - cs], [w - cs, h - cs]];
+      ctx.fillStyle = accentColor;
+      for (const [cx, cy] of corners) {
+        ctx.fillRect(cx, cy, cs, Math.round(4 * s));
+        ctx.fillRect(cx, cy, Math.round(4 * s), cs);
+        ctx.fillRect(cx + cs - Math.round(4 * s), cy, Math.round(4 * s), cs);
+        ctx.fillRect(cx, cy + cs - Math.round(4 * s), cs, Math.round(4 * s));
+      }
+      break;
+    }
+    case 'golden': {
+      const gold1 = '#FFD700', gold2 = '#DAA520', gold3 = '#B8860B';
+      ctx.fillStyle = gold1;
+      ctx.fillRect(0, 0, w, thickness); ctx.fillRect(0, h - thickness, w, thickness);
+      ctx.fillRect(0, 0, thickness, h); ctx.fillRect(w - thickness, 0, thickness, h);
+      ctx.fillStyle = gold2;
+      ctx.fillRect(thickness, thickness, w - thickness * 2, Math.round(2 * s));
+      ctx.fillRect(thickness, h - thickness - Math.round(2 * s), w - thickness * 2, Math.round(2 * s));
+      ctx.fillRect(thickness, thickness, Math.round(2 * s), h - thickness * 2);
+      ctx.fillRect(w - thickness - Math.round(2 * s), thickness, Math.round(2 * s), h - thickness * 2);
+      const gem = Math.round(8 * s);
+      ctx.fillStyle = gold3;
+      for (let i = Math.round(20 * s); i < w - Math.round(20 * s); i += Math.round(30 * s)) {
+        ctx.fillRect(i, Math.round(1 * s), gem, gem);
+        ctx.fillRect(i, h - gem - Math.round(1 * s), gem, gem);
+      }
+      break;
+    }
+    case 'neon-frame': {
+      const neonColors = ['#FF00FF', '#00FFFF', '#00FF00'];
+      for (let i = 0; i < 3; i++) {
+        ctx.shadowBlur = 15 - i * 4;
+        ctx.shadowColor = neonColors[i % 3];
+        ctx.strokeStyle = neonColors[i % 3];
+        ctx.lineWidth = Math.round((3 - i) * s);
+        ctx.strokeRect(Math.round((4 + i * 4) * s), Math.round((4 + i * 4) * s), w - Math.round((8 + i * 8) * s), h - Math.round((8 + i * 8) * s));
+      }
+      ctx.shadowBlur = 0;
+      break;
+    }
+    case 'fire-frame': {
+      ctx.fillStyle = '#8B0000';
+      ctx.fillRect(0, 0, w, thickness); ctx.fillRect(0, h - thickness, w, thickness);
+      ctx.fillRect(0, 0, thickness, h); ctx.fillRect(w - thickness, 0, thickness, h);
+      const fireColors = ['#FF4500', '#FF6347', '#FFD700', '#FF0000'];
+      for (let i = 0; i < w; i += Math.round(8 * s)) {
+        const fh = Math.round((4 + Math.sin(i * 0.1) * 6) * s);
+        ctx.fillStyle = fireColors[Math.floor(Math.abs(Math.sin(i * 0.3)) * fireColors.length)];
+        ctx.fillRect(i, 0, Math.round(6 * s), fh);
+        ctx.fillRect(i, h - fh, Math.round(6 * s), fh);
+      }
+      break;
+    }
+    case 'diamond': {
+      ctx.fillStyle = '#4169E1';
+      ctx.fillRect(0, 0, w, thickness); ctx.fillRect(0, h - thickness, w, thickness);
+      ctx.fillRect(0, 0, thickness, h); ctx.fillRect(w - thickness, 0, thickness, h);
+      ctx.fillStyle = '#87CEEB';
+      const ds = Math.round(6 * s);
+      for (let i = Math.round(12 * s); i < w; i += Math.round(24 * s)) {
+        ctx.save();
+        ctx.translate(i, Math.round(3 * s));
+        ctx.rotate(Math.PI / 4);
+        ctx.fillRect(-ds / 2, -ds / 2, ds, ds);
+        ctx.restore();
+        ctx.save();
+        ctx.translate(i, h - Math.round(3 * s));
+        ctx.rotate(Math.PI / 4);
+        ctx.fillRect(-ds / 2, -ds / 2, ds, ds);
+        ctx.restore();
+      }
+      break;
+    }
+    case 'galaxy-frame': {
+      const grd = ctx.createLinearGradient(0, 0, w, h);
+      grd.addColorStop(0, '#1a0533'); grd.addColorStop(0.5, '#4B0082'); grd.addColorStop(1, '#0d0221');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, thickness); ctx.fillRect(0, h - thickness, w, thickness);
+      ctx.fillRect(0, 0, thickness, h); ctx.fillRect(w - thickness, 0, thickness, h);
+      ctx.fillStyle = '#FFFFFF';
+      for (let i = 0; i < 30; i++) {
+        const sx = (Math.sin(i * 7.3) * 0.5 + 0.5) * w;
+        const sy = (i < 15) ? Math.sin(i * 2.1) * thickness : h - thickness + Math.sin(i * 2.1) * thickness;
+        ctx.fillRect(Math.round(sx), Math.round(Math.abs(sy)), 2, 2);
+      }
+      break;
+    }
+    case 'rainbow-frame': {
+      const rainbowColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
+      const segW = w / rainbowColors.length;
+      for (let i = 0; i < rainbowColors.length; i++) {
+        ctx.fillStyle = rainbowColors[i];
+        ctx.fillRect(Math.round(segW * i), 0, Math.ceil(segW) + 1, thickness);
+        ctx.fillRect(Math.round(segW * i), h - thickness, Math.ceil(segW) + 1, thickness);
+      }
+      const segH = h / rainbowColors.length;
+      for (let i = 0; i < rainbowColors.length; i++) {
+        ctx.fillStyle = rainbowColors[i];
+        ctx.fillRect(0, Math.round(segH * i), thickness, Math.ceil(segH) + 1);
+        ctx.fillRect(w - thickness, Math.round(segH * i), thickness, Math.ceil(segH) + 1);
+      }
+      break;
+    }
+    default:
+      drawPixelBorder(ctx, 0, 0, w, h, accentColor, thickness);
+      break;
+  }
+}
+
+function drawTextWithEffect(ctx, text, x, y, textColor, accentColor, effectId, fontSize) {
+  switch (effectId) {
+    case 'shadow':
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillText(text, x + 3, y + 3);
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, x, y);
+      break;
+    case 'outline':
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, x, y);
+      break;
+    case 'glow':
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = accentColor;
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, x, y);
+      ctx.fillText(text, x, y);
+      ctx.shadowBlur = 0;
+      break;
+    case 'gradient-text': {
+      const tw = ctx.measureText(text).width;
+      const grd = ctx.createLinearGradient(x, 0, x + tw, 0);
+      grd.addColorStop(0, accentColor);
+      grd.addColorStop(1, textColor);
+      ctx.fillStyle = grd;
+      ctx.fillText(text, x, y);
+      break;
+    }
+    case 'pixel-shadow':
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      ctx.fillText(text, x + 2, y + 2);
+      ctx.fillStyle = shadeColor(textColor, 0.7);
+      ctx.fillText(text, x + 1, y + 1);
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, x, y);
+      break;
+    default:
+      ctx.fillStyle = '#000000';
+      ctx.fillText(text, x + 2, y + 2);
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, x, y);
+      break;
+  }
+}
+
+function getTextSizeMultiplier(textSize) {
+  switch (textSize) {
+    case 'small': return 0.8;
+    case 'large': return 1.25;
+    default: return 1;
+  }
 }
 
 export async function generateRankCard(member, userData, progress, boostsText = '') {

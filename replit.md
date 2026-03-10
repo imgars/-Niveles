@@ -1,6 +1,21 @@
 # -Niveles
 
 ## Recent Changes
+- **Editor de Rankcards v3 - 8 Mejoras Mayores (Marzo 2026):**
+  - **Sistema de capas:** Las capas de la rankcard (fondo, dibujo, imágenes, stickers, avatar, texto) se pueden reordenar arrastrando en la pestaña "Capas". El orden se guarda en `layerOrder` del config.
+  - **Tienda de la comunidad (Marketplace):** Los usuarios pueden publicar sus diseños de rankcard para que otros los compren. Comisión del 15% (el autor recibe 85%). Máximo 5 publicaciones por usuario. Precios entre 500-500,000 LC. Datos en `data/marketplace.json`. Endpoints: `GET/POST /api/rankcard/marketplace/*`, comandos: `/rankcard marketplace`, `/rankcard publish`.
+  - **Animaciones GIF:** Hasta 3 efectos simultáneos por tarjeta: wave, floating-particles, shimmer, glow-text, pulse-bar, rainbow-bar, sparkle, breathing. Genera GIF de 20 frames a 80ms usando `gifenc`. Costo: 3,000 LC.
+  - **Tipografía expandida:** Selector de tamaño de texto (pequeño/normal/grande). 6 efectos de texto: shadow, outline, gradient, pixel-shadow, glow (VIP). Costo efecto: 500 LC.
+  - **Marcos decorativos:** 5 estándar (1,000 LC): pixel-simple, rounded, double-line, dotted-border, corner-deco. 6 VIP (2,000 LC): golden, neon-frame, fire-frame, diamond, galaxy-frame, rainbow-frame. Pestaña "Marcos" con preview visual.
+  - **Vista previa en Discord:** Comando `/rankcard preview` genera y envía la rankcard actual como imagen (o GIF si tiene animaciones) por DM efímero.
+  - **Gradientes personalizados:** Fondos con 2-3 colores y 4 direcciones (horizontal, vertical, diagonal, radial). Costo: 800 LC. También gradiente para barra XP (+400 LC).
+  - **Historial de diseños:** Últimos 5 diseños guardados automáticamente al comprar/cambiar. Restaurar desde pestaña "Historial" o `/rankcard history`. Datos en `data/design_history.json`. Endpoints: `GET /api/rankcard/history`, `POST /api/rankcard/history/restore`.
+  - **Editor HTML v3:** 11 pestañas: Dibujar, Colores, Fondos, Marcos, Objetos, Imágenes, Texto, Capas, Animaciones, Tienda, Historial.
+  - **Nuevas dependencias:** `gifenc` (generación GIF)
+  - **Nuevos exports rankcardService:** `RANKCARD_FRAME_COST`, `RANKCARD_VIP_FRAME_COST`, `RANKCARD_GRADIENT_COST`, `RANKCARD_ANIMATION_COST`, `RANKCARD_TEXT_EFFECT_COST`, `MARKETPLACE_COMMISSION`, `getFramesForRole()`, `getTextEffectsForRole()`, `getAnimationTypes()`, `getGradientDirections()`, `getLayerOrderDefault()`, `STANDARD_FRAMES`, `VIP_FRAMES`, `TEXT_EFFECTS`, `GRADIENT_DIRECTIONS`, `ANIMATION_TYPES`, `LAYER_ORDER_DEFAULT`.
+  - **Nuevos métodos DB:** `getMarketplaceListings()`, `getMarketplaceListingById()`, `getUserMarketplaceListings()`, `addMarketplaceListing()`, `buyMarketplaceListing()`, `removeMarketplaceListing()`, `getDesignHistory()`, `saveDesignToHistory()`, `restoreDesignFromHistory()`.
+  - **Archivos modificados:** `utils/database.js`, `utils/rankcardService.js`, `utils/cardGenerator.js`, `public/rankcard-editor.html`, `index.js`, `commands/rankcard.js`
+
 - **Dashboard & Admin Panel Overhaul (Marzo 2026):**
   - **Leaderboard simplificado:** Eliminado el podio exagerado del top 3. Ahora los 3 primeros usuarios se muestran como filas normales pero con colores personalizados: dorado (#FFD700), plateado (#C0C0C0) y bronce (#CD7F32). Incluyen medallas emoji.
   - **Todos los comandos en el Admin Panel:** Pagina "Comandos Staff" en el admin panel muestra TODOS los comandos del bot (~80+) organizados en 9 categorias: Niveles, Staff Niveles, Economia, Staff Economia, Casino, Minijuegos, Utilidad, Social, Staff Sistemas. Cada comando tiene toggle para activar/desactivar y edicion de descripcion. Filtros por categoria.

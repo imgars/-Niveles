@@ -25,6 +25,7 @@
     "drizzle-zod": "^0.8.3",
     "express": "^4.22.1",
     "fs": "^0.0.1-security",
+    "gifenc": "^1.0.3",
     "moment-timezone": "^0.5.48",
     "mongodb": "^7.1.0",
     "mongoose": "^9.2.4",

@@ -20,9 +20,9 @@
     .user-balance { background: rgba(255,215,0,0.15); border: 1px solid #FFD700; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #FFD700; font-weight: bold; }
 
     .tabs { display: flex; gap: 4px; margin-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
-    .tab-btn { padding: 8px 14px; font-size: 11px; background: rgba(0,0,0,0.4); border: 1px solid #444; color: #aaa; cursor: pointer; border-radius: 6px 6px 0 0; white-space: nowrap; flex-shrink: 0; }
+    .tab-btn { padding: 8px 12px; font-size: 10px; background: rgba(0,0,0,0.4); border: 1px solid #444; color: #aaa; cursor: pointer; border-radius: 6px 6px 0 0; white-space: nowrap; flex-shrink: 0; }
     .tab-btn.active { border-color: var(--accent, #5865F2); color: #fff; background: rgba(88,101,242,0.2); }
-    .tab-content { display: none; background: rgba(0,0,0,0.4); border: 2px solid var(--accent, #5865F2); padding: 14px; border-radius: 0 8px 8px 8px; }
+    .tab-content { display: none; background: rgba(0,0,0,0.4); border: 2px solid var(--accent, #5865F2); padding: 14px; border-radius: 0 8px 8px 8px; max-height: 500px; overflow-y: auto; }
     .tab-content.active { display: block; }
 
     .section-title { font-size: 12px; color: var(--accent, #5865F2); margin: 0 0 10px 0; font-weight: bold; }
@@ -68,10 +68,8 @@
     .logo-pos-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .logo-pos-row label { font-size: 9px; color: #888; min-width: 15px; }
     .logo-pos-row input[type="number"] { width: 60px; padding: 5px; }
-    .logo-drag-hint { font-size: 9px; color: #5865F2; margin-top: 4px; }
 
     .sticker-placed { position: absolute; cursor: grab; user-select: none; -webkit-user-select: none; font-size: 24px; z-index: 10; }
-    .sticker-placed.dragging { cursor: grabbing; opacity: 0.7; }
 
     .preview-section { background: rgba(0,0,0,0.4); border: 2px solid var(--accent, #5865F2); padding: 12px; border-radius: 8px; margin-top: 12px; }
     .preview-section img { width: 100%; max-width: 100%; height: auto; display: block; image-rendering: pixelated; border-radius: 4px; }
@@ -88,12 +86,13 @@
     .btn-purchase:hover { background: #00CC00; }
     .btn-purchase:disabled { background: #444; border-color: #666; cursor: not-allowed; }
     .btn-danger { padding: 8px 12px; background: #aa0000; color: #fff; border: 1px solid #ff4444; cursor: pointer; font-size: 11px; border-radius: 6px; }
+    .btn-secondary { padding: 8px 14px; background: #444; color: #fff; border: 1px solid #666; cursor: pointer; font-size: 11px; border-radius: 6px; }
+    .btn-secondary:hover { background: #555; }
 
     .error-msg { color: #ff4444; font-size: 11px; margin: 8px 0; padding: 8px; background: rgba(255,0,0,0.1); border-radius: 4px; }
     .success-msg { color: #00ff00; font-size: 11px; margin: 8px 0; padding: 8px; background: rgba(0,255,0,0.1); border-radius: 4px; }
 
     .mobile-info { display: none; font-size: 10px; color: #5865F2; background: rgba(88,101,242,0.1); padding: 8px; border-radius: 6px; margin-bottom: 10px; }
-
     .neon-section { margin-top: 8px; padding: 8px; background: rgba(255,0,255,0.05); border: 1px solid rgba(255,0,255,0.3); border-radius: 6px; }
     .neon-section label { font-size: 9px; color: #FF00FF; }
 
@@ -108,19 +107,64 @@
     .placed-sticker-item { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: rgba(0,0,0,0.2); border-radius: 4px; margin-bottom: 4px; font-size: 10px; color: #ccc; }
     .placed-sticker-item button { padding: 2px 8px; background: #aa0000; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-size: 9px; }
 
+    .frame-card { display: flex; flex-direction: column; align-items: center; padding: 10px; background: rgba(0,0,0,0.3); border: 2px solid #444; border-radius: 8px; cursor: pointer; transition: all 0.2s; min-width: 90px; text-align: center; }
+    .frame-card:hover, .frame-card.selected { border-color: #FFD700; }
+    .frame-card.vip { border-color: rgba(255,0,255,0.4); }
+    .frame-card .frame-name { font-size: 9px; color: #ccc; margin-top: 4px; }
+    .frame-card .frame-cost { font-size: 8px; color: #FFD700; }
+    .frame-preview { width: 70px; height: 25px; border-radius: 3px; }
+
+    .gradient-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+    .gradient-preview-bar { height: 20px; flex: 1; min-width: 120px; border-radius: 4px; border: 1px solid #555; }
+
+    .layer-list { list-style: none; padding: 0; margin: 0; }
+    .layer-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(0,0,0,0.3); border: 1px solid #444; border-radius: 6px; margin-bottom: 4px; cursor: grab; font-size: 11px; color: #ccc; }
+    .layer-item:active { cursor: grabbing; opacity: 0.7; }
+    .layer-item .layer-handle { color: #666; font-size: 14px; }
+    .layer-item .layer-name { flex: 1; }
+    .layer-item.dragging { opacity: 0.5; border-color: var(--accent, #5865F2); }
+
+    .anim-card { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(0,0,0,0.3); border: 2px solid #444; border-radius: 6px; cursor: pointer; transition: all 0.2s; margin-bottom: 6px; }
+    .anim-card:hover { border-color: #888; }
+    .anim-card.selected { border-color: #FFD700; background: rgba(255,215,0,0.1); }
+    .anim-card .anim-name { font-size: 11px; color: #fff; font-weight: bold; }
+    .anim-card .anim-desc { font-size: 9px; color: #888; }
+
+    .mkt-card { background: rgba(0,0,0,0.3); border: 2px solid #444; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+    .mkt-card:hover { border-color: var(--accent, #5865F2); }
+    .mkt-card .mkt-title { font-size: 12px; color: #fff; font-weight: bold; }
+    .mkt-card .mkt-author { font-size: 9px; color: #888; }
+    .mkt-card .mkt-price { font-size: 12px; color: #FFD700; font-weight: bold; }
+    .mkt-card .mkt-stats { font-size: 9px; color: #666; }
+    .mkt-card img { width: 100%; border-radius: 4px; margin: 6px 0; image-rendering: pixelated; }
+    .mkt-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+
+    .history-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: rgba(0,0,0,0.3); border: 1px solid #444; border-radius: 6px; margin-bottom: 6px; }
+    .history-item .history-info { font-size: 10px; color: #ccc; }
+    .history-item .history-date { font-size: 9px; color: #888; }
+    .history-item .history-badges { display: flex; gap: 4px; margin-top: 2px; }
+    .history-badge { font-size: 8px; padding: 1px 5px; border-radius: 3px; background: rgba(88,101,242,0.2); color: #5865F2; }
+
+    .publish-form { background: rgba(0,0,0,0.3); border: 2px solid var(--accent, #5865F2); padding: 14px; border-radius: 8px; margin-top: 10px; }
+    .publish-form input, .publish-form textarea { margin-bottom: 8px; }
+    .publish-form textarea { width: 100%; padding: 8px; background: #2a2d31; border: 1px solid #444; color: #fff; font-size: 12px; border-radius: 4px; resize: vertical; min-height: 60px; }
+
+    .mkt-sort { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .mkt-sort button { padding: 5px 10px; font-size: 10px; background: rgba(0,0,0,0.3); border: 1px solid #444; color: #aaa; cursor: pointer; border-radius: 4px; }
+    .mkt-sort button.active { border-color: var(--accent, #5865F2); color: #fff; }
+
     @media (max-width: 768px) {
       .rankcard-editor { padding: 8px; }
       .mobile-info { display: block; }
-      .tab-btn { padding: 6px 10px; font-size: 10px; }
+      .tab-btn { padding: 6px 8px; font-size: 9px; }
       .items-grid { grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); }
       .cost-bar { flex-direction: column; text-align: center; }
       .btn-row { flex-direction: column; }
       .btn-preview, .btn-purchase { min-width: 100%; }
     }
-
     @media (max-width: 480px) {
       .rankcard-editor h1 { font-size: 11px; }
-      .tab-btn { padding: 5px 8px; font-size: 9px; }
+      .tab-btn { padding: 5px 6px; font-size: 8px; }
       .control-group label { font-size: 9px; }
       .color-swatch { width: 26px; height: 26px; }
       .brush-btn { padding: 5px 7px; font-size: 9px; }
@@ -132,15 +176,15 @@
   <div class="pixel-bg"></div>
 
   <div class="rankcard-editor">
-    <h1>🎨 EDITOR DE RANKCARD PERSONALIZADA</h1>
+    <h1>🎨 EDITOR DE RANKCARD PERSONALIZADA v3</h1>
 
     <div id="loading" style="text-align:center;padding:40px;">
       <p>Verificando token...</p>
     </div>
 
     <div id="error-screen" style="display:none;text-align:center;padding:40px;color:#ff4444;">
-      <h2>Token inválido o expirado</h2>
-      <p>Usa <code>/rankcard link</code> en Discord para obtener un enlace (válido 15 min)</p>
+      <h2>Token inv&aacute;lido o expirado</h2>
+      <p>Usa <code>/rankcard link</code> en Discord para obtener un enlace (v&aacute;lido 15 min)</p>
     </div>
 
     <div id="editor-screen" style="display:none;">
@@ -154,16 +198,21 @@
       </div>
 
       <div class="mobile-info">
-        📱 Usa tus dedos para dibujar en el lienzo. Desliza las pestañas para ver todas las opciones.
+        📱 Usa tus dedos para dibujar. Desliza las pesta&ntilde;as para ver todas las opciones.
       </div>
 
       <div class="tabs" id="editor-tabs">
         <button class="tab-btn active" data-tab="tab-draw">✏️ Dibujar</button>
         <button class="tab-btn" data-tab="tab-colors">🎨 Colores</button>
         <button class="tab-btn" data-tab="tab-bg">🖼️ Fondos</button>
+        <button class="tab-btn" data-tab="tab-frames">🖼️ Marcos</button>
         <button class="tab-btn" data-tab="tab-stickers">⭐ Objetos</button>
-        <button class="tab-btn" data-tab="tab-images">📷 Imágenes</button>
+        <button class="tab-btn" data-tab="tab-images">📷 Im&aacute;genes</button>
         <button class="tab-btn" data-tab="tab-font">✒️ Texto</button>
+        <button class="tab-btn" data-tab="tab-layers">📑 Capas</button>
+        <button class="tab-btn" data-tab="tab-animations">✨ Animaciones</button>
+        <button class="tab-btn" data-tab="tab-marketplace">🛒 Tienda</button>
+        <button class="tab-btn" data-tab="tab-history">📜 Historial</button>
         <button class="tab-btn" data-tab="tab-settings" id="tab-settings-btn" style="display:none;">⚙️ Ajustes</button>
       </div>
 
@@ -173,7 +222,7 @@
           <label>Color del pincel</label>
           <div class="color-row" id="draw-colors"></div>
           <div id="neon-draw-colors" style="display:none; margin-top:6px;">
-            <label style="font-size:9px;color:#FF00FF;">Colores Neón:</label>
+            <label style="font-size:9px;color:#FF00FF;">Colores Ne&oacute;n:</label>
             <div class="color-row" id="neon-draw-palette"></div>
           </div>
         </div>
@@ -182,7 +231,7 @@
           <div class="brush-row" id="draw-brushes"></div>
         </div>
         <div class="control-group">
-          <label>Tamaño: <span id="brush-size-val">8</span>px</label>
+          <label>Tama&ntilde;o: <span id="brush-size-val">8</span>px</label>
           <input type="range" id="brush-size" min="1" max="40" value="8" style="width:100%;">
         </div>
         <div class="brush-row">
@@ -192,18 +241,38 @@
         <div class="draw-canvas-wrap" id="draw-canvas-wrap">
           <canvas id="draw-canvas" width="800" height="250"></canvas>
         </div>
-        <p class="hint" style="font-size:9px;color:#888;margin-top:4px;">Dibuja con el ratón o con el dedo en móviles. Usa el borrador para corregir.</p>
       </div>
 
       <div class="tab-content" id="tab-colors">
-        <h3 class="section-title">🎨 Colores de la tarjeta</h3>
+        <h3 class="section-title">🎨 Colores y Gradientes</h3>
         <div class="control-group">
           <label>Color de fondo</label>
           <div class="color-row">
             <input type="color" id="color-bg" value="#36393F" class="color-swatch">
             <input type="text" id="color-bg-hex" value="#36393F" class="color-input" maxlength="7">
           </div>
-          <p class="hint">Se usa solo si no seleccionas un fondo prediseñado</p>
+          <p class="hint">Se usa solo si no seleccionas un fondo predise&ntilde;ado ni gradiente</p>
+        </div>
+        <div class="control-group">
+          <label>Gradiente de fondo (opcional - +800 LC)</label>
+          <div class="gradient-row">
+            <label style="font-size:9px;color:#888;">Activar:</label>
+            <input type="checkbox" id="use-gradient">
+          </div>
+          <div id="gradient-controls" style="display:none;">
+            <div class="gradient-row">
+              <input type="color" id="grad-color1" value="#1a1a2e" class="color-swatch">
+              <input type="color" id="grad-color2" value="#16213e" class="color-swatch">
+              <input type="color" id="grad-color3" value="#0f3460" class="color-swatch">
+              <label style="font-size:9px;color:#888;">3er color (opcional)</label>
+              <input type="checkbox" id="use-grad-color3" checked>
+            </div>
+            <div class="gradient-row">
+              <label style="font-size:9px;color:#888;">Direcci&oacute;n:</label>
+              <select id="grad-direction" style="width:auto;min-width:120px;"></select>
+            </div>
+            <div class="gradient-preview-bar" id="gradient-preview"></div>
+          </div>
         </div>
         <div class="control-group">
           <label>Color de acento</label>
@@ -212,7 +281,7 @@
             <input type="text" id="color-accent-hex" value="#5865F2" class="color-input" maxlength="7">
           </div>
           <div id="neon-palette" style="display:none;" class="neon-section">
-            <label>Paleta Neón (VIP/Booster):</label>
+            <label>Paleta Ne&oacute;n (VIP/Booster):</label>
             <div class="color-row" id="neon-colors" style="margin-top:4px;"></div>
           </div>
         </div>
@@ -230,17 +299,31 @@
             <input type="text" id="color-bar-hex" value="#5865F2" class="color-input" maxlength="7">
           </div>
         </div>
+        <div class="control-group">
+          <label>Gradiente de barra XP (opcional - +400 LC)</label>
+          <div class="gradient-row">
+            <input type="checkbox" id="use-bar-gradient">
+            <input type="color" id="bar-grad-color1" value="#5865F2" class="color-swatch">
+            <input type="color" id="bar-grad-color2" value="#FF00FF" class="color-swatch">
+          </div>
+        </div>
         <div class="control-group" id="neon-toggle-wrap" style="display:none;">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-            <input type="checkbox" id="use-neon"> Usar efecto Neón en la tarjeta
+            <input type="checkbox" id="use-neon"> Usar efecto Ne&oacute;n en la tarjeta
           </label>
         </div>
       </div>
 
       <div class="tab-content" id="tab-bg">
-        <h3 class="section-title">🖼️ Fondos prediseñados (opcional)</h3>
-        <p class="hint" style="margin-bottom:10px;">Selecciona un fondo para tu rankcard. Esto reemplaza el color de fondo sólido. Selecciona "Ninguno" para usar tu color personalizado.</p>
+        <h3 class="section-title">🖼️ Fondos predise&ntilde;ados</h3>
+        <p class="hint" style="margin-bottom:10px;">Selecciona "Ninguno" para usar tu color o gradiente personalizado.</p>
         <div class="color-row" id="bg-options" style="gap:8px;flex-wrap:wrap;"></div>
+      </div>
+
+      <div class="tab-content" id="tab-frames">
+        <h3 class="section-title">🖼️ Marcos decorativos</h3>
+        <p class="hint" style="margin-bottom:10px;">Selecciona un marco para tu tarjeta. Costo: 1,000-2,000 LC</p>
+        <div class="color-row" id="frame-options" style="gap:8px;flex-wrap:wrap;"></div>
       </div>
 
       <div class="tab-content" id="tab-stickers">
@@ -251,7 +334,7 @@
           <div class="items-grid" id="sticker-grid"></div>
         </div>
         <div class="control-group">
-          <label>Tamaño del objeto: <span id="sticker-scale-val">1x</span></label>
+          <label>Tama&ntilde;o del objeto: <span id="sticker-scale-val">1x</span></label>
           <input type="range" id="sticker-scale" min="50" max="300" value="100" style="width:100%;">
         </div>
         <div class="placed-stickers-list" id="placed-stickers-list">
@@ -261,27 +344,94 @@
       </div>
 
       <div class="tab-content" id="tab-images">
-        <h3 class="section-title">📷 Imágenes y logos</h3>
-        <p class="hint" style="margin-bottom:10px;">Máx. 3 imágenes (máx. 2 MB c/u). Arrastra las imágenes directamente sobre la vista previa para moverlas.</p>
+        <h3 class="section-title">📷 Im&aacute;genes y logos</h3>
+        <p class="hint" style="margin-bottom:10px;">M&aacute;x. 3 im&aacute;genes (m&aacute;x. 2 MB c/u). Arrastra sobre la vista previa.</p>
         <div id="logo-list"></div>
         <button type="button" class="btn-preview" id="btn-add-image" style="margin-top:8px;padding:8px 14px;font-size:12px;">+ Agregar imagen</button>
         <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;">
       </div>
 
       <div class="tab-content" id="tab-font">
-        <h3 class="section-title">✒️ Tipografía</h3>
-        <p class="hint" style="margin-bottom:10px;">La fuente seleccionada solo aplica al nombre de usuario en TU rankcard. No afecta al leaderboard ni a otras rankcards.</p>
+        <h3 class="section-title">✒️ Tipograf&iacute;a y Efectos de Texto</h3>
+        <p class="hint" style="margin-bottom:10px;">La fuente solo aplica al nombre de usuario en TU rankcard.</p>
         <div class="control-group">
           <label>Fuente del nombre</label>
           <select id="font-select"></select>
         </div>
+        <div class="control-group">
+          <label>Tama&ntilde;o del texto</label>
+          <select id="text-size">
+            <option value="small">Peque&ntilde;o</option>
+            <option value="normal" selected>Normal</option>
+            <option value="large">Grande</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>Efecto de texto (+500 LC si no es "Sin efecto")</label>
+          <select id="text-effect"></select>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-layers">
+        <h3 class="section-title">📑 Orden de Capas</h3>
+        <p class="hint" style="margin-bottom:10px;">Arrastra las capas para cambiar el orden de renderizado. La primera capa se dibuja primero (fondo).</p>
+        <ul class="layer-list" id="layer-list"></ul>
+      </div>
+
+      <div class="tab-content" id="tab-animations">
+        <h3 class="section-title">✨ Animaciones (+3,000 LC)</h3>
+        <p class="hint" style="margin-bottom:10px;">Selecciona hasta 3 animaciones. Tu rankcard se generar&aacute; como GIF animado.</p>
+        <div id="animation-list"></div>
+      </div>
+
+      <div class="tab-content" id="tab-marketplace">
+        <h3 class="section-title">🛒 Tienda de la Comunidad</h3>
+        <p class="hint" style="margin-bottom:10px;">Compra dise&ntilde;os de otros usuarios o vende el tuyo. Comisi&oacute;n: 15%</p>
+
+        <div class="btn-row" style="margin-bottom:10px;">
+          <button type="button" class="btn-preview" id="btn-show-publish" style="flex:0;padding:8px 14px;">📤 Publicar mi dise&ntilde;o</button>
+          <button type="button" class="btn-secondary" id="btn-refresh-mkt">🔄 Actualizar</button>
+        </div>
+
+        <div id="publish-form-wrap" style="display:none;">
+          <div class="publish-form">
+            <h4 style="color:#FFD700;font-size:11px;margin:0 0 8px;">Publicar tu rankcard actual</h4>
+            <input type="text" id="mkt-title" placeholder="T&iacute;tulo (m&aacute;x 50 caracteres)" maxlength="50">
+            <textarea id="mkt-description" placeholder="Descripci&oacute;n (m&aacute;x 200 caracteres)" maxlength="200"></textarea>
+            <div class="gradient-row">
+              <label style="font-size:10px;color:#FFD700;">Precio (LC):</label>
+              <input type="number" id="mkt-price" min="500" max="500000" value="5000" style="width:120px;">
+            </div>
+            <p class="hint">Recibir&aacute;s el 85% del precio. 15% de comisi&oacute;n.</p>
+            <div class="btn-row" style="margin-top:8px;">
+              <button type="button" class="btn-purchase" id="btn-publish" style="flex:0;padding:8px 16px;">📤 Publicar</button>
+              <button type="button" class="btn-danger" id="btn-cancel-publish" style="flex:0;">Cancelar</button>
+            </div>
+            <p id="publish-msg" style="display:none;" class="success-msg"></p>
+          </div>
+        </div>
+
+        <div class="mkt-sort" id="mkt-sort">
+          <button class="active" data-sort="newest">Nuevos</button>
+          <button data-sort="popular">Populares</button>
+          <button data-sort="cheapest">Baratos</button>
+          <button data-sort="expensive">Caros</button>
+        </div>
+        <div id="marketplace-list"></div>
+        <div id="mkt-pagination" style="text-align:center;margin-top:8px;"></div>
+      </div>
+
+      <div class="tab-content" id="tab-history">
+        <h3 class="section-title">📜 Historial de Dise&ntilde;os</h3>
+        <p class="hint" style="margin-bottom:10px;">&Uacute;ltimos 5 dise&ntilde;os guardados. Restaurar reemplaza tu dise&ntilde;o actual.</p>
+        <div id="history-list"></div>
       </div>
 
       <div class="tab-content" id="tab-settings">
         <h3 class="section-title">⚙️ Ajustes VIP</h3>
         <div class="control-group">
-          <label>Resolución de la rankcard</label>
-          <p class="hint" style="margin-bottom:8px;">Mayor resolución = mejor calidad. Costo extra: <span style="color:#FFD700;">2,000 LC</span></p>
+          <label>Resoluci&oacute;n de la rankcard</label>
+          <p class="hint" style="margin-bottom:8px;">Mayor resoluci&oacute;n = mejor calidad. Costo extra: <span style="color:#FFD700;">2,000 LC</span></p>
           <div class="resolution-cards" id="resolution-options"></div>
         </div>
       </div>
@@ -289,7 +439,7 @@
       <div class="preview-section">
         <h3 class="section-title">👁️ Vista Previa</h3>
         <div id="preview-container" style="position:relative;">
-          <div class="preview-placeholder" id="preview-placeholder">Toca "Actualizar Vista Previa" para ver tu diseño</div>
+          <div class="preview-placeholder" id="preview-placeholder">Toca "Actualizar Vista Previa" para ver tu dise&ntilde;o</div>
           <img id="preview-img" src="" alt="Preview" style="display:none;">
           <div id="preview-stickers-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
         </div>
@@ -325,6 +475,7 @@
     let brushId = 'round';
     let brushSize = 8;
     let selectedBgId = null;
+    let selectedFrameId = null;
     let selectedResolution = 'standard';
     let selectedStickerId = null;
     let stickerScale = 1;
@@ -336,10 +487,35 @@
     let uploadedLogos = [];
     const MAX_LOGOS = 3;
     let stickerDragJustEnded = false;
+    let selectedAnimations = [];
+    let currentLayerOrder = ['background', 'drawLayer', 'images', 'stickers', 'avatar', 'text'];
+    let mktSortBy = 'newest';
+    let mktPage = 1;
 
-    function getToken() {
-      return new URLSearchParams(window.location.search).get('token');
-    }
+    const LAYER_LABELS = {
+      background: '🖼️ Fondo',
+      drawLayer: '✏️ Dibujo',
+      images: '📷 Imágenes',
+      stickers: '⭐ Stickers',
+      avatar: '👤 Avatar',
+      text: '📝 Texto/Barra XP'
+    };
+
+    const FRAME_PREVIEWS = {
+      'pixel-simple': 'border:3px solid var(--accent,#5865F2);',
+      'rounded': 'border:3px solid var(--accent,#5865F2);border-radius:8px;',
+      'double-line': 'border:2px double var(--accent,#5865F2);',
+      'dotted-border': 'border:3px dotted var(--accent,#5865F2);',
+      'corner-deco': 'border:3px solid var(--accent,#5865F2);outline:2px solid var(--accent,#5865F2);outline-offset:3px;',
+      'golden': 'border:3px solid #FFD700;box-shadow:inset 0 0 5px #DAA520;',
+      'neon-frame': 'border:2px solid #FF00FF;box-shadow:0 0 8px #00FFFF,inset 0 0 5px #00FF00;',
+      'fire-frame': 'border:3px solid #FF4500;box-shadow:0 0 8px #FF6347;',
+      'diamond': 'border:3px solid #4169E1;box-shadow:0 0 5px #87CEEB;',
+      'galaxy-frame': 'border:3px solid #4B0082;background:linear-gradient(135deg,#1a0533,#0d0221);',
+      'rainbow-frame': 'border:3px solid transparent;background-image:linear-gradient(#1a1a2e,#1a1a2e),linear-gradient(90deg,red,orange,yellow,green,blue,violet);background-origin:border-box;background-clip:padding-box,border-box;'
+    };
+
+    function getToken() { return new URLSearchParams(window.location.search).get('token'); }
 
     function syncColorInputs(id) {
       const colorEl = document.getElementById('color-' + id);
@@ -364,7 +540,7 @@
         const d = canvas.toDataURL('image/png');
         if (d.length > 100) drawLayer = d;
       }
-      return {
+      const config = {
         backgroundColor: document.getElementById('color-bg').value,
         accentColor: document.getElementById('color-accent').value,
         textColor: document.getElementById('color-text').value,
@@ -372,22 +548,42 @@
         useNeonPalette: document.getElementById('use-neon')?.checked || false,
         fontId: document.getElementById('font-select').value,
         backgroundId: selectedBgId,
+        frameId: selectedFrameId,
         resolution: selectedResolution,
+        textEffect: document.getElementById('text-effect')?.value || 'none',
+        textSize: document.getElementById('text-size')?.value || 'normal',
         baseImages: [],
         logos: [],
         stickers: placedStickers.map(s => ({ id: s.id, x: s.x, y: s.y, scale: s.scale })),
-        drawLayer: drawLayer
+        drawLayer: drawLayer,
+        layerOrder: [...currentLayerOrder],
+        animations: [...selectedAnimations],
+        animated: selectedAnimations.length > 0,
+        gradient: null,
+        barGradient: null
       };
+
+      if (document.getElementById('use-gradient')?.checked) {
+        config.gradient = {
+          color1: document.getElementById('grad-color1').value,
+          color2: document.getElementById('grad-color2').value,
+          color3: document.getElementById('use-grad-color3')?.checked ? document.getElementById('grad-color3').value : null,
+          direction: document.getElementById('grad-direction')?.value || 'horizontal'
+        };
+      }
+
+      if (document.getElementById('use-bar-gradient')?.checked) {
+        config.barGradient = {
+          color1: document.getElementById('bar-grad-color1').value,
+          color2: document.getElementById('bar-grad-color2').value
+        };
+      }
+
+      return config;
     }
 
     function getLogosFromInputs() {
-      return uploadedLogos.map(l => ({
-        url: l.dataUrl,
-        x: l.x,
-        y: l.y,
-        width: l.width,
-        height: l.height
-      }));
+      return uploadedLogos.map(l => ({ url: l.dataUrl, x: l.x, y: l.y, width: l.width, height: l.height }));
     }
 
     function saveUndoState() {
@@ -401,32 +597,17 @@
       if (undoStack.length === 0) return;
       const state = undoStack.pop();
       const img = new Image();
-      img.onload = () => {
-        drawCtx.clearRect(0, 0, drawCtx.canvas.width, drawCtx.canvas.height);
-        drawCtx.drawImage(img, 0, 0);
-      };
+      img.onload = () => { drawCtx.clearRect(0, 0, drawCtx.canvas.width, drawCtx.canvas.height); drawCtx.drawImage(img, 0, 0); };
       img.src = state;
     }
 
     function getXY(e, canvas) {
       const rect = canvas.getBoundingClientRect();
-      const cw = canvas.width;
-      const ch = canvas.height;
       let clientX, clientY;
-      if (e.touches && e.touches.length > 0) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-      } else if (e.changedTouches && e.changedTouches.length > 0) {
-        clientX = e.changedTouches[0].clientX;
-        clientY = e.changedTouches[0].clientY;
-      } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      }
-      return {
-        x: (clientX - rect.left) * (cw / rect.width),
-        y: (clientY - rect.top) * (ch / rect.height)
-      };
+      if (e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
+      else if (e.changedTouches && e.changedTouches.length > 0) { clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY; }
+      else { clientX = e.clientX; clientY = e.clientY; }
+      return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
     }
 
     function floodFill(ctx, startX, startY, fillColor) {
@@ -438,248 +619,57 @@
       if (sx < 0 || sx >= w || sy < 0 || sy >= h) return;
       const startIdx = (sy * w + sx) * 4;
       const sr = data[startIdx], sg = data[startIdx+1], sb = data[startIdx+2], sa = data[startIdx+3];
-
-      const fr = parseInt(fillColor.slice(1,3),16);
-      const fg = parseInt(fillColor.slice(3,5),16);
-      const fb = parseInt(fillColor.slice(5,7),16);
-
+      const fr = parseInt(fillColor.slice(1,3),16), fg = parseInt(fillColor.slice(3,5),16), fb = parseInt(fillColor.slice(5,7),16);
       if (sr === fr && sg === fg && sb === fb && sa === 255) return;
-
-      const stack = [[sx, sy]];
-      const visited = new Uint8Array(w * h);
-      const tolerance = 30;
-
-      function matches(idx) {
-        return Math.abs(data[idx] - sr) <= tolerance &&
-               Math.abs(data[idx+1] - sg) <= tolerance &&
-               Math.abs(data[idx+2] - sb) <= tolerance &&
-               Math.abs(data[idx+3] - sa) <= tolerance;
-      }
-
-      let count = 0;
-      const maxPixels = w * h;
+      const stack = [[sx, sy]]; const visited = new Uint8Array(w * h); const tolerance = 30;
+      function matches(idx) { return Math.abs(data[idx]-sr)<=tolerance && Math.abs(data[idx+1]-sg)<=tolerance && Math.abs(data[idx+2]-sb)<=tolerance && Math.abs(data[idx+3]-sa)<=tolerance; }
+      let count = 0; const maxPixels = w * h;
       while (stack.length > 0 && count < maxPixels) {
         const [cx, cy] = stack.pop();
         if (cx < 0 || cx >= w || cy < 0 || cy >= h) continue;
-        const pos = cy * w + cx;
-        if (visited[pos]) continue;
-        const idx = pos * 4;
-        if (!matches(idx)) continue;
-        visited[pos] = 1;
-        data[idx] = fr; data[idx+1] = fg; data[idx+2] = fb; data[idx+3] = 255;
-        stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
-        count++;
+        const pos = cy * w + cx; if (visited[pos]) continue;
+        const idx = pos * 4; if (!matches(idx)) continue;
+        visited[pos] = 1; data[idx]=fr; data[idx+1]=fg; data[idx+2]=fb; data[idx+3]=255;
+        stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]); count++;
       }
       ctx.putImageData(imageData, 0, 0);
     }
 
     function drawStroke(ctx, x1, y1, x2, y2) {
       if (brushId === 'fill') return;
-
-      if (brushId === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.strokeStyle = 'rgba(0,0,0,1)';
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-        ctx.globalCompositeOperation = 'source-over';
-        return;
-      }
-
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = drawColor;
-      ctx.lineWidth = brushSize;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
+      if (brushId === 'eraser') { ctx.globalCompositeOperation='destination-out'; ctx.strokeStyle='rgba(0,0,0,1)'; ctx.lineWidth=brushSize; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.globalCompositeOperation='source-over'; return; }
+      ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = drawColor; ctx.lineWidth = brushSize; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       if (brushId === 'square') ctx.lineCap = 'butt';
-
-      if (brushId === 'thin') {
-        ctx.lineWidth = Math.max(1, brushSize * 0.3);
-      }
-
-      if (brushId === 'medium') {
-        ctx.lineWidth = brushSize * 1.5;
-      }
-
-      if (brushId === 'spray') {
-        const steps = Math.max(6, Math.floor(Math.sqrt((x2-x1)**2 + (y2-y1)**2) / 2));
-        for (let i = 0; i < steps; i++) {
-          const t = i / steps;
-          const x = x1 + (x2-x1)*t + (Math.random()-0.5)*brushSize*1.5;
-          const y = y1 + (y2-y1)*t + (Math.random()-0.5)*brushSize*1.5;
-          ctx.beginPath();
-          ctx.arc(x, y, Math.random() * brushSize/4 + 0.5, 0, Math.PI*2);
-          ctx.fillStyle = drawColor;
-          ctx.fill();
-        }
-        return;
-      }
-
-      if (brushId === 'neon') {
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = drawColor;
-        ctx.strokeStyle = drawColor;
-        ctx.lineWidth = brushSize * 0.7;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        return;
-      }
-
-      if (brushId === 'marker') {
-        ctx.globalAlpha = 0.4;
-        ctx.lineWidth = brushSize * 2;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-        return;
-      }
-
-      if (brushId === 'dotted') {
-        const dist = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
-        const dots = Math.max(1, Math.floor(dist / (brushSize * 2)));
-        for (let i = 0; i <= dots; i++) {
-          const t = i / Math.max(1, dots);
-          const x = x1 + (x2-x1)*t;
-          const y = y1 + (y2-y1)*t;
-          ctx.beginPath();
-          ctx.arc(x, y, brushSize/2, 0, Math.PI*2);
-          ctx.fillStyle = drawColor;
-          ctx.fill();
-        }
-        return;
-      }
-
-      if (brushId === 'calligraphy') {
-        const angle = Math.atan2(y2-y1, x2-x1);
-        ctx.lineWidth = Math.max(1, brushSize * Math.abs(Math.sin(angle + Math.PI/4)) + 1);
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-        return;
-      }
-
-      if (brushId === 'glitter') {
-        const steps = Math.max(3, Math.floor(Math.sqrt((x2-x1)**2 + (y2-y1)**2)));
-        const glitterColors = ['#FFD700', '#FFF', drawColor, '#FF69B4', '#00FFFF'];
-        for (let i = 0; i < steps; i++) {
-          const t = i / steps;
-          const x = x1 + (x2-x1)*t + (Math.random()-0.5)*brushSize;
-          const y = y1 + (y2-y1)*t + (Math.random()-0.5)*brushSize;
-          ctx.fillStyle = glitterColors[Math.floor(Math.random()*glitterColors.length)];
-          const s = Math.random() * brushSize/3 + 1;
-          ctx.fillRect(x, y, s, s);
-        }
-        return;
-      }
-
-      if (brushId === 'rainbow') {
-        const hue = (Date.now() / 10) % 360;
-        ctx.strokeStyle = 'hsl(' + hue + ', 100%, 50%)';
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-        return;
-      }
-
-      if (brushId === 'pixel') {
-        const ps = Math.max(2, Math.round(brushSize / 2));
-        const px = Math.round(x2 / ps) * ps;
-        const py = Math.round(y2 / ps) * ps;
-        ctx.fillStyle = drawColor;
-        ctx.fillRect(px, py, ps, ps);
-        return;
-      }
-
-      if (brushId === 'star') {
-        ctx.fillStyle = drawColor;
-        ctx.font = Math.round(brushSize * 1.5) + 'px Arial';
-        ctx.fillText('✦', x2 - brushSize/2, y2 + brushSize/2);
-        return;
-      }
-
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+      if (brushId === 'thin') ctx.lineWidth = Math.max(1, brushSize * 0.3);
+      if (brushId === 'medium') ctx.lineWidth = brushSize * 1.5;
+      if (brushId === 'spray') { const steps=Math.max(6,Math.floor(Math.sqrt((x2-x1)**2+(y2-y1)**2)/2)); for(let i=0;i<steps;i++){const t=i/steps;const x=x1+(x2-x1)*t+(Math.random()-0.5)*brushSize*1.5;const y=y1+(y2-y1)*t+(Math.random()-0.5)*brushSize*1.5;ctx.beginPath();ctx.arc(x,y,Math.random()*brushSize/4+0.5,0,Math.PI*2);ctx.fillStyle=drawColor;ctx.fill();}return; }
+      if (brushId === 'neon') { ctx.shadowBlur=20;ctx.shadowColor=drawColor;ctx.lineWidth=brushSize*0.7;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.shadowBlur=0;return; }
+      if (brushId === 'marker') { ctx.globalAlpha=0.4;ctx.lineWidth=brushSize*2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.globalAlpha=1;return; }
+      if (brushId === 'dotted') { const dist=Math.sqrt((x2-x1)**2+(y2-y1)**2);const dots=Math.max(1,Math.floor(dist/(brushSize*2)));for(let i=0;i<=dots;i++){const t=i/Math.max(1,dots);ctx.beginPath();ctx.arc(x1+(x2-x1)*t,y1+(y2-y1)*t,brushSize/2,0,Math.PI*2);ctx.fillStyle=drawColor;ctx.fill();}return; }
+      if (brushId === 'calligraphy') { const angle=Math.atan2(y2-y1,x2-x1);ctx.lineWidth=Math.max(1,brushSize*Math.abs(Math.sin(angle+Math.PI/4))+1);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();return; }
+      if (brushId === 'glitter') { const steps=Math.max(3,Math.floor(Math.sqrt((x2-x1)**2+(y2-y1)**2)));const gc=['#FFD700','#FFF',drawColor,'#FF69B4','#00FFFF'];for(let i=0;i<steps;i++){const t=i/steps;ctx.fillStyle=gc[Math.floor(Math.random()*gc.length)];const s=Math.random()*brushSize/3+1;ctx.fillRect(x1+(x2-x1)*t+(Math.random()-0.5)*brushSize,y1+(y2-y1)*t+(Math.random()-0.5)*brushSize,s,s);}return; }
+      if (brushId === 'rainbow') { const hue=(Date.now()/10)%360;ctx.strokeStyle='hsl('+hue+',100%,50%)';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();return; }
+      if (brushId === 'pixel') { const ps=Math.max(2,Math.round(brushSize/2));ctx.fillStyle=drawColor;ctx.fillRect(Math.round(x2/ps)*ps,Math.round(y2/ps)*ps,ps,ps);return; }
+      if (brushId === 'star') { ctx.fillStyle=drawColor;ctx.font=Math.round(brushSize*1.5)+'px Arial';ctx.fillText('✦',x2-brushSize/2,y2+brushSize/2);return; }
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
     }
 
     function initDrawCanvas() {
-      const canvas = document.getElementById('draw-canvas');
-      if (!canvas) return;
+      const canvas = document.getElementById('draw-canvas'); if (!canvas) return;
       drawCtx = canvas.getContext('2d');
-
-      function startDraw(e) {
-        e.preventDefault();
-        isDrawing = true;
-        saveUndoState();
-        const pos = getXY(e, canvas);
-        lastX = pos.x; lastY = pos.y;
-
-        if (brushId === 'fill') {
-          floodFill(drawCtx, pos.x, pos.y, drawColor);
-          isDrawing = false;
-          return;
-        }
-
-        if (brushId === 'eraser') {
-          drawCtx.globalCompositeOperation = 'destination-out';
-          drawCtx.beginPath();
-          drawCtx.arc(pos.x, pos.y, brushSize/2, 0, Math.PI*2);
-          drawCtx.fill();
-          drawCtx.globalCompositeOperation = 'source-over';
-        } else if (brushId === 'pixel') {
-          const ps = Math.max(2, Math.round(brushSize/2));
-          drawCtx.fillStyle = drawColor;
-          drawCtx.fillRect(Math.round(pos.x/ps)*ps, Math.round(pos.y/ps)*ps, ps, ps);
-        } else if (brushId !== 'spray' && brushId !== 'dotted' && brushId !== 'glitter' && brushId !== 'star') {
-          drawCtx.fillStyle = drawColor;
-          drawCtx.beginPath();
-          drawCtx.arc(pos.x, pos.y, (brushId === 'thin' ? brushSize*0.15 : brushSize/2), 0, Math.PI*2);
-          drawCtx.fill();
-        }
+      function startDraw(e) { e.preventDefault(); isDrawing=true; saveUndoState(); const pos=getXY(e,canvas); lastX=pos.x; lastY=pos.y;
+        if (brushId==='fill'){floodFill(drawCtx,pos.x,pos.y,drawColor);isDrawing=false;return;}
+        if (brushId==='eraser'){drawCtx.globalCompositeOperation='destination-out';drawCtx.beginPath();drawCtx.arc(pos.x,pos.y,brushSize/2,0,Math.PI*2);drawCtx.fill();drawCtx.globalCompositeOperation='source-over';}
+        else if (brushId==='pixel'){const ps=Math.max(2,Math.round(brushSize/2));drawCtx.fillStyle=drawColor;drawCtx.fillRect(Math.round(pos.x/ps)*ps,Math.round(pos.y/ps)*ps,ps,ps);}
+        else if (brushId!=='spray'&&brushId!=='dotted'&&brushId!=='glitter'&&brushId!=='star'){drawCtx.fillStyle=drawColor;drawCtx.beginPath();drawCtx.arc(pos.x,pos.y,(brushId==='thin'?brushSize*0.15:brushSize/2),0,Math.PI*2);drawCtx.fill();}
       }
-
-      function moveDraw(e) {
-        e.preventDefault();
-        if (!isDrawing) return;
-        const pos = getXY(e, canvas);
-        drawStroke(drawCtx, lastX, lastY, pos.x, pos.y);
-        lastX = pos.x; lastY = pos.y;
-      }
-
-      function endDraw(e) {
-        e.preventDefault();
-        isDrawing = false;
-      }
-
-      canvas.addEventListener('mousedown', startDraw);
-      canvas.addEventListener('mousemove', moveDraw);
-      canvas.addEventListener('mouseup', endDraw);
-      canvas.addEventListener('mouseleave', endDraw);
-
-      canvas.addEventListener('touchstart', startDraw, { passive: false });
-      canvas.addEventListener('touchmove', moveDraw, { passive: false });
-      canvas.addEventListener('touchend', endDraw, { passive: false });
-      canvas.addEventListener('touchcancel', endDraw, { passive: false });
+      function moveDraw(e) { e.preventDefault(); if(!isDrawing) return; const pos=getXY(e,canvas); drawStroke(drawCtx,lastX,lastY,pos.x,pos.y); lastX=pos.x; lastY=pos.y; }
+      function endDraw(e) { e.preventDefault(); isDrawing=false; }
+      canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', moveDraw); canvas.addEventListener('mouseup', endDraw); canvas.addEventListener('mouseleave', endDraw);
+      canvas.addEventListener('touchstart', startDraw, {passive:false}); canvas.addEventListener('touchmove', moveDraw, {passive:false}); canvas.addEventListener('touchend', endDraw, {passive:false}); canvas.addEventListener('touchcancel', endDraw, {passive:false});
     }
 
-    function clearDrawCanvas() {
-      if (!drawCtx) return;
-      saveUndoState();
-      drawCtx.clearRect(0, 0, drawCtx.canvas.width, drawCtx.canvas.height);
-    }
+    function clearDrawCanvas() { if(!drawCtx) return; saveUndoState(); drawCtx.clearRect(0,0,drawCtx.canvas.width,drawCtx.canvas.height); }
 
     function initTabs() {
       document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -688,281 +678,291 @@
           document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
           btn.classList.add('active');
           document.getElementById(btn.dataset.tab).classList.add('active');
+          if (btn.dataset.tab === 'tab-marketplace') loadMarketplace();
+          if (btn.dataset.tab === 'tab-history') renderHistory();
         });
       });
     }
 
     function renderPlacedStickers() {
-      const container = document.getElementById('stickers-placed-container');
-      container.innerHTML = '';
+      const container = document.getElementById('stickers-placed-container'); container.innerHTML = '';
       const allStickers = [...(userData.options?.stickers || [])];
       placedStickers.forEach((ps, idx) => {
-        const def = allStickers.find(s => s.id === ps.id);
-        if (!def) return;
-        const item = document.createElement('div');
-        item.className = 'placed-sticker-item';
-        item.innerHTML = '<span>' + def.emoji + ' ' + def.name + ' (' + Math.round(ps.scale*100) + '%)</span>';
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = '✕';
-        removeBtn.addEventListener('click', () => {
-          placedStickers.splice(idx, 1);
-          renderPlacedStickers();
-          renderStickerOverlay();
-          updateCost();
-        });
-        item.appendChild(removeBtn);
-        container.appendChild(item);
+        const def = allStickers.find(s => s.id === ps.id); if(!def) return;
+        const item = document.createElement('div'); item.className='placed-sticker-item';
+        item.innerHTML='<span>'+def.emoji+' '+def.name+' ('+Math.round(ps.scale*100)+'%)</span>';
+        const removeBtn = document.createElement('button'); removeBtn.textContent='✕';
+        removeBtn.addEventListener('click', () => { placedStickers.splice(idx,1); renderPlacedStickers(); renderStickerOverlay(); updateCost(); });
+        item.appendChild(removeBtn); container.appendChild(item);
       });
     }
 
     function renderStickerOverlay() {
       const overlay = document.getElementById('preview-stickers-overlay');
       const previewImg = document.getElementById('preview-img');
-      overlay.innerHTML = '';
-      if (previewImg.style.display === 'none') return;
-      const res = getCanvasResolution();
-      const allStickers = [...(userData.options?.stickers || [])];
-
-      overlay.style.pointerEvents = 'none';
-      overlay.style.top = (previewImg.offsetTop) + 'px';
-      overlay.style.left = (previewImg.offsetLeft) + 'px';
-      overlay.style.width = previewImg.offsetWidth + 'px';
-      overlay.style.height = previewImg.offsetHeight + 'px';
-
+      overlay.innerHTML = ''; if (previewImg.style.display === 'none') return;
+      const res = getCanvasResolution(); const allStickers = [...(userData.options?.stickers || [])];
+      overlay.style.pointerEvents='none'; overlay.style.top=previewImg.offsetTop+'px'; overlay.style.left=previewImg.offsetLeft+'px'; overlay.style.width=previewImg.offsetWidth+'px'; overlay.style.height=previewImg.offsetHeight+'px';
       placedStickers.forEach((ps, idx) => {
-        const def = allStickers.find(s => s.id === ps.id);
-        if (!def) return;
-        const el = document.createElement('div');
-        el.className = 'sticker-placed';
-        el.style.pointerEvents = 'auto';
-        el.style.cursor = 'grab';
-        let curPxX = (ps.x / res.width) * previewImg.offsetWidth;
-        let curPxY = (ps.y / res.height) * previewImg.offsetHeight;
-        const fontSize = Math.round(22 * (ps.scale || 1) * (previewImg.offsetWidth / res.width));
-        el.style.left = curPxX + 'px';
-        el.style.top = curPxY + 'px';
-        el.style.fontSize = Math.max(10, fontSize) + 'px';
-        el.style.transform = 'translate(-50%, -50%)';
-        el.style.userSelect = 'none';
-        el.style.webkitUserSelect = 'none';
-        el.textContent = def.emoji;
-        el.title = def.name + ' (arrastra para mover, doble clic para eliminar)';
-
-        let offsetX = 0, offsetY = 0, isDragging = false, hasMoved = false;
-
-        function onDown(e) {
-          e.stopPropagation();
-          e.preventDefault();
-          isDragging = true;
-          hasMoved = false;
-          el.style.cursor = 'grabbing';
-          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-          offsetX = clientX - curPxX;
-          offsetY = clientY - curPxY;
-
-          function onMove(ev) {
-            if (!isDragging) return;
-            ev.preventDefault();
-            hasMoved = true;
-            const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-            const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
-            curPxX = cx - offsetX;
-            curPxY = cy - offsetY;
-            el.style.left = curPxX + 'px';
-            el.style.top = curPxY + 'px';
-            placedStickers[idx].x = Math.round((curPxX / previewImg.offsetWidth) * res.width);
-            placedStickers[idx].y = Math.round((curPxY / previewImg.offsetHeight) * res.height);
-          }
-
-          function onUp() {
-            isDragging = false;
-            el.style.cursor = 'grab';
-            if (hasMoved) {
-              stickerDragJustEnded = true;
-              setTimeout(() => { stickerDragJustEnded = false; }, 200);
-            }
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('touchend', onUp);
-          }
-
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-          document.addEventListener('touchmove', onMove, { passive: false });
-          document.addEventListener('touchend', onUp);
+        const def = allStickers.find(s => s.id === ps.id); if(!def) return;
+        const el = document.createElement('div'); el.className='sticker-placed'; el.style.pointerEvents='auto'; el.style.cursor='grab';
+        let curPxX=(ps.x/res.width)*previewImg.offsetWidth, curPxY=(ps.y/res.height)*previewImg.offsetHeight;
+        const fontSize=Math.round(22*(ps.scale||1)*(previewImg.offsetWidth/res.width));
+        el.style.left=curPxX+'px'; el.style.top=curPxY+'px'; el.style.fontSize=Math.max(10,fontSize)+'px'; el.style.transform='translate(-50%,-50%)'; el.style.userSelect='none'; el.textContent=def.emoji;
+        let offsetX=0,offsetY=0,isDragging=false,hasMoved=false;
+        function onDown(e){e.stopPropagation();e.preventDefault();isDragging=true;hasMoved=false;el.style.cursor='grabbing';const cx=e.touches?e.touches[0].clientX:e.clientX;const cy=e.touches?e.touches[0].clientY:e.clientY;offsetX=cx-curPxX;offsetY=cy-curPxY;
+          function onMove(ev){if(!isDragging)return;ev.preventDefault();hasMoved=true;const mx=ev.touches?ev.touches[0].clientX:ev.clientX;const my=ev.touches?ev.touches[0].clientY:ev.clientY;curPxX=mx-offsetX;curPxY=my-offsetY;el.style.left=curPxX+'px';el.style.top=curPxY+'px';placedStickers[idx].x=Math.round((curPxX/previewImg.offsetWidth)*res.width);placedStickers[idx].y=Math.round((curPxY/previewImg.offsetHeight)*res.height);}
+          function onUp(){isDragging=false;el.style.cursor='grab';if(hasMoved){stickerDragJustEnded=true;setTimeout(()=>{stickerDragJustEnded=false;},200);}document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);}
+          document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
         }
-
-        el.addEventListener('mousedown', onDown);
-        el.addEventListener('touchstart', onDown, { passive: false });
-
-        el.addEventListener('dblclick', (e) => {
-          e.stopPropagation();
-          placedStickers.splice(idx, 1);
-          renderPlacedStickers();
-          renderStickerOverlay();
-          updateCost();
-        });
-
+        el.addEventListener('mousedown', onDown); el.addEventListener('touchstart', onDown, {passive:false});
+        el.addEventListener('dblclick', (e)=>{e.stopPropagation();placedStickers.splice(idx,1);renderPlacedStickers();renderStickerOverlay();updateCost();});
         overlay.appendChild(el);
       });
-
       renderImageOverlays();
     }
 
     function renderImageOverlays() {
       let imgOverlay = document.getElementById('preview-images-overlay');
-      if (!imgOverlay) {
-        imgOverlay = document.createElement('div');
-        imgOverlay.id = 'preview-images-overlay';
-        imgOverlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
-        document.getElementById('preview-container').appendChild(imgOverlay);
-      }
-      imgOverlay.innerHTML = '';
-      const previewImg = document.getElementById('preview-img');
-      if (previewImg.style.display === 'none') return;
+      if (!imgOverlay) { imgOverlay=document.createElement('div');imgOverlay.id='preview-images-overlay';imgOverlay.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';document.getElementById('preview-container').appendChild(imgOverlay); }
+      imgOverlay.innerHTML='';
+      const previewImg = document.getElementById('preview-img'); if(previewImg.style.display==='none') return;
       const res = getCanvasResolution();
-
-      imgOverlay.style.top = (previewImg.offsetTop) + 'px';
-      imgOverlay.style.left = (previewImg.offsetLeft) + 'px';
-      imgOverlay.style.width = previewImg.offsetWidth + 'px';
-      imgOverlay.style.height = previewImg.offsetHeight + 'px';
-
+      imgOverlay.style.top=previewImg.offsetTop+'px'; imgOverlay.style.left=previewImg.offsetLeft+'px'; imgOverlay.style.width=previewImg.offsetWidth+'px'; imgOverlay.style.height=previewImg.offsetHeight+'px';
       uploadedLogos.forEach((logo, idx) => {
-        const el = document.createElement('div');
-        el.style.pointerEvents = 'auto';
-        el.style.position = 'absolute';
-        el.style.cursor = 'grab';
-        el.style.border = '1px dashed rgba(255,255,255,0.5)';
-        el.style.boxSizing = 'border-box';
-        el.style.userSelect = 'none';
-        el.style.webkitUserSelect = 'none';
-
-        const scaleW = previewImg.offsetWidth / res.width;
-        const scaleH = previewImg.offsetHeight / res.height;
-        let curLeft = logo.x * scaleW;
-        let curTop = logo.y * scaleH;
-        const elW = logo.width * scaleW;
-        const elH = logo.height * scaleH;
-        el.style.left = curLeft + 'px';
-        el.style.top = curTop + 'px';
-        el.style.width = elW + 'px';
-        el.style.height = elH + 'px';
-        el.style.backgroundImage = 'url(' + logo.dataUrl + ')';
-        el.style.backgroundSize = 'cover';
-        el.style.opacity = '0.7';
-        el.title = 'Arrastra para mover';
-
-        let offsetX = 0, offsetY = 0, isDragging = false;
-
-        function onDown(e) {
-          e.stopPropagation();
-          e.preventDefault();
-          isDragging = true;
-          el.style.cursor = 'grabbing';
-          el.style.opacity = '1';
-          const cx = e.touches ? e.touches[0].clientX : e.clientX;
-          const cy = e.touches ? e.touches[0].clientY : e.clientY;
-          offsetX = cx - curLeft;
-          offsetY = cy - curTop;
-
-          function onMove(ev) {
-            if (!isDragging) return;
-            ev.preventDefault();
-            const mx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-            const my = ev.touches ? ev.touches[0].clientY : ev.clientY;
-            curLeft = mx - offsetX;
-            curTop = my - offsetY;
-            el.style.left = curLeft + 'px';
-            el.style.top = curTop + 'px';
-            uploadedLogos[idx].x = Math.max(0, Math.round(curLeft / scaleW));
-            uploadedLogos[idx].y = Math.max(0, Math.round(curTop / scaleH));
-          }
-
-          function onUp() {
-            isDragging = false;
-            el.style.cursor = 'grab';
-            el.style.opacity = '0.7';
-            stickerDragJustEnded = true;
-            setTimeout(() => { stickerDragJustEnded = false; }, 200);
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('touchend', onUp);
-            renderLogoList();
-          }
-
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-          document.addEventListener('touchmove', onMove, { passive: false });
-          document.addEventListener('touchend', onUp);
+        const el=document.createElement('div');el.style.pointerEvents='auto';el.style.position='absolute';el.style.cursor='grab';el.style.border='1px dashed rgba(255,255,255,0.5)';el.style.boxSizing='border-box';el.style.userSelect='none';
+        const scaleW=previewImg.offsetWidth/res.width,scaleH=previewImg.offsetHeight/res.height;
+        let curLeft=logo.x*scaleW,curTop=logo.y*scaleH; const elW=logo.width*scaleW,elH=logo.height*scaleH;
+        el.style.left=curLeft+'px';el.style.top=curTop+'px';el.style.width=elW+'px';el.style.height=elH+'px';el.style.backgroundImage='url('+logo.dataUrl+')';el.style.backgroundSize='cover';el.style.opacity='0.7';
+        let offsetX=0,offsetY=0,isDragging=false;
+        function onDown(e){e.stopPropagation();e.preventDefault();isDragging=true;el.style.cursor='grabbing';el.style.opacity='1';const cx=e.touches?e.touches[0].clientX:e.clientX;const cy=e.touches?e.touches[0].clientY:e.clientY;offsetX=cx-curLeft;offsetY=cy-curTop;
+          function onMove(ev){if(!isDragging)return;ev.preventDefault();const mx=ev.touches?ev.touches[0].clientX:ev.clientX;const my=ev.touches?ev.touches[0].clientY:ev.clientY;curLeft=mx-offsetX;curTop=my-offsetY;el.style.left=curLeft+'px';el.style.top=curTop+'px';uploadedLogos[idx].x=Math.max(0,Math.round(curLeft/scaleW));uploadedLogos[idx].y=Math.max(0,Math.round(curTop/scaleH));}
+          function onUp(){isDragging=false;el.style.cursor='grab';el.style.opacity='0.7';stickerDragJustEnded=true;setTimeout(()=>{stickerDragJustEnded=false;},200);document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onUp);renderLogoList();}
+          document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);document.addEventListener('touchmove',onMove,{passive:false});document.addEventListener('touchend',onUp);
         }
-
-        el.addEventListener('mousedown', onDown);
-        el.addEventListener('touchstart', onDown, { passive: false });
+        el.addEventListener('mousedown',onDown);el.addEventListener('touchstart',onDown,{passive:false});
         imgOverlay.appendChild(el);
       });
     }
 
     function setupPreviewStickerPlacement() {
-      const previewContainer = document.getElementById('preview-container');
-      previewContainer.addEventListener('click', (e) => {
-        if (stickerDragJustEnded) return;
-        if (!selectedStickerId) return;
-        const previewImg = document.getElementById('preview-img');
-        if (previewImg.style.display === 'none') return;
+      document.getElementById('preview-container').addEventListener('click', (e) => {
+        if(stickerDragJustEnded) return; if(!selectedStickerId) return;
+        const previewImg=document.getElementById('preview-img'); if(previewImg.style.display==='none') return;
+        const rect=previewImg.getBoundingClientRect();const res=getCanvasResolution();
+        const x=(e.clientX-rect.left)*(res.width/rect.width),y=(e.clientY-rect.top)*(res.height/rect.height);
+        if(x<0||y<0||x>res.width||y>res.height) return;
+        placedStickers.push({id:selectedStickerId,x:Math.round(x),y:Math.round(y),scale:stickerScale});
+        renderPlacedStickers();renderStickerOverlay();updateCost();
+      });
+      const observer=new MutationObserver(()=>{if(document.getElementById('preview-img').style.display!=='none') renderStickerOverlay();});
+      observer.observe(document.getElementById('preview-img'),{attributes:true,attributeFilter:['style','src']});
+    }
 
-        const rect = previewImg.getBoundingClientRect();
-        const res = getCanvasResolution();
-        const scaleX = res.width / rect.width;
-        const scaleY = res.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+    function initFrames() {
+      const container = document.getElementById('frame-options'); container.innerHTML = '';
+      const noneCard = document.createElement('div');
+      noneCard.className = 'frame-card selected';
+      noneCard.innerHTML = '<div class="frame-preview" style="background:#36393F;border:2px dashed #666;display:flex;align-items:center;justify-content:center;font-size:10px;color:#888;">✕</div><div class="frame-name">Sin marco</div><div class="frame-cost">Gratis</div>';
+      noneCard.addEventListener('click', () => { selectedFrameId = null; highlightSelectedFrame(); updateCost(); });
+      container.appendChild(noneCard);
+      (userData.options?.frames || []).forEach(frame => {
+        const card = document.createElement('div');
+        card.className = 'frame-card' + (frame.premium ? ' vip' : '');
+        card.dataset.frameId = frame.id;
+        const previewStyle = FRAME_PREVIEWS[frame.id] || 'border:2px solid #444;';
+        card.innerHTML = '<div class="frame-preview" style="background:#2a2d31;'+previewStyle+'"></div><div class="frame-name">'+frame.name+(frame.premium?' ⭐':'')+'</div><div class="frame-cost">+'+frame.cost.toLocaleString()+' LC</div>';
+        card.addEventListener('click', () => { selectedFrameId = frame.id; highlightSelectedFrame(); updateCost(); });
+        container.appendChild(card);
+      });
+    }
 
-        if (x < 0 || y < 0 || x > res.width || y > res.height) return;
+    function highlightSelectedFrame() {
+      document.querySelectorAll('#frame-options .frame-card').forEach(c => {
+        c.classList.toggle('selected', (!selectedFrameId && !c.dataset.frameId) || c.dataset.frameId === selectedFrameId);
+      });
+    }
 
-        placedStickers.push({
-          id: selectedStickerId,
-          x: Math.round(x),
-          y: Math.round(y),
-          scale: stickerScale
+    function initGradientControls() {
+      const dirSelect = document.getElementById('grad-direction');
+      (userData.options?.gradientDirections || []).forEach(d => {
+        const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.name; dirSelect.appendChild(opt);
+      });
+      const updatePreviewBar = () => {
+        const c1 = document.getElementById('grad-color1').value;
+        const c2 = document.getElementById('grad-color2').value;
+        const c3 = document.getElementById('use-grad-color3').checked ? document.getElementById('grad-color3').value : null;
+        const dir = document.getElementById('grad-direction').value;
+        let cssDir = 'to right';
+        if (dir==='vertical') cssDir='to bottom'; else if (dir==='diagonal') cssDir='to bottom right'; else if (dir==='radial') cssDir=null;
+        const bar = document.getElementById('gradient-preview');
+        if (cssDir) bar.style.background = 'linear-gradient('+cssDir+','+c1+','+(c3?c2+','+c3:c2)+')';
+        else bar.style.background = 'radial-gradient(circle,'+c1+','+(c3?c2+','+c3:c2)+')';
+      };
+      document.getElementById('use-gradient').addEventListener('change', (e) => {
+        document.getElementById('gradient-controls').style.display = e.target.checked ? 'block' : 'none';
+        updatePreviewBar(); updateCost();
+      });
+      ['grad-color1','grad-color2','grad-color3','grad-direction','use-grad-color3'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', () => { updatePreviewBar(); updateCost(); });
+        document.getElementById(id)?.addEventListener('change', () => { updatePreviewBar(); updateCost(); });
+      });
+    }
+
+    function initLayers() {
+      renderLayerList();
+    }
+
+    function renderLayerList() {
+      const list = document.getElementById('layer-list'); list.innerHTML = '';
+      currentLayerOrder.forEach((layerId, idx) => {
+        const li = document.createElement('li'); li.className = 'layer-item'; li.draggable = true; li.dataset.idx = idx;
+        li.innerHTML = '<span class="layer-handle">☰</span><span class="layer-name">'+(LAYER_LABELS[layerId]||layerId)+'</span><span style="font-size:9px;color:#666;">#'+(idx+1)+'</span>';
+        li.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', idx); li.classList.add('dragging'); });
+        li.addEventListener('dragend', () => { li.classList.remove('dragging'); });
+        li.addEventListener('dragover', (e) => { e.preventDefault(); });
+        li.addEventListener('drop', (e) => {
+          e.preventDefault(); const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+          if (fromIdx === idx) return;
+          const item = currentLayerOrder.splice(fromIdx, 1)[0];
+          currentLayerOrder.splice(idx, 0, item);
+          renderLayerList(); updateCost();
         });
-        renderPlacedStickers();
-        renderStickerOverlay();
-        updateCost();
+        list.appendChild(li);
       });
+    }
 
-      const observer = new MutationObserver(() => {
-        if (document.getElementById('preview-img').style.display !== 'none') {
-          renderStickerOverlay();
-        }
+    function initAnimations() {
+      const container = document.getElementById('animation-list'); container.innerHTML = '';
+      (userData.options?.animations || []).forEach(anim => {
+        const card = document.createElement('div');
+        card.className = 'anim-card' + (selectedAnimations.includes(anim.id) ? ' selected' : '');
+        card.innerHTML = '<div><div class="anim-name">'+anim.name+'</div><div class="anim-desc">'+anim.description+'</div></div>';
+        card.addEventListener('click', () => {
+          const idx = selectedAnimations.indexOf(anim.id);
+          if (idx > -1) { selectedAnimations.splice(idx, 1); card.classList.remove('selected'); }
+          else if (selectedAnimations.length < 3) { selectedAnimations.push(anim.id); card.classList.add('selected'); }
+          updateCost();
+        });
+        container.appendChild(card);
       });
-      observer.observe(document.getElementById('preview-img'), { attributes: true, attributeFilter: ['style', 'src'] });
+    }
+
+    function initTextEffects() {
+      const select = document.getElementById('text-effect'); select.innerHTML = '';
+      (userData.options?.textEffects || []).forEach(effect => {
+        const opt = document.createElement('option'); opt.value = effect.id;
+        opt.textContent = effect.name + (effect.premium ? ' ⭐' : '');
+        select.appendChild(opt);
+      });
+      select.addEventListener('change', updateCost);
+    }
+
+    async function loadMarketplace() {
+      const container = document.getElementById('marketplace-list'); container.innerHTML = '<p style="color:#888;font-size:11px;">Cargando...</p>';
+      try {
+        const res = await fetch('/api/rankcard/marketplace?sortBy='+mktSortBy+'&page='+mktPage+'&guildId='+(userData?.guildId||''));
+        const data = await res.json();
+        container.innerHTML = '';
+        if (data.listings.length === 0) { container.innerHTML = '<p style="color:#888;font-size:11px;">No hay publicaciones a&uacute;n. S&eacute; el primero en publicar.</p>'; return; }
+        data.listings.forEach(listing => {
+          const card = document.createElement('div'); card.className = 'mkt-card';
+          let imgHtml = '';
+          if (listing.previewBase64) imgHtml = '<img src="data:image/png;base64,'+listing.previewBase64+'" alt="Preview">';
+          card.innerHTML = '<div class="mkt-title">'+listing.title+'</div><div class="mkt-author">por '+listing.authorName+' · '+listing.sales+' ventas</div>'+imgHtml+'<p style="font-size:10px;color:#aaa;margin:4px 0;">'+(listing.description||'')+'</p><div class="mkt-row"><span class="mkt-price">'+listing.price.toLocaleString()+' LC</span>'+(listing.authorId !== userData?.userId ? '<button class="btn-purchase" style="padding:6px 14px;font-size:11px;flex:0;">Comprar</button>' : '<span style="font-size:9px;color:#888;">Tu publicaci&oacute;n</span>')+'</div>';
+          if (listing.authorId !== userData?.userId) {
+            card.querySelector('.btn-purchase')?.addEventListener('click', () => buyFromMarketplace(listing.id, listing.price, listing.title));
+          }
+          container.appendChild(card);
+        });
+        const pagDiv = document.getElementById('mkt-pagination');
+        if (data.totalPages > 1) {
+          pagDiv.innerHTML = '';
+          for (let i = 1; i <= data.totalPages; i++) {
+            const btn = document.createElement('button'); btn.className = 'btn-secondary'; btn.textContent = i;
+            if (i === data.page) btn.style.borderColor = '#FFD700';
+            btn.addEventListener('click', () => { mktPage = i; loadMarketplace(); });
+            pagDiv.appendChild(btn);
+          }
+        } else pagDiv.innerHTML = '';
+      } catch (e) { container.innerHTML = '<p class="error-msg">Error al cargar la tienda</p>'; }
+    }
+
+    async function buyFromMarketplace(listingId, price, title) {
+      if (!confirm('¿Comprar "'+title+'" por '+price.toLocaleString()+' LC?\nTu diseño actual se guardará en el historial.')) return;
+      try {
+        const res = await fetch('/api/rankcard/marketplace/buy', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token, listingId}) });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message);
+          document.getElementById('user-lagcoins').textContent = (data.newBalance||0).toLocaleString();
+          document.getElementById('user-lagcoins-2').textContent = (data.newBalance||0).toLocaleString();
+          loadMarketplace();
+        } else alert('Error: ' + (data.error || 'Error desconocido'));
+      } catch (e) { alert('Error de conexión'); }
+    }
+
+    async function publishToMarketplace() {
+      const title = document.getElementById('mkt-title').value.trim();
+      const description = document.getElementById('mkt-description').value.trim();
+      const price = parseInt(document.getElementById('mkt-price').value);
+      if (!title) { alert('Escribe un título'); return; }
+      if (!price || price < 500 || price > 500000) { alert('Precio debe ser entre 500 y 500,000 LC'); return; }
+      const msgEl = document.getElementById('publish-msg');
+      try {
+        const res = await fetch('/api/rankcard/marketplace/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token, title, description, price}) });
+        const data = await res.json();
+        if (data.success) {
+          msgEl.textContent = 'Publicado: "'+data.listing.title+'" por '+data.listing.price.toLocaleString()+' LC';
+          msgEl.style.display = 'block';
+          document.getElementById('publish-form-wrap').style.display = 'none';
+          loadMarketplace();
+        } else { msgEl.textContent = data.error || 'Error'; msgEl.className = 'error-msg'; msgEl.style.display = 'block'; }
+      } catch (e) { alert('Error de conexión'); }
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('history-list'); container.innerHTML = '';
+      const history = userData.designHistory || [];
+      if (history.length === 0) { container.innerHTML = '<p style="color:#888;font-size:11px;">No hay dise&ntilde;os anteriores guardados.</p>'; return; }
+      history.forEach(h => {
+        const item = document.createElement('div'); item.className = 'history-item';
+        const date = new Date(h.savedAt).toLocaleString('es-ES');
+        let badges = '';
+        if (h.hasGradient) badges += '<span class="history-badge">Gradiente</span>';
+        if (h.hasFrame) badges += '<span class="history-badge">Marco</span>';
+        if (h.animated) badges += '<span class="history-badge">Animado</span>';
+        item.innerHTML = '<div><div class="history-info">Diseño guardado</div><div class="history-date">'+date+'</div><div class="history-badges">'+badges+'</div></div>';
+        const btn = document.createElement('button'); btn.className = 'btn-secondary'; btn.textContent = '↩️ Restaurar';
+        btn.addEventListener('click', () => restoreFromHistory(h.id));
+        item.appendChild(btn);
+        container.appendChild(item);
+      });
+    }
+
+    async function restoreFromHistory(historyId) {
+      if (!confirm('¿Restaurar este diseño? Tu diseño actual se guardará en el historial.')) return;
+      try {
+        const res = await fetch('/api/rankcard/history/restore', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token, historyId}) });
+        const data = await res.json();
+        if (data.success) { alert('Diseño restaurado. Recarga la página para ver los cambios.'); location.reload(); }
+        else alert('Error: ' + (data.error || 'Error desconocido'));
+      } catch (e) { alert('Error de conexión'); }
     }
 
     async function loadUser() {
       token = getToken();
-      if (!token) {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error-screen').style.display = 'block';
-        return;
-      }
+      if (!token) { document.getElementById('loading').style.display='none'; document.getElementById('error-screen').style.display='block'; return; }
       try {
         const res = await fetch('/api/rankcard/verify?token=' + encodeURIComponent(token));
         if (!res.ok) throw new Error('Token inválido');
         userData = await res.json();
         initEditor();
-      } catch (e) {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error-screen').style.display = 'block';
-      }
+      } catch (e) { document.getElementById('loading').style.display='none'; document.getElementById('error-screen').style.display='block'; }
     }
 
     function initEditor() {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('editor-screen').style.display = 'block';
-
+      document.getElementById('loading').style.display='none'; document.getElementById('editor-screen').style.display='block';
       document.getElementById('user-avatar').src = userData.avatar || '';
       document.getElementById('user-name').textContent = userData.username || 'Usuario';
       const balanceStr = (userData.lagcoins || 0).toLocaleString();
@@ -970,430 +970,235 @@
       document.getElementById('user-lagcoins-2').textContent = balanceStr;
 
       if (userData.hasVIPBenefits) {
-        document.getElementById('vip-badge').style.display = 'inline-block';
-        document.getElementById('neon-palette').style.display = 'block';
-        document.getElementById('neon-toggle-wrap').style.display = 'block';
-        document.getElementById('neon-draw-colors').style.display = 'block';
-        document.getElementById('tab-settings-btn').style.display = '';
-
-        const neonDiv = document.getElementById('neon-colors');
-        (userData.options?.neonColors || []).forEach(c => {
-          const sw = document.createElement('div');
-          sw.className = 'color-swatch';
-          sw.style.backgroundColor = c;
-          sw.style.cursor = 'pointer';
-          sw.title = c;
-          sw.addEventListener('click', () => {
-            document.getElementById('color-accent').value = c;
-            document.getElementById('color-accent-hex').value = c;
-            drawColor = c;
-            highlightDrawColor(c);
-            updateCost();
-          });
-          neonDiv.appendChild(sw);
-        });
-
-        const neonDrawDiv = document.getElementById('neon-draw-palette');
-        (userData.options?.neonColors || []).forEach(c => {
-          const sw = document.createElement('div');
-          sw.className = 'color-swatch';
-          sw.style.backgroundColor = c;
-          sw.style.cursor = 'pointer';
-          sw.title = c;
-          sw.addEventListener('click', () => {
-            drawColor = c;
-            highlightDrawColor(c);
-          });
-          neonDrawDiv.appendChild(sw);
-        });
+        document.getElementById('vip-badge').style.display='inline-block';
+        document.getElementById('neon-palette').style.display='block';
+        document.getElementById('neon-toggle-wrap').style.display='block';
+        document.getElementById('neon-draw-colors').style.display='block';
+        document.getElementById('tab-settings-btn').style.display='';
+        const neonDiv=document.getElementById('neon-colors');
+        (userData.options?.neonColors||[]).forEach(c=>{const sw=document.createElement('div');sw.className='color-swatch';sw.style.backgroundColor=c;sw.style.cursor='pointer';sw.title=c;sw.addEventListener('click',()=>{document.getElementById('color-accent').value=c;document.getElementById('color-accent-hex').value=c;drawColor=c;highlightDrawColor(c);updateCost();});neonDiv.appendChild(sw);});
+        const neonDrawDiv=document.getElementById('neon-draw-palette');
+        (userData.options?.neonColors||[]).forEach(c=>{const sw=document.createElement('div');sw.className='color-swatch';sw.style.backgroundColor=c;sw.style.cursor='pointer';sw.title=c;sw.addEventListener('click',()=>{drawColor=c;highlightDrawColor(c);});neonDrawDiv.appendChild(sw);});
       }
 
-      const fontSelect = document.getElementById('font-select');
-      fontSelect.innerHTML = '';
-      (userData.options?.standardFonts || []).forEach(f => {
-        const opt = document.createElement('option');
-        opt.value = f.id;
-        opt.textContent = f.name;
-        fontSelect.appendChild(opt);
-      });
-      (userData.options?.premiumFonts || []).forEach(f => {
-        const opt = document.createElement('option');
-        opt.value = f.id;
-        opt.textContent = f.name + ' ⭐ VIP';
-        fontSelect.appendChild(opt);
-      });
+      const fontSelect=document.getElementById('font-select'); fontSelect.innerHTML='';
+      (userData.options?.standardFonts||[]).forEach(f=>{const opt=document.createElement('option');opt.value=f.id;opt.textContent=f.name;fontSelect.appendChild(opt);});
+      (userData.options?.premiumFonts||[]).forEach(f=>{const opt=document.createElement('option');opt.value=f.id;opt.textContent=f.name+' ⭐ VIP';fontSelect.appendChild(opt);});
 
-      initDrawColors();
-      initBrushes();
-      initBackgrounds();
-      initStickers();
-      initResolutions();
-      initLogos();
-      initDrawCanvas();
-      initTabs();
-      setupPreviewStickerPlacement();
+      currentLayerOrder = userData.options?.layerOrderDefault || ['background','drawLayer','images','stickers','avatar','text'];
+
+      initDrawColors(); initBrushes(); initBackgrounds(); initStickers(); initResolutions(); initLogos(); initDrawCanvas(); initTabs(); setupPreviewStickerPlacement();
+      initFrames(); initGradientControls(); initLayers(); initAnimations(); initTextEffects();
 
       if (userData.rankcard_custom) {
         const c = userData.rankcard_custom;
-        if (c.backgroundColor) { document.getElementById('color-bg').value = c.backgroundColor; document.getElementById('color-bg-hex').value = c.backgroundColor; }
-        if (c.accentColor) { document.getElementById('color-accent').value = c.accentColor; document.getElementById('color-accent-hex').value = c.accentColor; }
-        if (c.textColor) { document.getElementById('color-text').value = c.textColor; document.getElementById('color-text-hex').value = c.textColor; }
-        if (c.barColor) { document.getElementById('color-bar').value = c.barColor; document.getElementById('color-bar-hex').value = c.barColor; }
+        if (c.backgroundColor) { document.getElementById('color-bg').value=c.backgroundColor; document.getElementById('color-bg-hex').value=c.backgroundColor; }
+        if (c.accentColor) { document.getElementById('color-accent').value=c.accentColor; document.getElementById('color-accent-hex').value=c.accentColor; }
+        if (c.textColor) { document.getElementById('color-text').value=c.textColor; document.getElementById('color-text-hex').value=c.textColor; }
+        if (c.barColor) { document.getElementById('color-bar').value=c.barColor; document.getElementById('color-bar-hex').value=c.barColor; }
         if (c.fontId) document.getElementById('font-select').value = c.fontId;
         if (c.useNeonPalette) document.getElementById('use-neon').checked = true;
-        if (c.backgroundId) { selectedBgId = c.backgroundId; highlightSelectedBg(); }
-        if (c.resolution) { selectedResolution = c.resolution; highlightSelectedRes(); }
-        if (c.stickers?.length) { placedStickers = c.stickers.map(s => ({...s})); renderPlacedStickers(); }
+        if (c.backgroundId) { selectedBgId=c.backgroundId; highlightSelectedBg(); }
+        if (c.frameId) { selectedFrameId=c.frameId; highlightSelectedFrame(); }
+        if (c.resolution) { selectedResolution=c.resolution; highlightSelectedRes(); }
+        if (c.textEffect) document.getElementById('text-effect').value = c.textEffect;
+        if (c.textSize) document.getElementById('text-size').value = c.textSize;
+        if (c.stickers?.length) { placedStickers=c.stickers.map(s=>({...s})); renderPlacedStickers(); }
+        if (c.layerOrder?.length) { currentLayerOrder=[...c.layerOrder]; renderLayerList(); }
+        if (c.animations?.length) { selectedAnimations=[...c.animations]; initAnimations(); }
+        if (c.gradient) {
+          document.getElementById('use-gradient').checked=true;
+          document.getElementById('gradient-controls').style.display='block';
+          document.getElementById('grad-color1').value=c.gradient.color1;
+          document.getElementById('grad-color2').value=c.gradient.color2;
+          if (c.gradient.color3) { document.getElementById('grad-color3').value=c.gradient.color3; document.getElementById('use-grad-color3').checked=true; }
+          else document.getElementById('use-grad-color3').checked=false;
+          if (c.gradient.direction) document.getElementById('grad-direction').value=c.gradient.direction;
+        }
+        if (c.barGradient) {
+          document.getElementById('use-bar-gradient').checked=true;
+          document.getElementById('bar-grad-color1').value=c.barGradient.color1;
+          document.getElementById('bar-grad-color2').value=c.barGradient.color2;
+        }
         if (c.logos?.length) {
-          uploadedLogos = c.logos.slice(0, MAX_LOGOS).map(logo => ({
-            dataUrl: logo.url || '',
-            name: 'Imagen guardada',
-            x: logo.x ?? 500,
-            y: logo.y ?? 80,
-            width: logo.width ?? 60,
-            height: logo.height ?? 60
-          }));
+          uploadedLogos = c.logos.slice(0, MAX_LOGOS).map(logo => ({ dataUrl:logo.url||'', name:'Imagen guardada', x:logo.x??500, y:logo.y??80, width:logo.width??60, height:logo.height??60 }));
           renderLogoList();
         }
         if (c.drawLayer && c.drawLayer.startsWith('data:image/png;base64,')) {
-          const img = new Image();
-          img.onload = () => { if (drawCtx) drawCtx.drawImage(img, 0, 0, 800, 250); };
-          img.src = c.drawLayer;
+          const img = new Image(); img.onload = () => { if(drawCtx) drawCtx.drawImage(img, 0, 0, 800, 250); }; img.src = c.drawLayer;
         }
       }
 
-      ['bg', 'accent', 'text', 'bar'].forEach(syncColorInputs);
-
+      ['bg','accent','text','bar'].forEach(syncColorInputs);
       document.getElementById('btn-preview').addEventListener('click', updatePreview);
       document.getElementById('btn-purchase').addEventListener('click', doPurchase);
       document.getElementById('draw-clear').addEventListener('click', clearDrawCanvas);
       document.getElementById('draw-undo').addEventListener('click', undoDraw);
-      document.getElementById('brush-size').addEventListener('input', (e) => {
-        brushSize = parseInt(e.target.value, 10);
-        document.getElementById('brush-size-val').textContent = brushSize;
+      document.getElementById('brush-size').addEventListener('input', (e)=>{brushSize=parseInt(e.target.value,10);document.getElementById('brush-size-val').textContent=brushSize;});
+      document.getElementById('sticker-scale').addEventListener('input', (e)=>{stickerScale=parseInt(e.target.value,10)/100;document.getElementById('sticker-scale-val').textContent=stickerScale.toFixed(1)+'x';});
+      document.getElementById('btn-show-publish').addEventListener('click', ()=>{document.getElementById('publish-form-wrap').style.display='block';});
+      document.getElementById('btn-cancel-publish').addEventListener('click', ()=>{document.getElementById('publish-form-wrap').style.display='none';});
+      document.getElementById('btn-publish').addEventListener('click', publishToMarketplace);
+      document.getElementById('btn-refresh-mkt').addEventListener('click', loadMarketplace);
+      document.querySelectorAll('#mkt-sort button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#mkt-sort button').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active'); mktSortBy=btn.dataset.sort; mktPage=1; loadMarketplace();
+        });
       });
-      document.getElementById('sticker-scale').addEventListener('input', (e) => {
-        stickerScale = parseInt(e.target.value, 10) / 100;
-        document.getElementById('sticker-scale-val').textContent = stickerScale.toFixed(1) + 'x';
-      });
+      document.getElementById('use-bar-gradient')?.addEventListener('change', updateCost);
 
       updateCost();
-      document.querySelectorAll('#color-bg, #color-accent, #color-text, #color-bar, #font-select, #use-neon').forEach(el => {
-        el.addEventListener('change', updateCost);
-      });
+      document.querySelectorAll('#color-bg,#color-accent,#color-text,#color-bar,#font-select,#use-neon,#text-size').forEach(el => el.addEventListener('change', updateCost));
       document.getElementById('logo-list').addEventListener('input', updateCost);
     }
 
     function highlightDrawColor(color) {
-      document.querySelectorAll('#draw-colors .color-swatch, #neon-draw-palette .color-swatch').forEach(s => {
-        s.style.border = s.title === color ? '2px solid #FFD700' : '2px solid #555';
-      });
+      document.querySelectorAll('#draw-colors .color-swatch, #neon-draw-palette .color-swatch').forEach(s => { s.style.border = s.title===color ? '2px solid #FFD700' : '2px solid #555'; });
     }
 
     function initDrawColors() {
-      const row = document.getElementById('draw-colors');
-      row.innerHTML = '';
-      const standardColors = ['#FFFFFF','#000000','#FF0000','#00FF00','#0000FF','#FFFF00','#FF00FF','#00FFFF','#808080','#C0C0C0'];
-      standardColors.forEach(c => {
-        const sw = document.createElement('div');
-        sw.className = 'color-swatch';
-        sw.style.backgroundColor = c;
-        sw.style.cursor = 'pointer';
-        sw.title = c;
-        sw.addEventListener('click', () => { drawColor = c; highlightDrawColor(c); });
-        row.appendChild(sw);
+      const row=document.getElementById('draw-colors'); row.innerHTML='';
+      ['#FFFFFF','#000000','#FF0000','#00FF00','#0000FF','#FFFF00','#FF00FF','#00FFFF','#808080','#C0C0C0'].forEach(c=>{
+        const sw=document.createElement('div');sw.className='color-swatch';sw.style.backgroundColor=c;sw.style.cursor='pointer';sw.title=c;
+        sw.addEventListener('click',()=>{drawColor=c;highlightDrawColor(c);}); row.appendChild(sw);
       });
-      if (row.firstChild) row.firstChild.style.border = '2px solid #FFD700';
+      if(row.firstChild) row.firstChild.style.border='2px solid #FFD700';
     }
 
     function initBrushes() {
-      const row = document.getElementById('draw-brushes');
-      row.innerHTML = '';
-      (userData.options?.brushes || []).forEach(b => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'brush-btn' + (b.premium ? ' vip' : '');
-        btn.textContent = b.name;
-        btn.dataset.id = b.id;
-        btn.addEventListener('click', () => {
-          brushId = b.id;
-          document.querySelectorAll('#draw-brushes .brush-btn').forEach(x => x.classList.remove('active'));
-          btn.classList.add('active');
-        });
+      const row=document.getElementById('draw-brushes'); row.innerHTML='';
+      (userData.options?.brushes||[]).forEach(b=>{
+        const btn=document.createElement('button');btn.type='button';btn.className='brush-btn'+(b.premium?' vip':'');btn.textContent=b.name;btn.dataset.id=b.id;
+        btn.addEventListener('click',()=>{brushId=b.id;document.querySelectorAll('#draw-brushes .brush-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');});
         row.appendChild(btn);
       });
-      if (row.firstChild) row.firstChild.classList.add('active');
+      if(row.firstChild) row.firstChild.classList.add('active');
     }
 
     function initBackgrounds() {
-      const container = document.getElementById('bg-options');
-      container.innerHTML = '';
-
-      const noneCard = document.createElement('div');
-      noneCard.className = 'bg-card selected';
-      noneCard.innerHTML = '<div class="bg-preview" style="background:#36393F;border:1px dashed #666;display:flex;align-items:center;justify-content:center;font-size:14px;">✕</div><div class="bg-name">Ninguno</div><div class="bg-cost">Gratis</div>';
-      noneCard.addEventListener('click', () => { selectedBgId = null; highlightSelectedBg(); updateCost(); });
-      container.appendChild(noneCard);
-
-      const bgPreviews = {
-        stars: 'linear-gradient(180deg, #0B0D21, #1A1A3E, #0B0D21)',
-        waves: 'linear-gradient(135deg, #006994, #003B5C, #001F3F)',
-        geometric: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
-        cyberpunk: 'linear-gradient(135deg, #0a0a23, #1a0a2e, #FF00FF33)',
-        galaxy: 'radial-gradient(circle, #1a0533, #0d0221, #000)'
-      };
-
-      (userData.options?.backgrounds || []).forEach(bg => {
-        const card = document.createElement('div');
-        card.className = 'bg-card' + (bg.premium ? ' vip' : '');
-        card.dataset.bgId = bg.id;
-        card.innerHTML = '<div class="bg-preview" style="background:' + (bgPreviews[bg.id] || '#333') + ';"></div><div class="bg-name">' + bg.name + (bg.premium ? ' ⭐' : '') + '</div><div class="bg-cost">+' + bg.cost.toLocaleString() + ' LC</div>';
-        card.addEventListener('click', () => { selectedBgId = bg.id; highlightSelectedBg(); updateCost(); });
-        container.appendChild(card);
+      const container=document.getElementById('bg-options'); container.innerHTML='';
+      const noneCard=document.createElement('div');noneCard.className='bg-card selected';
+      noneCard.innerHTML='<div class="bg-preview" style="background:#36393F;border:1px dashed #666;display:flex;align-items:center;justify-content:center;font-size:14px;">✕</div><div class="bg-name">Ninguno</div><div class="bg-cost">Gratis</div>';
+      noneCard.addEventListener('click',()=>{selectedBgId=null;highlightSelectedBg();updateCost();}); container.appendChild(noneCard);
+      const bgPreviews={stars:'linear-gradient(180deg,#0B0D21,#1A1A3E,#0B0D21)',waves:'linear-gradient(135deg,#006994,#003B5C,#001F3F)',geometric:'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',cyberpunk:'linear-gradient(135deg,#0a0a23,#1a0a2e,#FF00FF33)',galaxy:'radial-gradient(circle,#1a0533,#0d0221,#000)'};
+      (userData.options?.backgrounds||[]).forEach(bg=>{
+        const card=document.createElement('div');card.className='bg-card'+(bg.premium?' vip':'');card.dataset.bgId=bg.id;
+        card.innerHTML='<div class="bg-preview" style="background:'+(bgPreviews[bg.id]||'#333')+';"></div><div class="bg-name">'+bg.name+(bg.premium?' ⭐':'')+'</div><div class="bg-cost">+'+bg.cost.toLocaleString()+' LC</div>';
+        card.addEventListener('click',()=>{selectedBgId=bg.id;highlightSelectedBg();updateCost();}); container.appendChild(card);
       });
     }
 
     function highlightSelectedBg() {
-      document.querySelectorAll('#bg-options .bg-card').forEach(c => {
-        const isSelected = (selectedBgId === null && !c.dataset.bgId) || (c.dataset.bgId === selectedBgId);
-        c.classList.toggle('selected', isSelected);
-      });
+      document.querySelectorAll('#bg-options .bg-card').forEach(c=>{c.classList.toggle('selected',(!selectedBgId&&!c.dataset.bgId)||c.dataset.bgId===selectedBgId);});
     }
 
     function initStickers() {
-      const grid = document.getElementById('sticker-grid');
-      grid.innerHTML = '';
-      (userData.options?.stickers || []).forEach(s => {
-        const card = document.createElement('div');
-        card.className = 'item-card' + (s.premium ? ' vip' : '');
-        card.innerHTML = '<div class="emoji">' + s.emoji + '</div><div class="name">' + s.name + (s.premium ? ' ⭐' : '') + '</div>';
-        card.addEventListener('click', () => {
-          selectedStickerId = (selectedStickerId === s.id) ? null : s.id;
-          document.querySelectorAll('#sticker-grid .item-card').forEach(c => c.classList.remove('selected'));
-          if (selectedStickerId === s.id) card.classList.add('selected');
-        });
+      const grid=document.getElementById('sticker-grid'); grid.innerHTML='';
+      (userData.options?.stickers||[]).forEach(s=>{
+        const card=document.createElement('div');card.className='item-card'+(s.premium?' vip':'');
+        card.innerHTML='<span class="emoji">'+s.emoji+'</span><span class="name">'+s.name+'</span>';
+        card.addEventListener('click',()=>{selectedStickerId=s.id;document.querySelectorAll('#sticker-grid .item-card').forEach(c=>c.classList.remove('selected'));card.classList.add('selected');});
         grid.appendChild(card);
       });
     }
 
-    function updateCanvasResolution() {
-      const canvas = document.getElementById('draw-canvas');
-      if (!canvas || !drawCtx) return;
-      const res = getCanvasResolution();
-      const oldData = canvas.toDataURL();
-      const oldW = canvas.width;
-      const oldH = canvas.height;
-      canvas.width = res.width;
-      canvas.height = res.height;
-      drawCtx = canvas.getContext('2d');
-      if (oldData.length > 100) {
-        const img = new Image();
-        img.onload = () => {
-          drawCtx.drawImage(img, 0, 0, oldW, oldH, 0, 0, res.width, res.height);
-        };
-        img.src = oldData;
-      }
-    }
-
     function initResolutions() {
-      const container = document.getElementById('resolution-options');
-      if (!container) return;
-      container.innerHTML = '';
-      (userData.options?.resolutions || []).forEach(r => {
-        const card = document.createElement('div');
-        card.className = 'res-card' + (r.premium ? ' vip' : '') + (r.id === selectedResolution ? ' selected' : '');
-        card.dataset.resId = r.id;
-        card.innerHTML = '<div class="res-name">' + r.name + (r.premium ? ' ⭐' : '') + '</div>' + (r.premium ? '<div class="res-cost">+2,000 LC</div>' : '<div class="res-cost">Incluido</div>');
-        card.addEventListener('click', () => { selectedResolution = r.id; highlightSelectedRes(); updateCanvasResolution(); updateCost(); });
+      const container=document.getElementById('resolution-options'); container.innerHTML='';
+      (userData.options?.resolutions||[]).forEach(r=>{
+        const card=document.createElement('div');card.className='res-card'+(r.premium?' vip':'')+(r.id===selectedResolution?' selected':'');card.dataset.resId=r.id;
+        card.innerHTML='<div class="res-name">'+r.name+(r.premium?' ⭐':'')+'</div>'+(r.premium?'<div class="res-cost">+2,000 LC</div>':'<div class="res-cost">Gratis</div>');
+        card.addEventListener('click',()=>{selectedResolution=r.id;highlightSelectedRes();updateCost();});
         container.appendChild(card);
       });
     }
 
     function highlightSelectedRes() {
-      document.querySelectorAll('#resolution-options .res-card').forEach(c => {
-        c.classList.toggle('selected', c.dataset.resId === selectedResolution);
-      });
+      document.querySelectorAll('#resolution-options .res-card').forEach(c=>c.classList.toggle('selected',c.dataset.resId===selectedResolution));
     }
 
     function initLogos() {
-      const addBtn = document.getElementById('btn-add-image');
-      const fileInput = document.getElementById('logo-file-input');
-
-      addBtn.addEventListener('click', () => {
-        if (uploadedLogos.length >= MAX_LOGOS) {
-          alert('Máximo ' + MAX_LOGOS + ' imágenes permitidas');
-          return;
-        }
-        fileInput.click();
+      document.getElementById('btn-add-image').addEventListener('click',()=>{if(uploadedLogos.length>=MAX_LOGOS){alert('Máximo '+MAX_LOGOS+' imágenes');return;}document.getElementById('logo-file-input').click();});
+      document.getElementById('logo-file-input').addEventListener('change',(e)=>{
+        const file=e.target.files[0]; if(!file) return;
+        if(file.size>2*1024*1024){alert('Máximo 2MB por imagen');e.target.value='';return;}
+        const reader=new FileReader();reader.onload=(ev)=>{uploadedLogos.push({dataUrl:ev.target.result,name:file.name,x:500,y:80,width:60,height:60});renderLogoList();updateCost();};reader.readAsDataURL(file);e.target.value='';
       });
-
-      fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        if (file.size > 2 * 1024 * 1024) {
-          alert('La imagen no puede superar 2 MB');
-          fileInput.value = '';
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          uploadedLogos.push({
-            dataUrl: ev.target.result,
-            name: file.name,
-            x: 500 + uploadedLogos.length * 70,
-            y: 80,
-            width: 60,
-            height: 60
-          });
-          renderLogoList();
-          renderImageOverlays();
-          updateCost();
-        };
-        reader.readAsDataURL(file);
-        fileInput.value = '';
-      });
-
-      renderLogoList();
     }
 
     function renderLogoList() {
-      const container = document.getElementById('logo-list');
-      container.innerHTML = '';
-      const addBtn = document.getElementById('btn-add-image');
-      addBtn.style.display = uploadedLogos.length >= MAX_LOGOS ? 'none' : 'inline-block';
-
-      uploadedLogos.forEach((logo, idx) => {
-        const item = document.createElement('div');
-        item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:6px;';
-
-        const thumb = document.createElement('img');
-        thumb.src = logo.dataUrl;
-        thumb.style.cssText = 'width:40px;height:40px;object-fit:cover;border-radius:4px;border:1px solid #444;';
-
-        const info = document.createElement('div');
-        info.style.cssText = 'flex:1;min-width:0;';
-        info.innerHTML = '<div style="font-size:10px;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + logo.name + '</div>' +
-          '<div style="font-size:9px;color:#888;">Pos: ' + logo.x + ',' + logo.y + ' | ' + logo.width + 'x' + logo.height + '</div>';
-
-        const sizeRow = document.createElement('div');
-        sizeRow.style.cssText = 'display:flex;gap:4px;align-items:center;';
-        sizeRow.innerHTML =
-          '<label style="font-size:9px;color:#aaa;">W</label><input type="number" min="20" max="200" value="' + logo.width + '" style="width:45px;padding:2px;font-size:10px;background:#1a1a2e;color:#fff;border:1px solid #333;border-radius:3px;">' +
-          '<label style="font-size:9px;color:#aaa;">H</label><input type="number" min="20" max="200" value="' + logo.height + '" style="width:45px;padding:2px;font-size:10px;background:#1a1a2e;color:#fff;border:1px solid #333;border-radius:3px;">';
-
-        const wInput = sizeRow.querySelectorAll('input')[0];
-        const hInput = sizeRow.querySelectorAll('input')[1];
-        wInput.addEventListener('change', () => { uploadedLogos[idx].width = Math.max(20, Math.min(200, parseInt(wInput.value) || 60)); renderImageOverlays(); });
-        hInput.addEventListener('change', () => { uploadedLogos[idx].height = Math.max(20, Math.min(200, parseInt(hInput.value) || 60)); renderImageOverlays(); });
-
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = '✕';
-        removeBtn.className = 'btn-danger';
-        removeBtn.style.cssText = 'padding:4px 8px;font-size:10px;';
-        removeBtn.addEventListener('click', () => {
-          uploadedLogos.splice(idx, 1);
-          renderLogoList();
-          renderImageOverlays();
-          updateCost();
-        });
-
-        item.appendChild(thumb);
-        item.appendChild(info);
-        item.appendChild(sizeRow);
-        item.appendChild(removeBtn);
-        container.appendChild(item);
+      const list=document.getElementById('logo-list'); list.innerHTML='';
+      uploadedLogos.forEach((logo,idx)=>{
+        const item=document.createElement('div');item.className='logo-item';
+        item.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><img src="'+logo.dataUrl+'" style="width:40px;height:40px;object-fit:cover;border-radius:4px;"><span style="font-size:10px;color:#ccc;flex:1;">'+logo.name+'</span><button type="button" class="btn-danger" style="padding:4px 8px;font-size:9px;">✕</button></div><div class="logo-pos-row"><label>X</label><input type="number" value="'+logo.x+'" data-idx="'+idx+'" data-prop="x"><label>Y</label><input type="number" value="'+logo.y+'" data-idx="'+idx+'" data-prop="y"><label>W</label><input type="number" value="'+logo.width+'" data-idx="'+idx+'" data-prop="width"><label>H</label><input type="number" value="'+logo.height+'" data-idx="'+idx+'" data-prop="height"></div>';
+        item.querySelector('.btn-danger').addEventListener('click',()=>{uploadedLogos.splice(idx,1);renderLogoList();renderStickerOverlay();updateCost();});
+        item.querySelectorAll('.logo-pos-row input').forEach(inp=>{inp.addEventListener('input',(e)=>{uploadedLogos[parseInt(e.target.dataset.idx)][e.target.dataset.prop]=parseInt(e.target.value)||0;});});
+        list.appendChild(item);
       });
     }
 
-    async function updateCost() {
-      const config = { ...getConfig(), logos: getLogosFromInputs() };
-      try {
-        const res = await fetch('/api/rankcard/calculate-cost', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, config })
-        });
-        const data = await res.json();
-        if (data.total !== undefined) {
-          document.getElementById('cost-total').textContent = data.total.toLocaleString();
-          let bd = 'Base: 7,500';
-          if (data.breakdown?.extras > 0) bd += ' + ' + data.breakdown.extras.toLocaleString() + ' extras';
-          document.getElementById('cost-breakdown').textContent = bd;
-        }
-      } catch (e) { console.error(e); }
+    function updateCost() {
+      const config = getConfig(); config.logos = getLogosFromInputs();
+      let total = userData.costs?.base || 7500;
+      const extras = [];
+      const totalImages = (config.logos?.length||0);
+      if (totalImages>1) { const imgCost=(totalImages-1)*(userData.costs?.perImageExtra||500); total+=imgCost; extras.push('Imgs: +'+imgCost); }
+      const premFonts = userData.options?.premiumFonts||[];
+      if (premFonts.find(f=>f.id===config.fontId)) { total+=userData.costs?.premiumFont||1000; extras.push('Fuente: +1,000'); }
+      if (config.backgroundId) {
+        const bgs=[...(userData.options?.backgrounds||[])]; const bg=bgs.find(b=>b.id===config.backgroundId);
+        if(bg) { total+=bg.cost; extras.push('Fondo: +'+bg.cost.toLocaleString()); }
+      }
+      if (config.stickers?.length) { const sc=config.stickers.length*(userData.costs?.sticker||300); total+=sc; extras.push('Stickers: +'+sc.toLocaleString()); }
+      if (config.resolution&&config.resolution!=='standard') { total+=userData.costs?.resolution||2000; extras.push('HD: +2,000'); }
+      if (config.frameId) {
+        const frames=[...(userData.options?.frames||[])]; const fr=frames.find(f=>f.id===config.frameId);
+        if(fr) { total+=fr.cost; extras.push('Marco: +'+fr.cost.toLocaleString()); }
+      }
+      if (config.gradient) { total+=userData.costs?.gradient||800; extras.push('Gradiente: +800'); }
+      if (config.barGradient) { total+=Math.round((userData.costs?.gradient||800)/2); extras.push('Grad. barra: +400'); }
+      if (config.textEffect && config.textEffect!=='none') { total+=userData.costs?.textEffect||500; extras.push('Efecto texto: +500'); }
+      if (config.animated && config.animations?.length>0) { total+=userData.costs?.animation||3000; extras.push('Animación: +3,000'); }
+
+      document.getElementById('cost-total').textContent = total.toLocaleString();
+      document.getElementById('cost-breakdown').textContent = 'Base: 7,500' + (extras.length ? ' | ' + extras.join(' | ') : '');
     }
 
     async function updatePreview() {
-      const config = { ...getConfig(), logos: getLogosFromInputs() };
-      const btn = document.getElementById('btn-preview');
-      btn.disabled = true;
-      btn.textContent = '⏳ Generando...';
+      const btn=document.getElementById('btn-preview'); btn.disabled=true; btn.textContent='Generando...';
+      const config = getConfig(); config.logos = getLogosFromInputs();
       try {
-        const res = await fetch('/api/rankcard/preview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, config })
-        });
-        if (!res.ok) throw new Error(await res.text());
+        const res = await fetch('/api/rankcard/preview', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token, config}) });
+        if (!res.ok) { const err=await res.json().catch(()=>({})); throw new Error(err.error||'Error'); }
+        const contentType = res.headers.get('content-type') || '';
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
-        document.getElementById('preview-placeholder').style.display = 'none';
         const img = document.getElementById('preview-img');
-        img.src = url;
-        img.style.display = 'block';
-      } catch (e) {
-        document.getElementById('preview-placeholder').textContent = 'Error al generar vista previa';
-        document.getElementById('preview-placeholder').style.display = 'flex';
-        document.getElementById('preview-img').style.display = 'none';
-      }
-      btn.disabled = false;
-      btn.textContent = '👁️ Actualizar Vista Previa';
+        img.src = url; img.style.display='block';
+        document.getElementById('preview-placeholder').style.display='none';
+        setTimeout(()=>renderStickerOverlay(), 200);
+      } catch(e) { alert('Error: '+e.message); }
+      btn.disabled=false; btn.textContent='👁️ Actualizar Vista Previa';
     }
 
     async function doPurchase() {
-      const config = { ...getConfig(), logos: getLogosFromInputs() };
-      const errEl = document.getElementById('purchase-error');
-      const successEl = document.getElementById('purchase-success');
-      errEl.style.display = 'none';
-      successEl.style.display = 'none';
-
-      const btn = document.getElementById('btn-purchase');
-      btn.disabled = true;
-      btn.textContent = '⏳ Procesando...';
-
+      const btn=document.getElementById('btn-purchase'); btn.disabled=true; btn.textContent='Procesando...';
+      const errEl=document.getElementById('purchase-error'), okEl=document.getElementById('purchase-success');
+      errEl.style.display='none'; okEl.style.display='none';
+      const config = getConfig(); config.logos = getLogosFromInputs();
       try {
-        const res = await fetch('/api/rankcard/purchase', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, config })
-        });
+        const res = await fetch('/api/rankcard/purchase', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token, config}) });
         const data = await res.json();
-        if (!res.ok) {
-          errEl.textContent = data.error || 'Error al procesar';
-          if (data.balance !== undefined) errEl.textContent += ' (Tienes: ' + data.balance.toLocaleString() + ' LC)';
-          errEl.style.display = 'block';
-          btn.disabled = false;
-          btn.textContent = '✅ Confirmar y Pagar';
-          return;
-        }
-        successEl.textContent = '🎉 ¡Rankcard guardada! Usa /level en Discord para verla.';
-        successEl.style.display = 'block';
-        const newBal = (data.newBalance || 0).toLocaleString();
-        document.getElementById('user-lagcoins').textContent = newBal;
-        document.getElementById('user-lagcoins-2').textContent = newBal;
-        userData.lagcoins = data.newBalance;
-      } catch (e) {
-        errEl.textContent = 'Error de conexión';
-        errEl.style.display = 'block';
-      }
-      btn.disabled = false;
-      btn.textContent = '✅ Confirmar y Pagar';
+        if (data.success) {
+          okEl.textContent=data.message; okEl.style.display='block';
+          document.getElementById('user-lagcoins').textContent=(data.newBalance||0).toLocaleString();
+          document.getElementById('user-lagcoins-2').textContent=(data.newBalance||0).toLocaleString();
+        } else { errEl.textContent=data.error||'Error'; errEl.style.display='block'; }
+      } catch(e) { errEl.textContent='Error de conexión'; errEl.style.display='block'; }
+      btn.disabled=false; btn.textContent='✅ Confirmar y Pagar';
     }
 
-    document.addEventListener('DOMContentLoaded', loadUser);
-    window.addEventListener('resize', () => {
-      renderStickerOverlay();
-    });
+    loadUser();
   </script>
 </body>
 </html>
