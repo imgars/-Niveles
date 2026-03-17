@@ -435,7 +435,12 @@ class Database {
         insurance: true,
         robbery: true,
         missions: true,
-        powerups: true
+        powerups: true,
+        niveles: true,
+        rankcard: true,
+        rankcard_minecraft: true,
+        rankcard_roblox: true,
+        rankcard_brawlstars: true
       };
     }
     return this.systems[guildId];

@@ -82,11 +82,15 @@ export default {
 
   async execute(interaction) {
     try {
-      await interaction.deferReply();
-
       if (!db.isSystemEnabled(interaction.guild.id, 'niveles')) {
-        return interaction.editReply({ content: '❌ El sistema de niveles está desactivado en este servidor.' });
+        return interaction.reply({ content: '❌ El sistema de niveles está desactivado en este servidor.', ephemeral: true });
       }
+
+      if (!db.isSystemEnabled(interaction.guild.id, 'rankcard')) {
+        return interaction.reply({ content: '❌ Las rankcards están desactivadas en este servidor.', ephemeral: true });
+      }
+
+      await interaction.deferReply();
 
       const targetUser = interaction.options.getUser('usuario') || interaction.user;
       const member = await interaction.guild.members.fetch(targetUser.id);
@@ -108,10 +112,6 @@ export default {
       const theme = await getCardTheme(member, userData.level || 0, userData.selectedCardTheme, userData.purchasedCards || []);
       const buttonColor = getThemeButtonColor(theme);
       const buttonStyle = buttonStyleMap[buttonColor] || ButtonStyle.Primary;
-
-      if (!db.isSystemEnabled(interaction.guild.id, 'rankcard')) {
-        return interaction.editReply({ content: '❌ Las rankcards están desactivadas en este servidor.' });
-      }
 
       const RANKCARD_THEME_SYSTEMS = {
         minecraft: 'rankcard_minecraft',
