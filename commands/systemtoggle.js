@@ -22,7 +22,12 @@ export default {
               { name: '🛡️ Seguros', value: 'insurance' },
               { name: '🔫 Robos', value: 'robbery' },
               { name: '🎯 Misiones', value: 'missions' },
-              { name: '⚡ Power-ups', value: 'powerups' }
+              { name: '⚡ Power-ups', value: 'powerups' },
+              { name: '⭐ Niveles (XP)', value: 'niveles' },
+              { name: '🃏 Rankcards (todas)', value: 'rankcard' },
+              { name: '⛏️ Rankcard Minecraft', value: 'rankcard_minecraft' },
+              { name: '🎲 Rankcard Roblox', value: 'rankcard_roblox' },
+              { name: '🥊 Rankcard Brawl Stars', value: 'rankcard_brawlstars' }
             )
         )
         .addStringOption(option =>
@@ -59,7 +64,12 @@ export default {
         insurance: '🛡️ Seguros',
         robbery: '🔫 Robos',
         missions: '🎯 Misiones',
-        powerups: '⚡ Power-ups'
+        powerups: '⚡ Power-ups',
+        niveles: '⭐ Niveles (XP)',
+        rankcard: '🃏 Rankcards (todas)',
+        rankcard_minecraft: '⛏️ Rankcard Minecraft',
+        rankcard_roblox: '🎲 Rankcard Roblox',
+        rankcard_brawlstars: '🥊 Rankcard Brawl Stars'
       };
 
       const statusLines = Object.entries(SYSTEM_NAMES).map(([key, name]) => {
@@ -92,7 +102,12 @@ export default {
         insurance: '🛡️ Seguros',
         robbery: '🔫 Robos',
         missions: '🎯 Misiones',
-        powerups: '⚡ Power-ups'
+        powerups: '⚡ Power-ups',
+        niveles: '⭐ Niveles (XP)',
+        rankcard: '🃏 Rankcards (todas)',
+        rankcard_minecraft: '⛏️ Rankcard Minecraft',
+        rankcard_roblox: '🎲 Rankcard Roblox',
+        rankcard_brawlstars: '🥊 Rankcard Brawl Stars'
       };
 
       return interaction.reply({

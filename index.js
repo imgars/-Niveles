@@ -5,7 +5,7 @@ import { calculateLevel, getXPProgress, getRandomXP, calculateBoostMultiplier, a
 import { generateRankCard } from './utils/cardGenerator.js';
 import { initializeNightBoost, getNightBoostMultiplier } from './utils/timeBoost.js';
 import { isStaff } from './utils/helpers.js';
-import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, getAllStreaksFromMongo, getUserMissions, updateMissionProgress, getEconomy, addLagcoins } from './utils/mongoSync.js';
+import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, getAllStreaksFromMongo, getUserMissions, updateMissionProgress, getEconomy, addLagcoins, saveGuildSettings, loadAllGuildSettings } from './utils/mongoSync.js';
 import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFromMongo, getLogsFromMongo, getAlerts, exportLogs, getSystemsList, SYSTEMS } from './utils/activityLogger.js';
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
 import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
@@ -27,6 +27,7 @@ const mongoConnected = await connectMongoDB();
 
 // Pasar funciones de MongoDB a la base de datos
 db.setMongoSync({ saveUserToMongo, saveBoostsToMongo });
+db.setGuildSettingsSync(saveGuildSettings);
 
 // Cargar datos desde MongoDB si está conectado
 if (mongoConnected) {
@@ -58,6 +59,15 @@ if (mongoConnected) {
 
     // Cargar logs de actividad desde MongoDB
     await loadLogsFromMongo();
+
+    // Cargar configuración de sistemas (toggle) desde MongoDB
+    const guildSettings = await loadAllGuildSettings();
+    if (guildSettings && Object.keys(guildSettings).length > 0) {
+      for (const [guildId, systems] of Object.entries(guildSettings)) {
+        db.systems[guildId] = systems;
+      }
+      console.log(`✅ Configuración de ${Object.keys(guildSettings).length} servidor(es) cargada desde MongoDB`);
+    }
   } catch (error) {
     console.error('Error cargando datos desde MongoDB:', error.message);
   }
@@ -1396,6 +1406,8 @@ client.on('messageCreate', async (message) => {
   
   if (db.isUserBanned(message.author.id)) return;
   
+  if (!db.isSystemEnabled(message.guild.id, 'niveles')) return;
+  
   const cooldown = db.checkCooldown('xp', message.author.id);
   if (cooldown) return;
   
@@ -2387,6 +2399,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
   if (CONFIG.NO_XP_CHANNELS.includes(message.channel.id)) return;
   if (db.isChannelBanned(message.channel.id)) return;
   if (db.isUserBanned(user.id)) return;
+  if (!db.isSystemEnabled(message.guild.id, 'niveles')) return;
   
   const cooldown = db.checkCooldown('xp', user.id);
   if (cooldown) return;

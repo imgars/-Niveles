@@ -181,6 +181,13 @@ designHistorySchema.index({ guildId: 1, userId: 1 });
 
 const DesignHistory = mongoose.model('DesignHistory', designHistorySchema);
 
+const guildSettingsSchema = new mongoose.Schema({
+  guildId: { type: String, required: true, unique: true },
+  systems: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { timestamps: true });
+
+const GuildSettings = mongoose.model('GuildSettings', guildSettingsSchema);
+
 let isConnected = false;
 
 export async function connectMongoDB() {
@@ -988,5 +995,33 @@ export async function restoreDesignFromMongo(guildId, userId, historyId) {
   } catch (error) {
     console.error('Error restaurando design de MongoDB:', error.message);
     return null;
+  }
+}
+
+export async function saveGuildSettings(guildId, systems) {
+  if (!isConnected) return;
+  try {
+    await GuildSettings.findOneAndUpdate(
+      { guildId },
+      { $set: { systems } },
+      { upsert: true, new: true }
+    );
+  } catch (error) {
+    console.error('Error guardando configuración del servidor en MongoDB:', error.message);
+  }
+}
+
+export async function loadAllGuildSettings() {
+  if (!isConnected) return {};
+  try {
+    const all = await GuildSettings.find({}).lean();
+    const result = {};
+    for (const entry of all) {
+      result[entry.guildId] = entry.systems;
+    }
+    return result;
+  } catch (error) {
+    console.error('Error cargando configuración de servidores de MongoDB:', error.message);
+    return {};
   }
 }

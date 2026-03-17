@@ -46,6 +46,10 @@ class Database {
     this.mongoSync = mongoSync;
   }
 
+  setGuildSettingsSync(saveGuildSettings) {
+    this._saveGuildSettings = saveGuildSettings;
+  }
+
   loadFile(filePath, defaultData) {
     try {
       if (fs.existsSync(filePath)) {
@@ -447,11 +451,23 @@ class Database {
         insurance: true,
         robbery: true,
         missions: true,
-        powerups: true
+        powerups: true,
+        niveles: true,
+        rankcard: true,
+        rankcard_minecraft: true,
+        rankcard_roblox: true,
+        rankcard_brawlstars: true
       };
     }
     this.systems[guildId][system] = enabled;
     this.saveFile(SYSTEMS_FILE, this.systems);
+    if (this._saveGuildSettings) {
+      setImmediate(() => {
+        this._saveGuildSettings(guildId, this.systems[guildId]).catch(err =>
+          console.error('Error guardando sistemas en MongoDB:', err.message)
+        );
+      });
+    }
   }
 
   isSystemEnabled(guildId, system) {
