@@ -82,6 +82,7 @@ export default {
 
   async execute(interaction) {
     try {
+      await interaction.deferReply();
       const targetUser = interaction.options.getUser('usuario') || interaction.user;
       const member = await interaction.guild.members.fetch(targetUser.id);
 
@@ -105,7 +106,9 @@ export default {
 
       try {
         const cardBuffer = await generateRankCard(member, userData, progress, boostCardText);
-        const attachment = new AttachmentBuilder(cardBuffer, { name: 'rank.png' });
+        const isAnimated = userData.rankcard_custom && userData.rankcard_custom.animated && userData.rankcard_custom.animations && userData.rankcard_custom.animations.length > 0;
+        const filename = isAnimated ? 'rank.gif' : 'rank.png';
+        const attachment = new AttachmentBuilder(cardBuffer, { name: filename });
 
         const rewardBtn = new ButtonBuilder()
           .setCustomId('earn_rewards')
@@ -127,7 +130,7 @@ export default {
           replyOptions.embeds = [embed];
         }
 
-        return await interaction.reply(replyOptions);
+        return await interaction.editReply(replyOptions);
       } catch (error) {
         console.error('Error generating rank card:', error);
 
@@ -149,14 +152,14 @@ export default {
           embed.setDescription(boostDetails);
         }
 
-        return await interaction.reply({
+        return await interaction.editReply({
           embeds: [embed],
           components: [new ActionRowBuilder().addComponents(rewardBtn)]
         });
       }
     } catch (error) {
       console.error('Error in level command:', error);
-      return await interaction.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
+      return await interaction.editReply({ content: `❌ Error: ${error.message}` });
     }
   }
 };

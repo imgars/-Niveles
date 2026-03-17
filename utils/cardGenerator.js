@@ -1053,8 +1053,8 @@ export async function generateCustomRankCard(member, userData, progress, boostsT
 }
 
 async function createAnimatedGif(frameBuffers, width, height, delay) {
-  const { GIFEncoder } = await import('gifenc').catch(() => ({ GIFEncoder: null }));
-  if (!GIFEncoder) {
+  const { GIFEncoder, applyPalette } = await import('gifenc').catch(() => ({ GIFEncoder: null, applyPalette: null }));
+  if (!GIFEncoder || !applyPalette) {
     return frameBuffers[0];
   }
 
