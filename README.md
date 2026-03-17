@@ -1,4 +1,4 @@
-# Bot de Niveles - Discord
+**-Niveles - Discord**
 
 Bot avanzado de Discord con sistema de niveles, economía virtual (Lagcoins), casino, minijuegos, power-ups, tarjetas de rango en pixel art y mucho más. Diseñado para comunidades de habla hispana que buscan gamificación e interacción social.
 
