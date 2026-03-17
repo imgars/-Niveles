@@ -43,3 +43,7 @@ run = ["node", "index.js"]
 
 [userenv.shared]
 MONGODB_URI = "mongodb+srv://garscraftxd_db_user:FZKEDMJDTxWt9JW6@niveles.rj9trzi.mongodb.net/?appName=Niveles"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
