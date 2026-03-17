@@ -529,6 +529,36 @@ class Database {
         icon: '⚡',
         description: 'Multiplicadores de XP y boosts',
         commands: ['powerups', 'boost', 'globalboost', 'removeglobalboost']
+      },
+      niveles: {
+        name: 'Niveles (XP)',
+        icon: '⭐',
+        description: 'Sistema de XP, niveles y tarjetas de rango',
+        commands: ['level', 'rank', 'nivel', 'lb', 'leaderboard']
+      },
+      rankcard: {
+        name: 'Rankcards (todas)',
+        icon: '🃏',
+        description: 'Generación de tarjetas de nivel personalizadas',
+        commands: ['rankcard']
+      },
+      rankcard_minecraft: {
+        name: 'Rankcard Minecraft',
+        icon: '⛏️',
+        description: 'Tema Minecraft para tarjetas de nivel',
+        commands: ['rankcard']
+      },
+      rankcard_roblox: {
+        name: 'Rankcard Roblox',
+        icon: '🎲',
+        description: 'Tema Roblox para tarjetas de nivel',
+        commands: ['rankcard']
+      },
+      rankcard_brawlstars: {
+        name: 'Rankcard Brawl Stars',
+        icon: '🥊',
+        description: 'Tema Brawl Stars para tarjetas de nivel',
+        commands: ['rankcard']
       }
     };
 
