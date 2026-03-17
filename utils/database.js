@@ -546,19 +546,19 @@ class Database {
         name: 'Rankcard Minecraft',
         icon: '⛏️',
         description: 'Tema Minecraft para tarjetas de nivel',
-        commands: ['rankcard']
+        commands: []
       },
       rankcard_roblox: {
         name: 'Rankcard Roblox',
         icon: '🎲',
         description: 'Tema Roblox para tarjetas de nivel',
-        commands: ['rankcard']
+        commands: []
       },
       rankcard_brawlstars: {
         name: 'Rankcard Brawl Stars',
         icon: '🥊',
         description: 'Tema Brawl Stars para tarjetas de nivel',
-        commands: ['rankcard']
+        commands: []
       }
     };
 
