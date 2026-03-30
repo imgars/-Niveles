@@ -16,7 +16,9 @@ const THEME_NAMES = {
   fnaf: '🐻 FNAF',
   cuphead: '🎪 Cuphead',
   undertale: '❤️ Undertale',
-  fortnite: '🔫 Fortnite'
+  fortnite: '🔫 Fortnite',
+  valentine: '💘 San Valentín',
+  deltarune: '🟣 Deltarune'
 };
 
 export default {

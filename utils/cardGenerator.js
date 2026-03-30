@@ -55,7 +55,7 @@ export async function getAvailableThemes(member, level, purchasedCards = []) {
   }
   
   if (userId === CONFIG.SPECIAL_USER_ID) {
-    return ['discord', 'roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash', 'pixel', 'cuphead', 'undertale', 'fortnite'];
+    return ['discord', 'roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash', 'pixel', 'cuphead', 'undertale', 'fortnite', 'valentine', 'deltarune'];
   }
   
   if (roles && roles.has(CONFIG.VIP_ROLE_ID)) {
@@ -109,7 +109,7 @@ export async function getCardTheme(member, level, selectedTheme = null, purchase
   }
   
   if (userId === CONFIG.SPECIAL_USER_ID) {
-    const themes = ['roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash', 'cuphead', 'undertale', 'fortnite'];
+    const themes = ['roblox', 'minecraft', 'zelda', 'fnaf', 'geometrydash', 'cuphead', 'undertale', 'fortnite', 'valentine', 'deltarune'];
     return themes[Math.floor((rand || Math.random)() * themes.length)];
   }
   
@@ -155,6 +155,8 @@ export function getThemeButtonStyle(theme) {
     cuphead: 4,
     undertale: 4,
     fortnite: 1,
+    valentine: 1,
+    deltarune: 2
   };
   return themeStyles[theme] || 1;
 }
@@ -364,6 +366,38 @@ function getPixelArtThemeColors(theme) {
       barFill: ['#0066FF', '#00CCFF', '#FFD700'],
       storm: true,
       buttonColor: 'Primary'
+    },
+    valentine: {
+      gradient: [
+        { pos: 0, color: '#FF5FA2' },
+        { pos: 0.35, color: '#FF89C7' },
+        { pos: 0.7, color: '#FFB6D9' },
+        { pos: 1, color: '#FF4D8D' }
+      ],
+      border: '#FFE1EE',
+      accent: '#FF2E7A',
+      text: '#FFFFFF',
+      textShadow: '#6E173B',
+      barBg: '#7A1D45',
+      barFill: ['#FF2E7A', '#FFD1E8'],
+      valentineSparkle: true,
+      buttonColor: 'Primary'
+    },
+    deltarune: {
+      gradient: [
+        { pos: 0, color: '#120022' },
+        { pos: 0.4, color: '#21003D' },
+        { pos: 0.75, color: '#31005A' },
+        { pos: 1, color: '#17002B' }
+      ],
+      border: '#B070FF',
+      accent: '#7A4BFF',
+      text: '#F3E9FF',
+      textShadow: '#1B0730',
+      barBg: '#1A0D2E',
+      barFill: ['#7A4BFF', '#C18BFF', '#5CE1E6'],
+      deltaruneRune: true,
+      buttonColor: 'Secondary'
     }
   };
   
@@ -544,6 +578,63 @@ function drawFortniteEffects(ctx, width, height, rand) {
     const size = rand() * 3 + 1;
     ctx.fillStyle = '#FFD700';
     ctx.fillRect(x, y, size, size);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawValentineEffects(ctx, width, height, rand) {
+  ctx.globalAlpha = 0.22;
+  for (let i = 0; i < 20; i++) {
+    const x = rand() * width;
+    const y = rand() * height;
+    const r = rand() * 10 + 6;
+    ctx.fillStyle = i % 2 === 0 ? '#FFD1E8' : '#FF7AB8';
+    ctx.beginPath();
+    ctx.arc(x - r * 0.5, y, r * 0.5, 0, Math.PI * 2);
+    ctx.arc(x + r * 0.5, y, r * 0.5, 0, Math.PI * 2);
+    ctx.moveTo(x - r, y + r * 0.15);
+    ctx.lineTo(x, y + r * 1.25);
+    ctx.lineTo(x + r, y + r * 0.15);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.globalAlpha = 0.14;
+  for (let i = 0; i < 40; i++) {
+    const sx = rand() * width;
+    const sy = rand() * height;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(Math.floor(sx / 3) * 3, Math.floor(sy / 3) * 3, 3, 3);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawDeltaruneEffects(ctx, width, height, rand) {
+  ctx.globalAlpha = 0.2;
+  for (let i = 0; i < 18; i++) {
+    const x = rand() * width;
+    const y = rand() * height;
+    const size = rand() * 8 + 4;
+    ctx.fillStyle = ['#B070FF', '#7A4BFF', '#5CE1E6'][i % 3];
+    ctx.fillRect(x, y, size, size);
+  }
+
+  const triX = width - 85;
+  const triY = 30;
+  ctx.globalAlpha = 0.35;
+  ctx.strokeStyle = '#E7D4FF';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(triX, triY);
+  ctx.lineTo(triX + 42, triY + 70);
+  ctx.lineTo(triX - 42, triY + 70);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.globalAlpha = 0.2;
+  for (let i = 0; i < 6; i++) {
+    ctx.beginPath();
+    ctx.arc(width * 0.75, height * 0.75, 14 + i * 10, 0, Math.PI * 2);
+    ctx.stroke();
   }
   ctx.globalAlpha = 1;
 }
@@ -1392,6 +1483,12 @@ export async function generateRankCard(member, userData, progress, boostsText = 
   if (colors.storm) {
     drawFortniteEffects(ctx, CARD_WIDTH, CARD_HEIGHT, rand);
   }
+  if (colors.valentineSparkle) {
+    drawValentineEffects(ctx, CARD_WIDTH, CARD_HEIGHT, rand);
+  }
+  if (colors.deltaruneRune) {
+    drawDeltaruneEffects(ctx, CARD_WIDTH, CARD_HEIGHT, rand);
+  }
   
   ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
   for (let i = 0; i < CARD_HEIGHT; i += 4) {
@@ -1529,7 +1626,9 @@ function getThemeLabel(theme) {
     fnaf: '🐻 FNAF',
     cuphead: '🎪 CUPHEAD',
     undertale: '❤️ UNDERTALE',
-    fortnite: '🔫 FORTNITE'
+    fortnite: '🔫 FORTNITE',
+    valentine: '💘 VALENTINE',
+    deltarune: '🟣 DELTARUNE'
   };
   return labels[theme] || theme.toUpperCase();
 }

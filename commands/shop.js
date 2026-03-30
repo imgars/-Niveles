@@ -2,6 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { removeUserLagcoins, saveUserEconomy, getUserEconomy } from '../utils/economyDB.js';
 import db from '../utils/database.js';
 import { logActivity, LOG_TYPES } from '../utils/activityLogger.js';
+import { isDeltaruneShopUnlocked } from '../utils/deltaruneEventService.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -22,7 +23,8 @@ export default {
           { name: 'Tarjeta Roblox - 25000 Lagcoins', value: 'card_roblox' },
           { name: 'Tarjeta Cuphead - 15000 Lagcoins', value: 'card_cuphead' },
           { name: 'Tarjeta Undertale - 15000 Lagcoins', value: 'card_undertale' },
-          { name: 'Tarjeta Fortnite - 15000 Lagcoins', value: 'card_fortnite' }
+          { name: 'Tarjeta Fortnite - 15000 Lagcoins', value: 'card_fortnite' },
+          { name: 'Tarjeta Deltarune - 15000 Lagcoins', value: 'card_deltarune' }
         )
         .setRequired(true)
     ),
@@ -49,10 +51,15 @@ export default {
       card_roblox: { price: 25000, card: 'roblox', name: 'Tarjeta Roblox' },
       card_cuphead: { price: 15000, card: 'cuphead', name: 'Tarjeta Cuphead' },
       card_undertale: { price: 15000, card: 'undertale', name: 'Tarjeta Undertale' },
-      card_fortnite: { price: 15000, card: 'fortnite', name: 'Tarjeta Fortnite' }
+      card_fortnite: { price: 15000, card: 'fortnite', name: 'Tarjeta Fortnite' },
+      card_deltarune: { price: 15000, card: 'deltarune', name: 'Tarjeta Deltarune' }
     };
 
     const itemData = items[item];
+    if (item === 'card_deltarune' && !isDeltaruneShopUnlocked()) {
+      return interaction.editReply('❌ La tarjeta **Deltarune** estará disponible en la tienda al finalizar el evento especial.');
+    }
+
     if (!itemData || economy.lagcoins < itemData.price) {
       return interaction.editReply('❌ No tienes suficientes Lagcoins');
     }

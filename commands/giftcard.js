@@ -15,7 +15,9 @@ const AVAILABLE_CARDS = [
   { name: 'Discord', value: 'discord' },
   { name: 'Fortnite', value: 'fortnite' },
   { name: 'Undertale', value: 'undertale' },
-  { name: 'Cuphead', value: 'cuphead' }
+  { name: 'Cuphead', value: 'cuphead' },
+  { name: 'San Valentín', value: 'valentine' },
+  { name: 'Deltarune', value: 'deltarune' }
 ];
 
 export default {

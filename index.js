@@ -10,6 +10,7 @@ import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFrom
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
 import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
 import { REACTION_MESSAGES } from './data/reactionGifs.js';
+import { loadDeltaruneState, saveDeltaruneState, markDeltaruneWinner } from './utils/deltaruneEventService.js';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cron from 'node-cron';
@@ -85,6 +86,97 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+
+const MZINGERKAI_ID = '926219678798454875';
+const DELTARUNE_EVENT_CHANNEL_ID = '1441276918916710501';
+const VALENTINE_EXCLUSIVE_USERNAMES = new Set([
+  'choybix_15_41092',
+  'javier31207',
+  'jugo.de.mango33',
+  'cactus_da_negocios',
+  'mzin_531',
+  'boing_de_manzananita',
+  'random_0980_56245',
+  'agustisito.',
+  'elpelotocino0568',
+  'gatocual123'
+].map(u => u.toLowerCase()));
+
+const deltaruneConfigSessions = new Map();
+const deltaruneQuizSessions = new Map();
+let deltaruneInterval = null;
+
+function giveCardToUser(guildId, userId, cardType, autoEquip = false) {
+  const userData = db.getUser(guildId, userId);
+  if (!userData.purchasedCards) userData.purchasedCards = [];
+  if (!userData.purchasedCards.includes(cardType)) {
+    userData.purchasedCards.push(cardType);
+  }
+  if (autoEquip) {
+    userData.selectedCardTheme = cardType;
+  }
+  db.saveUser(guildId, userId, userData);
+  return userData;
+}
+
+function giveValentineIfExclusive(member) {
+  const username = member?.user?.username?.toLowerCase?.();
+  if (!username || !VALENTINE_EXCLUSIVE_USERNAMES.has(username)) return false;
+  const userData = db.getUser(member.guild.id, member.user.id);
+  if (userData.purchasedCards?.includes('valentine')) return false;
+  giveCardToUser(member.guild.id, member.user.id, 'valentine', false);
+  return true;
+}
+
+async function postDeltaruneQuizEmbed(guild, reason = 'hourly') {
+  const state = loadDeltaruneState();
+  if (!state.active) return;
+  const channel = guild.channels.cache.get(state.channelId || DELTARUNE_EVENT_CHANNEL_ID);
+  if (!channel || !channel.isTextBased()) return;
+
+  const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = await import('discord.js');
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('deltarune_quiz_join')
+      .setLabel('🧠 Iniciar Quiz Deltarune')
+      .setStyle(ButtonStyle.Primary)
+  );
+
+  const embed = new EmbedBuilder()
+    .setColor(0x8A2BE2)
+    .setTitle('🟣 Evento Deltarune: Quiz Especial')
+    .setDescription(
+      `¡Comienza un nuevo quiz de 5 preguntas!\n` +
+      `Si aciertas las **5/5**, ganas la rankcard **Deltarune** totalmente gratis.\n\n` +
+      `🎂 Este evento celebra el cumpleaños de <@${MZINGERKAI_ID}>. ¡Pásate a felicitarle!`
+    )
+    .addFields(
+      { name: '🎯 Objetivo', value: 'Responde correctamente las 5 preguntas', inline: true },
+      { name: '💎 Premio', value: 'Rankcard exclusiva Deltarune (gratis)', inline: true },
+      { name: '⏰ Frecuencia', value: 'Se publica cada 1 hora', inline: true }
+    )
+    .setFooter({ text: reason === 'start' ? 'Primera ronda del evento' : 'Nueva ronda automática' })
+    .setTimestamp();
+
+  await channel.send({
+    content: `🎉 ¡Feliz cumpleaños <@${MZINGERKAI_ID}>!`,
+    embeds: [embed],
+    components: [row]
+  });
+
+  saveDeltaruneState({ lastQuizAt: Date.now() });
+}
+
+function startDeltaruneInterval() {
+  if (deltaruneInterval) clearInterval(deltaruneInterval);
+  deltaruneInterval = setInterval(async () => {
+    const state = loadDeltaruneState();
+    if (!state.active) return;
+    for (const guild of client.guilds.cache.values()) {
+      await postDeltaruneQuizEmbed(guild).catch(err => console.error('Error enviando quiz Deltarune:', err));
+    }
+  }, 60 * 60 * 1000);
+}
 
 // Sincronizar datos a MongoDB cada 2 minutos (backup adicional)
 setInterval(async () => {
@@ -1092,8 +1184,28 @@ client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   
   client.user.setActivity('/info para ver mas información sobre el bot', { type: 0 });
+  const deltaruneStateOnBoot = loadDeltaruneState();
+  if (deltaruneStateOnBoot.active) {
+    startDeltaruneInterval();
+  }
   
   initializeNightBoost();
+
+  for (const guild of client.guilds.cache.values()) {
+    try {
+      const members = await guild.members.fetch();
+      let granted = 0;
+      for (const member of members.values()) {
+        if (member.user.bot) continue;
+        if (giveValentineIfExclusive(member)) granted++;
+      }
+      if (granted > 0) {
+        console.log(`💘 Rankcard San Valentín entregada a ${granted} usuario(s) en ${guild.name}`);
+      }
+    } catch (error) {
+      console.error(`Error asignando rankcard San Valentín en ${guild.name}:`, error.message);
+    }
+  }
   
   const commands = client.commands.map(cmd => cmd.data.toJSON());
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
@@ -1658,6 +1770,147 @@ client.on('interactionCreate', async (interaction) => {
       const row = new (await import('discord.js')).ActionRowBuilder().addComponents(select);
       
       return interaction.reply({ content: '🎮 Elige un minijuego para jugar:', components: [row], flags: 64 });
+    }
+
+    if (interaction.customId.startsWith('deltarune_open_q_')) {
+      const parts = interaction.customId.split('_');
+      const questionIndex = Number(parts[3]);
+      const ownerId = parts[4];
+      if (interaction.user.id !== ownerId) {
+        return interaction.reply({ content: '❌ Solo quien inició la configuración puede editar estas preguntas.', flags: 64 });
+      }
+      if (!isStaff(interaction.member)) {
+        return interaction.reply({ content: '❌ Solo staff puede configurar el evento.', flags: 64 });
+      }
+
+      const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = await import('discord.js');
+      const modal = new ModalBuilder()
+        .setCustomId(`deltarune_modal_q_${questionIndex}_${interaction.user.id}`)
+        .setTitle(`Configurar pregunta ${questionIndex}`);
+
+      const qInput = new TextInputBuilder()
+        .setCustomId('question')
+        .setLabel('Pregunta')
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true)
+        .setMaxLength(200);
+      const optionsInput = new TextInputBuilder()
+        .setCustomId('options')
+        .setLabel('Opciones (4 líneas: A, B, C, D)')
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true)
+        .setMaxLength(320);
+      const correctInput = new TextInputBuilder()
+        .setCustomId('correct')
+        .setLabel('Respuesta correcta (A, B, C o D)')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(1);
+
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(qInput),
+        new ActionRowBuilder().addComponents(optionsInput),
+        new ActionRowBuilder().addComponents(correctInput)
+      );
+
+      return interaction.showModal(modal);
+    }
+
+    if (interaction.customId === 'deltarune_quiz_join') {
+      const state = loadDeltaruneState();
+      if (!state.active) {
+        return interaction.reply({ content: '❌ El evento Deltarune no está activo en este momento.', flags: 64 });
+      }
+
+      deltaruneQuizSessions.set(interaction.user.id, {
+        guildId: interaction.guildId,
+        index: 0,
+        correct: 0
+      });
+
+      const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = await import('discord.js');
+      const first = state.questions[0];
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('deltarune_answer_0_0').setLabel(`A) ${first.options[0]}`.slice(0, 80)).setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('deltarune_answer_0_1').setLabel(`B) ${first.options[1]}`.slice(0, 80)).setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('deltarune_answer_0_2').setLabel(`C) ${first.options[2]}`.slice(0, 80)).setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('deltarune_answer_0_3').setLabel(`D) ${first.options[3]}`.slice(0, 80)).setStyle(ButtonStyle.Secondary)
+      );
+
+      const quizEmbed = new EmbedBuilder()
+        .setColor(0x8A2BE2)
+        .setTitle('🧠 Quiz Deltarune • Pregunta 1/5')
+        .setDescription(first.question)
+        .setFooter({ text: `Especial de cumpleaños de Mzingerkai • ${MZINGERKAI_ID}` });
+
+      return interaction.reply({ embeds: [quizEmbed], components: [row], flags: 64 });
+    }
+
+    if (interaction.customId.startsWith('deltarune_answer_')) {
+      const parts = interaction.customId.split('_');
+      const questionIndex = Number(parts[2]);
+      const selected = Number(parts[3]);
+      const session = deltaruneQuizSessions.get(interaction.user.id);
+      const state = loadDeltaruneState();
+
+      if (!session || session.index !== questionIndex) {
+        return interaction.reply({ content: '❌ Tu sesión del quiz expiró o está desincronizada. Pulsa "Iniciar Quiz Deltarune" de nuevo.', flags: 64 });
+      }
+      if (!state.active) {
+        deltaruneQuizSessions.delete(interaction.user.id);
+        return interaction.reply({ content: '❌ El evento ya no está activo.', flags: 64 });
+      }
+
+      const currentQ = state.questions[questionIndex];
+      const isCorrect = currentQ.correctIndex === selected;
+
+      if (!isCorrect) {
+        deltaruneQuizSessions.delete(interaction.user.id);
+        const failEmbed = new EmbedBuilder()
+          .setColor(0xFF4D6D)
+          .setTitle('❌ Respuesta incorrecta')
+          .setDescription(`Fallaste en la pregunta ${questionIndex + 1}/5.\nInténtalo en la próxima ronda horaria.`)
+          .setFooter({ text: `¡Felicita a Mzingerkai por su cumpleaños! <@${MZINGERKAI_ID}>` });
+        return interaction.update({ embeds: [failEmbed], components: [] });
+      }
+
+      session.correct += 1;
+      session.index += 1;
+
+      if (session.correct >= 5) {
+        deltaruneQuizSessions.delete(interaction.user.id);
+        const userData = db.getUser(interaction.guildId, interaction.user.id);
+        const hadCard = userData.purchasedCards?.includes('deltarune');
+        if (!hadCard) {
+          giveCardToUser(interaction.guildId, interaction.user.id, 'deltarune', true);
+          markDeltaruneWinner(interaction.user.id);
+        }
+
+        const winEmbed = new EmbedBuilder()
+          .setColor(0x57F287)
+          .setTitle('🏆 ¡Perfecto! 5/5 correctas')
+          .setDescription(`Ganaste la rankcard **Deltarune** completamente gratis.\n🎉 Y recuerda felicitar a <@${MZINGERKAI_ID}> por su cumpleaños.`)
+          .setFooter({ text: hadCard ? 'Ya tenías la tarjeta, pero completaste el reto.' : 'Tarjeta equipada automáticamente.' });
+        return interaction.update({ embeds: [winEmbed], components: [] });
+      }
+
+      deltaruneQuizSessions.set(interaction.user.id, session);
+      const nextQ = state.questions[session.index];
+      const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = await import('discord.js');
+      const nextRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`deltarune_answer_${session.index}_0`).setLabel(`A) ${nextQ.options[0]}`.slice(0, 80)).setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`deltarune_answer_${session.index}_1`).setLabel(`B) ${nextQ.options[1]}`.slice(0, 80)).setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`deltarune_answer_${session.index}_2`).setLabel(`C) ${nextQ.options[2]}`.slice(0, 80)).setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`deltarune_answer_${session.index}_3`).setLabel(`D) ${nextQ.options[3]}`.slice(0, 80)).setStyle(ButtonStyle.Secondary)
+      );
+
+      const nextEmbed = new EmbedBuilder()
+        .setColor(0x8A2BE2)
+        .setTitle(`🧠 Quiz Deltarune • Pregunta ${session.index + 1}/5`)
+        .setDescription(nextQ.question)
+        .setFooter({ text: `Puntaje perfecto actual: ${session.correct}/5` });
+
+      return interaction.update({ embeds: [nextEmbed], components: [nextRow] });
     }
     
     if (interaction.customId.startsWith('streak_accept_')) {
@@ -2248,6 +2501,88 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isModalSubmit()) return;
+  if (!interaction.customId.startsWith('deltarune_modal_q_')) return;
+
+  try {
+    if (!isStaff(interaction.member)) {
+      return interaction.reply({ content: '❌ Solo staff puede configurar este evento.', flags: 64 });
+    }
+
+    const parts = interaction.customId.split('_');
+    const questionIndex = Number(parts[3]);
+    const ownerId = parts[4];
+    if (interaction.user.id !== ownerId) {
+      return interaction.reply({ content: '❌ Solo quien inició la configuración puede guardar.', flags: 64 });
+    }
+    if (questionIndex < 1 || questionIndex > 5) {
+      return interaction.reply({ content: '❌ Índice de pregunta inválido.', flags: 64 });
+    }
+
+    const question = interaction.fields.getTextInputValue('question').trim();
+    const rawOptions = interaction.fields.getTextInputValue('options').split('\n').map(x => x.trim()).filter(Boolean);
+    const correctLetter = interaction.fields.getTextInputValue('correct').trim().toUpperCase();
+    const letterMap = { A: 0, B: 1, C: 2, D: 3 };
+
+    if (rawOptions.length !== 4) {
+      return interaction.reply({ content: '❌ Debes colocar exactamente 4 opciones (A, B, C y D) en líneas separadas.', flags: 64 });
+    }
+    if (!(correctLetter in letterMap)) {
+      return interaction.reply({ content: '❌ La respuesta correcta debe ser A, B, C o D.', flags: 64 });
+    }
+
+    const ownerSession = deltaruneConfigSessions.get(ownerId) || { questions: Array(5).fill(null) };
+    ownerSession.questions[questionIndex - 1] = {
+      question,
+      options: rawOptions,
+      correctIndex: letterMap[correctLetter]
+    };
+    deltaruneConfigSessions.set(ownerId, ownerSession);
+
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = await import('discord.js');
+    const configuredCount = ownerSession.questions.filter(Boolean).length;
+
+    if (questionIndex < 5) {
+      const next = questionIndex + 1;
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`deltarune_open_q_${next}_${ownerId}`)
+          .setLabel(`Configurar pregunta ${next}`)
+          .setStyle(ButtonStyle.Primary)
+      );
+      return interaction.reply({
+        content: `✅ Pregunta ${questionIndex} guardada.\nConfiguradas: ${configuredCount}/5`,
+        components: [row],
+        flags: 64
+      });
+    }
+
+    if (configuredCount !== 5) {
+      return interaction.reply({ content: '❌ Te faltan preguntas por completar antes de finalizar.', flags: 64 });
+    }
+
+    saveDeltaruneState({
+      active: false,
+      channelId: DELTARUNE_EVENT_CHANNEL_ID,
+      configuredBy: interaction.user.id,
+      configuredAt: Date.now(),
+      questions: ownerSession.questions
+    });
+    deltaruneConfigSessions.delete(ownerId);
+
+    return interaction.reply({
+      content: '✅ Configuración Deltarune guardada (5/5). Ya puedes iniciar con `!Dstart`.',
+      flags: 64
+    });
+  } catch (error) {
+    console.error('Error guardando modal Deltarune:', error);
+    if (!interaction.replied && !interaction.deferred) {
+      return interaction.reply({ content: '❌ No se pudo guardar la configuración del quiz.', flags: 64 });
+    }
+  }
+});
+
 // Auditoría
 const AUDIT_CHANNEL_ID = '1438720716378996757';
 
@@ -2437,10 +2772,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
 client.on("messageCreate", async (message) => {
   // Ignorar mensajes de bots
   if (message.author.bot) return;
+  if (!message.guild) return;
 
   // Actualizar última actividad
   const userData = db.getUser(message.guild.id, message.author.id);
   userData.lastActivity = Date.now();
+  giveValentineIfExclusive(message.member);
 
   // Si el usuario estaba inactivo, contar mensajes para salir del estado
   if (userData.isInactive) {
@@ -2485,6 +2822,82 @@ client.on("messageCreate", async (message) => {
   // Separar comando y argumentos
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
+
+  if (command === 'configd') {
+    if (!isStaff(message.member)) {
+      return message.reply('❌ Solo el staff puede usar `!configD`.');
+    }
+
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = await import('discord.js');
+    deltaruneConfigSessions.set(message.author.id, { questions: Array(5).fill(null) });
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`deltarune_open_q_1_${message.author.id}`)
+        .setLabel('Configurar pregunta 1')
+        .setStyle(ButtonStyle.Primary)
+    );
+
+    const embed = new EmbedBuilder()
+      .setColor(0x8A2BE2)
+      .setTitle('🛠️ Configuración del Evento Deltarune')
+      .setDescription(
+        'Vas a configurar **5 preguntas** mediante modales.\n' +
+        'Cada pregunta debe incluir 4 opciones (A/B/C/D) y una respuesta correcta.\n\n' +
+        `🎂 Tema del evento: cumpleaños de <@${MZINGERKAI_ID}> (¡felicítale!).`
+      )
+      .setFooter({ text: 'Pulsa el botón para abrir el primer modal' });
+
+    return message.reply({ embeds: [embed], components: [row] });
+  }
+
+  if (command === 'dstart') {
+    if (!isStaff(message.member)) {
+      return message.reply('❌ Solo el staff puede usar `!Dstart`.');
+    }
+
+    const state = loadDeltaruneState();
+    if (!state.questions || state.questions.length !== 5) {
+      return message.reply('❌ Primero configura las 5 preguntas con `!configD`.');
+    }
+
+    saveDeltaruneState({
+      active: true,
+      channelId: DELTARUNE_EVENT_CHANNEL_ID
+    });
+    startDeltaruneInterval();
+
+    await message.reply(
+      `✅ Evento Deltarune iniciado.\n` +
+      `Se enviará un quiz cada 1 hora en <#${DELTARUNE_EVENT_CHANNEL_ID}>.\n` +
+      `🎉 ¡Feliz cumpleaños, <@${MZINGERKAI_ID}>!`
+    );
+
+    await postDeltaruneQuizEmbed(message.guild, 'start').catch(console.error);
+    return;
+  }
+
+  if (command === 'dstop') {
+    if (!isStaff(message.member)) {
+      return message.reply('❌ Solo el staff puede usar `!Dstop`.');
+    }
+
+    if (deltaruneInterval) {
+      clearInterval(deltaruneInterval);
+      deltaruneInterval = null;
+    }
+
+    saveDeltaruneState({
+      active: false,
+      shopUnlocked: true
+    });
+
+    return message.reply(
+      '🛑 Evento Deltarune finalizado.\n' +
+      '✅ La rankcard **Deltarune** ahora está disponible en `/shop` por **15000 Lagcoins**.\n' +
+      `🎂 Gracias por celebrar y felicitar a <@${MZINGERKAI_ID}>.`
+    );
+  }
 
   // ===========================
   //   COMANDOS DE REACCIÓN (prefix !)
