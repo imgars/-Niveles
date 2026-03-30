@@ -2770,14 +2770,15 @@ client.on('messageReactionAdd', async (reaction, user) => {
 });
 
 client.on("messageCreate", async (message) => {
-  // Ignorar mensajes de bots
-  if (message.author.bot) return;
-  if (!message.guild) return;
+  try {
+    // Ignorar mensajes de bots
+    if (message.author.bot) return;
+    if (!message.guild) return;
 
-  // Actualizar última actividad
-  const userData = db.getUser(message.guild.id, message.author.id);
-  userData.lastActivity = Date.now();
-  giveValentineIfExclusive(message.member);
+    // Actualizar última actividad
+    const userData = db.getUser(message.guild.id, message.author.id);
+    userData.lastActivity = Date.now();
+    giveValentineIfExclusive(message.member);
 
   // Si el usuario estaba inactivo, contar mensajes para salir del estado
   if (userData.isInactive) {
@@ -2816,14 +2817,14 @@ client.on("messageCreate", async (message) => {
 
   const prefix = "!";
 
-  // Verificar que el mensaje tenga el prefijo
-  if (!message.content.startsWith(prefix)) return;
+    // Verificar que el mensaje tenga el prefijo
+    if (!message.content.startsWith(prefix)) return;
 
-  // Separar comando y argumentos
-  const args = message.content.slice(prefix.length).trim().split(/ +/);
-  const command = args.shift().toLowerCase();
+    // Separar comando y argumentos
+    const args = message.content.slice(prefix.length).trim().split(/ +/);
+    const command = args.shift().toLowerCase();
 
-  if (command === 'configd') {
+    if (command === 'configd') {
     if (!isStaff(message.member)) {
       return message.reply('❌ Solo el staff puede usar `!configD`.');
     }
@@ -2851,7 +2852,7 @@ client.on("messageCreate", async (message) => {
     return message.reply({ embeds: [embed], components: [row] });
   }
 
-  if (command === 'dstart') {
+    if (command === 'dstart') {
     if (!isStaff(message.member)) {
       return message.reply('❌ Solo el staff puede usar `!Dstart`.');
     }
@@ -2877,7 +2878,7 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  if (command === 'dstop') {
+    if (command === 'dstop') {
     if (!isStaff(message.member)) {
       return message.reply('❌ Solo el staff puede usar `!Dstop`.');
     }
@@ -2899,13 +2900,13 @@ client.on("messageCreate", async (message) => {
     );
   }
 
-  // ===========================
-  //   COMANDOS DE REACCIÓN (prefix !)
-  // ===========================
-  const SOLO_REACTIONS = ['angry', 'happy', 'laugh', 'smile', 'dance', 'claps', 'smug', 'teehee', 'cry', 'sad', 'pout', 'blush', 'scared', 'confused', 'bored', 'facepalm', 'shrug', 'sleep', 'sip', 'nani'];
-  const TARGET_REACTIONS = ['kisscheeks', 'cuddle', 'handholding', 'love', 'cheeks', 'feed', 'baka', 'slap', 'punch', 'bite', 'kickbutt', 'glare', 'spank', 'highfive', 'poke', 'tickle', 'lick', 'stare', 'gaming', 'hug', 'kiss', 'pat', 'kill'];
+    // ===========================
+    //   COMANDOS DE REACCIÓN (prefix !)
+    // ===========================
+    const SOLO_REACTIONS = ['angry', 'happy', 'laugh', 'smile', 'dance', 'claps', 'smug', 'teehee', 'cry', 'sad', 'pout', 'blush', 'scared', 'confused', 'bored', 'facepalm', 'shrug', 'sleep', 'sip', 'nani'];
+    const TARGET_REACTIONS = ['kisscheeks', 'cuddle', 'handholding', 'love', 'cheeks', 'feed', 'baka', 'slap', 'punch', 'bite', 'kickbutt', 'glare', 'spank', 'highfive', 'poke', 'tickle', 'lick', 'stare', 'gaming', 'hug', 'kiss', 'pat', 'kill'];
 
-  if (SOLO_REACTIONS.includes(command) || TARGET_REACTIONS.includes(command)) {
+    if (SOLO_REACTIONS.includes(command) || TARGET_REACTIONS.includes(command)) {
     const config = REACTION_MESSAGES[command];
     if (!config) return;
 
@@ -2929,7 +2930,7 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  if (command === 'ship') {
+    if (command === 'ship') {
     const mentioned = message.mentions.users;
     let user1, user2;
 
@@ -2954,14 +2955,14 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
-  if (command === 'acceptmarriage') {
+    if (command === 'acceptmarriage') {
     return message.reply('💍 Usa el comando `/marry @usuario` para proponer matrimonio. La otra persona puede aceptar con el botón.');
   }
 
   // ===========================
   //   COMANDO: !expulsarbot
   // ===========================
-  if (command === "expulsarbot") {
+    if (command === "expulsarbot") {
 
     const OWNER_ID = "1032482231677108224";
 
@@ -3007,7 +3008,13 @@ client.on("messageCreate", async (message) => {
       }
     }
 
-    await message.reply(`✅ **Proceso completado.**\nEl bot salió de **${total} servidores**.`);
+      await message.reply(`✅ **Proceso completado.**\nEl bot salió de **${total} servidores**.`);
+    }
+  } catch (error) {
+    console.error('❌ Error en handler de comandos prefix (!):', error);
+    if (message?.channel?.isTextBased()) {
+      await message.reply('❌ Ocurrió un error ejecutando ese comando. Revisa logs.').catch(() => {});
+    }
   }
 });
 
@@ -4732,7 +4739,13 @@ if (token) {
     console.error('   2. Discord podría estar bloqueando la conexión');
     console.error('   3. Problema de red en el servidor');
     console.error('   Intentando verificar el token manualmente...');
-    
+
+    if (typeof fetch !== 'function') {
+      console.error('   ⚠️ fetch() no está disponible en este runtime de Node.');
+      console.error('   💡 En Render usa Node 18+ o desactiva esta verificación manual.');
+      return;
+    }
+
     fetch('https://discord.com/api/v10/users/@me', {
       headers: { 'Authorization': `Bot ${token}` }
     })
