@@ -11,6 +11,8 @@ import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, 
 import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
 import { REACTION_MESSAGES } from './data/reactionGifs.js';
 import { loadDeltaruneState, saveDeltaruneState, markDeltaruneWinner } from './utils/deltaruneEventService.js';
+import { initializeDeltaruneRuntime } from './utils/deltaruneEventRuntime.js';
+import { deltaruneConfigSessions, deltaruneQuizSessions } from './utils/deltaruneEventMemory.js';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cron from 'node-cron';
@@ -102,10 +104,6 @@ const VALENTINE_EXCLUSIVE_USERNAMES = new Set([
   'gatocual123'
 ].map(u => u.toLowerCase()));
 
-const deltaruneConfigSessions = new Map();
-const deltaruneQuizSessions = new Map();
-let deltaruneInterval = null;
-
 function giveCardToUser(guildId, userId, cardType, autoEquip = false) {
   const userData = db.getUser(guildId, userId);
   if (!userData.purchasedCards) userData.purchasedCards = [];
@@ -128,55 +126,6 @@ function giveValentineIfExclusive(member) {
   return true;
 }
 
-async function postDeltaruneQuizEmbed(guild, reason = 'hourly') {
-  const state = loadDeltaruneState();
-  if (!state.active) return;
-  const channel = guild.channels.cache.get(state.channelId || DELTARUNE_EVENT_CHANNEL_ID);
-  if (!channel || !channel.isTextBased()) return;
-
-  const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = await import('discord.js');
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId('deltarune_quiz_join')
-      .setLabel('🧠 Iniciar Quiz Deltarune')
-      .setStyle(ButtonStyle.Primary)
-  );
-
-  const embed = new EmbedBuilder()
-    .setColor(0x8A2BE2)
-    .setTitle('🟣 Evento Deltarune: Quiz Especial')
-    .setDescription(
-      `¡Comienza un nuevo quiz de 5 preguntas!\n` +
-      `Si aciertas las **5/5**, ganas la rankcard **Deltarune** totalmente gratis.\n\n` +
-      `🎂 Este evento celebra el cumpleaños de <@${MZINGERKAI_ID}>. ¡Pásate a felicitarle!`
-    )
-    .addFields(
-      { name: '🎯 Objetivo', value: 'Responde correctamente las 5 preguntas', inline: true },
-      { name: '💎 Premio', value: 'Rankcard exclusiva Deltarune (gratis)', inline: true },
-      { name: '⏰ Frecuencia', value: 'Se publica cada 1 hora', inline: true }
-    )
-    .setFooter({ text: reason === 'start' ? 'Primera ronda del evento' : 'Nueva ronda automática' })
-    .setTimestamp();
-
-  await channel.send({
-    content: `🎉 ¡Feliz cumpleaños <@${MZINGERKAI_ID}>!`,
-    embeds: [embed],
-    components: [row]
-  });
-
-  saveDeltaruneState({ lastQuizAt: Date.now() });
-}
-
-function startDeltaruneInterval() {
-  if (deltaruneInterval) clearInterval(deltaruneInterval);
-  deltaruneInterval = setInterval(async () => {
-    const state = loadDeltaruneState();
-    if (!state.active) return;
-    for (const guild of client.guilds.cache.values()) {
-      await postDeltaruneQuizEmbed(guild).catch(err => console.error('Error enviando quiz Deltarune:', err));
-    }
-  }, 60 * 60 * 1000);
-}
 
 // Sincronizar datos a MongoDB cada 2 minutos (backup adicional)
 setInterval(async () => {
@@ -1184,10 +1133,7 @@ client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   
   client.user.setActivity('/info para ver mas información sobre el bot', { type: 0 });
-  const deltaruneStateOnBoot = loadDeltaruneState();
-  if (deltaruneStateOnBoot.active) {
-    startDeltaruneInterval();
-  }
+  initializeDeltaruneRuntime(client);
   
   initializeNightBoost();
 
@@ -2825,80 +2771,16 @@ client.on("messageCreate", async (message) => {
     const command = args.shift().toLowerCase();
 
     if (command === 'configd') {
-    if (!isStaff(message.member)) {
-      return message.reply('❌ Solo el staff puede usar `!configD`.');
+      return message.reply('ℹ️ Este comando migró a slash command: usa `/deltaruneevento config`.');
     }
-
-    const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = await import('discord.js');
-    deltaruneConfigSessions.set(message.author.id, { questions: Array(5).fill(null) });
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`deltarune_open_q_1_${message.author.id}`)
-        .setLabel('Configurar pregunta 1')
-        .setStyle(ButtonStyle.Primary)
-    );
-
-    const embed = new EmbedBuilder()
-      .setColor(0x8A2BE2)
-      .setTitle('🛠️ Configuración del Evento Deltarune')
-      .setDescription(
-        'Vas a configurar **5 preguntas** mediante modales.\n' +
-        'Cada pregunta debe incluir 4 opciones (A/B/C/D) y una respuesta correcta.\n\n' +
-        `🎂 Tema del evento: cumpleaños de <@${MZINGERKAI_ID}> (¡felicítale!).`
-      )
-      .setFooter({ text: 'Pulsa el botón para abrir el primer modal' });
-
-    return message.reply({ embeds: [embed], components: [row] });
-  }
 
     if (command === 'dstart') {
-    if (!isStaff(message.member)) {
-      return message.reply('❌ Solo el staff puede usar `!Dstart`.');
+      return message.reply('ℹ️ Este comando migró a slash command: usa `/deltaruneevento start`.');
     }
-
-    const state = loadDeltaruneState();
-    if (!state.questions || state.questions.length !== 5) {
-      return message.reply('❌ Primero configura las 5 preguntas con `!configD`.');
-    }
-
-    saveDeltaruneState({
-      active: true,
-      channelId: DELTARUNE_EVENT_CHANNEL_ID
-    });
-    startDeltaruneInterval();
-
-    await message.reply(
-      `✅ Evento Deltarune iniciado.\n` +
-      `Se enviará un quiz cada 1 hora en <#${DELTARUNE_EVENT_CHANNEL_ID}>.\n` +
-      `🎉 ¡Feliz cumpleaños, <@${MZINGERKAI_ID}>!`
-    );
-
-    await postDeltaruneQuizEmbed(message.guild, 'start').catch(console.error);
-    return;
-  }
 
     if (command === 'dstop') {
-    if (!isStaff(message.member)) {
-      return message.reply('❌ Solo el staff puede usar `!Dstop`.');
+      return message.reply('ℹ️ Este comando migró a slash command: usa `/deltaruneevento stop`.');
     }
-
-    if (deltaruneInterval) {
-      clearInterval(deltaruneInterval);
-      deltaruneInterval = null;
-    }
-
-    saveDeltaruneState({
-      active: false,
-      shopUnlocked: true
-    });
-
-    return message.reply(
-      '🛑 Evento Deltarune finalizado.\n' +
-      '✅ La rankcard **Deltarune** ahora está disponible en `/shop` por **15000 Lagcoins**.\n' +
-      `🎂 Gracias por celebrar y felicitar a <@${MZINGERKAI_ID}>.`
-    );
-  }
 
     // ===========================
     //   COMANDOS DE REACCIÓN (prefix !)
