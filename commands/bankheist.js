@@ -25,6 +25,9 @@ export default {
         .setDescription(`Debes esperar **${result.remaining}** segundos antes de intentar otro robo al banco.`);
       return interaction.editReply({ embeds: [embed] });
     }
+    if (result && result.error === 'jailed') {
+      return interaction.editReply(`🚔 Estás en la cárcel. Te quedan **${result.remaining} segundos**. Usa \`/carcel\` para revisar/pagar fianza.`);
+    }
 
     if (result && result.success) {
       logActivity({
@@ -48,6 +51,9 @@ export default {
           { name: 'Dinero Robado', value: `${result.stolen} Lagcoins` },
           { name: '🚨', value: 'La policía está en camino...' }
         );
+      if (result.jailed) {
+        embed.addFields({ name: '🚔 Arresto', value: `Condena: ${Math.ceil((result.jailStatus?.remainingMs || 0) / 1000)}s\nFianza: ${result.jailStatus?.bailRemaining || 0} Lagcoins` });
+      }
       return interaction.editReply({ embeds: [embed] });
     } else {
       logActivity({
@@ -68,6 +74,9 @@ export default {
         .setTitle('🚓 ¡TE ATRAPARON!')
         .setDescription('¡La policía te capturó! Tuviste que pagar una multa')
         .addFields({ name: 'Multa', value: `-${result.penalty} Lagcoins` });
+      if (result.jailed) {
+        embed.addFields({ name: '⛓️ Cárcel', value: `Condena: ${Math.ceil((result.jailStatus?.remainingMs || 0) / 1000)}s\nFianza: ${result.jailStatus?.bailRemaining || 0} Lagcoins` });
+      }
       return interaction.editReply({ embeds: [embed] });
     }
   }

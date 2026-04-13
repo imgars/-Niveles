@@ -101,6 +101,17 @@ export default {
           });
           return;
         }
+        if (result.error === 'jailed') {
+          await interaction.editReply({
+            embeds: [{
+              color: 0xFF0000,
+              title: '🚔 Estás en la cárcel',
+              description: `No puedes trabajar ahora.\nTiempo restante: **${result.remaining} segundos**.\nUsa \`/carcel\` para ver tu estado.`
+            }],
+            components: []
+          });
+          return;
+        }
         
         if (result.error) {
           await interaction.editReply({

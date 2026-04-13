@@ -222,7 +222,113 @@ function createNewEconomy(guildId, userId) {
     tradesCompleted: 0,
     auctionsWon: 0,
     marriedTo: null,
+    jail: null,
     createdAt: new Date().toISOString()
+  };
+}
+
+function getActiveJailData(economy) {
+  if (!economy?.jail?.until) return null;
+  const untilMs = new Date(economy.jail.until).getTime();
+  if (!Number.isFinite(untilMs)) return null;
+  const remainingMs = untilMs - Date.now();
+  if (remainingMs <= 0) return null;
+
+  const bailTotal = Math.max(0, Number(economy.jail.bailTotal) || 0);
+  const bailPaid = Math.max(0, Number(economy.jail.bailPaid) || 0);
+  return {
+    ...economy.jail,
+    bailTotal,
+    bailPaid,
+    bailRemaining: Math.max(0, bailTotal - bailPaid),
+    remainingMs
+  };
+}
+
+export async function getUserJailStatus(guildId, userId) {
+  const economy = await getUserEconomy(guildId, userId);
+  const jailData = getActiveJailData(economy);
+  if (!jailData) {
+    if (economy?.jail) {
+      economy.jail = null;
+      await saveUserEconomy(guildId, userId, economy);
+    }
+    return { jailed: false, remainingMs: 0 };
+  }
+
+  return { jailed: true, ...jailData };
+}
+
+export async function sendUserToJail(guildId, userId, options = {}) {
+  const economy = await getUserEconomy(guildId, userId);
+  const durationMs = Math.max(30000, Number(options.durationMs) || 120000);
+  const bailTotal = Math.max(0, Number(options.bailTotal) || 0);
+  const reason = options.reason || 'Robo';
+  const severity = options.severity || 'leve';
+  const now = Date.now();
+  const existing = getActiveJailData(economy);
+
+  let until = now + durationMs;
+  let bailPaid = 0;
+  if (existing) {
+    const existingUntil = new Date(existing.until).getTime();
+    until = Math.max(existingUntil, until);
+    bailPaid = Math.max(0, existing.bailPaid || 0);
+  }
+
+  economy.jail = {
+    since: existing?.since || new Date(now).toISOString(),
+    until: new Date(until).toISOString(),
+    reason,
+    severity,
+    bailTotal: Math.max(existing?.bailTotal || 0, bailTotal),
+    bailPaid,
+    updatedAt: new Date().toISOString()
+  };
+
+  await saveUserEconomy(guildId, userId, economy);
+  return getUserJailStatus(guildId, userId);
+}
+
+export async function payUserJailBail(guildId, userId, amount, instant = false) {
+  const economy = await getUserEconomy(guildId, userId);
+  const jailData = getActiveJailData(economy);
+  if (!jailData) return { error: 'not_jailed' };
+
+  const bailRemaining = jailData.bailRemaining;
+  const desired = instant ? bailRemaining : Math.max(1, Number(amount) || 0);
+  const toPay = Math.min(desired, bailRemaining);
+  if ((economy.lagcoins || 0) < toPay) {
+    return { error: 'insufficient_funds', needed: toPay, have: economy.lagcoins || 0, bailRemaining };
+  }
+
+  economy.lagcoins = Math.max(0, (economy.lagcoins || 0) - toPay);
+  economy.totalSpent = (economy.totalSpent || 0) + toPay;
+
+  const currentPaid = Math.max(0, Number(economy.jail?.bailPaid) || 0);
+  const totalBail = Math.max(0, Number(economy.jail?.bailTotal) || 0);
+  const newPaid = Math.min(totalBail, currentPaid + toPay);
+  const remainingAfter = Math.max(0, totalBail - newPaid);
+
+  economy.jail.bailPaid = newPaid;
+  economy.jail.updatedAt = new Date().toISOString();
+  if (remainingAfter <= 0) economy.jail = null;
+
+  if (!economy.transactions) economy.transactions = [];
+  economy.transactions.push({
+    type: 'jail_bail',
+    amount: -toPay,
+    description: 'Pago de fianza',
+    date: new Date().toISOString()
+  });
+
+  await saveUserEconomy(guildId, userId, economy);
+  return {
+    success: true,
+    released: remainingAfter <= 0,
+    paid: toPay,
+    remainingBail: remainingAfter,
+    newBalance: economy.lagcoins || 0
   };
 }
 
@@ -370,7 +476,8 @@ export async function saveUserEconomy(guildId, userId, data) {
       totalSpent: data.totalSpent !== undefined ? data.totalSpent : (existingData.totalSpent || 0),
       minigamesWon: data.minigamesWon !== undefined ? data.minigamesWon : (existingData.minigamesWon || 0),
       tradesCompleted: data.tradesCompleted !== undefined ? data.tradesCompleted : (existingData.tradesCompleted || 0),
-      auctionsWon: data.auctionsWon !== undefined ? data.auctionsWon : (existingData.auctionsWon || 0)
+      auctionsWon: data.auctionsWon !== undefined ? data.auctionsWon : (existingData.auctionsWon || 0),
+      jail: data.jail !== undefined ? data.jail : (existingData.jail || null)
     };
     
     saveEconomyFile(economyData);
@@ -1422,6 +1529,10 @@ export async function robUser(guildId, robberUserId, victimUserId) {
   try {
     const robber = await getUserEconomy(guildId, robberUserId);
     const victim = await getUserEconomy(guildId, victimUserId);
+    const jailData = getActiveJailData(robber);
+    if (jailData) {
+      return { error: 'jailed', remaining: Math.ceil(jailData.remainingMs / 1000) };
+    }
     
     if (!victim || (victim.lagcoins || 0) < 100) return { error: 'victim_poor' };
     
@@ -1471,6 +1582,15 @@ export async function robUser(guildId, robberUserId, victimUserId) {
       const fine = Math.floor(Math.random() * 300) + 200;
       robber.lagcoins = Math.max(0, (robber.lagcoins || 0) - fine);
       await saveUserEconomy(guildId, robberUserId, robber);
+      if (Math.random() < 0.35) {
+        const jailStatus = await sendUserToJail(guildId, robberUserId, {
+          durationMs: (Math.floor(Math.random() * 6) + 3) * 60 * 1000,
+          bailTotal: Math.floor(fine * 2.2),
+          reason: 'Intento de robo a usuario',
+          severity: 'media'
+        });
+        return { success: false, fine, jailed: true, jailStatus };
+      }
       return { success: false, fine };
     }
     
@@ -1490,7 +1610,15 @@ export async function robUser(guildId, robberUserId, victimUserId) {
     
     await saveUserEconomy(guildId, robberUserId, robber);
     await saveUserEconomy(guildId, victimUserId, victim);
-    
+    if (Math.random() < 0.12) {
+      const jailStatus = await sendUserToJail(guildId, robberUserId, {
+        durationMs: (Math.floor(Math.random() * 4) + 2) * 60 * 1000,
+        bailTotal: Math.floor(stolen * 0.8),
+        reason: 'Robo a usuario detectado',
+        severity: 'leve'
+      });
+      return { success: true, stolen, newBalance: robber.lagcoins, robBonus, jailed: true, jailStatus };
+    }
     return { success: true, stolen, newBalance: robber.lagcoins, robBonus };
   } catch (error) {
     console.error('Error in robUser:', error);
@@ -1682,6 +1810,10 @@ export async function bankWithdraw(guildId, userId, amount) {
 export async function doWork(guildId, userId, jobId = 'basico') {
   try {
     const economy = await getUserEconomy(guildId, userId);
+    const jailData = getActiveJailData(economy);
+    if (jailData) {
+      return { error: 'jailed', remaining: Math.ceil(jailData.remainingMs / 1000) };
+    }
     const job = JOBS[jobId];
     
     if (!job) return { error: 'invalid_job' };
@@ -1771,6 +1903,10 @@ export async function doWork(guildId, userId, jobId = 'basico') {
 export async function robBank(guildId, userId) {
   try {
     const economy = await getUserEconomy(guildId, userId);
+    const jailData = getActiveJailData(economy);
+    if (jailData) {
+      return { error: 'jailed', remaining: Math.ceil(jailData.remainingMs / 1000) };
+    }
     
     const now = Date.now();
     const lastRob = economy.lastBankRob ? new Date(economy.lastBankRob).getTime() : 0;
@@ -1813,6 +1949,15 @@ export async function robBank(guildId, userId) {
       economy.transactions.push({ type: 'bank_heist', amount: stolen, description: 'Robo de banco exitoso', date: new Date().toISOString() });
       
       await saveUserEconomy(guildId, userId, economy);
+      if (Math.random() < 0.35) {
+        const jailStatus = await sendUserToJail(guildId, userId, {
+          durationMs: (Math.floor(Math.random() * 12) + 8) * 60 * 1000,
+          bailTotal: Math.floor(stolen * 1.5),
+          reason: 'Robo al banco',
+          severity: 'alta'
+        });
+        return { success: true, stolen, newBalance: economy.lagcoins, robBonus, jailed: true, jailStatus };
+      }
       return { success: true, stolen, newBalance: economy.lagcoins, robBonus };
     } else {
       const penalty = Math.floor(Math.random() * 500) + 200;
@@ -1822,6 +1967,15 @@ export async function robBank(guildId, userId) {
       economy.transactions.push({ type: 'bank_heist_failed', amount: -penalty, description: 'Robo de banco fallido', date: new Date().toISOString() });
       
       await saveUserEconomy(guildId, userId, economy);
+      if (Math.random() < 0.8) {
+        const jailStatus = await sendUserToJail(guildId, userId, {
+          durationMs: (Math.floor(Math.random() * 18) + 12) * 60 * 1000,
+          bailTotal: Math.floor(penalty * 3.5),
+          reason: 'Intento de robo al banco',
+          severity: 'grave'
+        });
+        return { success: false, penalty, newBalance: economy.lagcoins, jailed: true, jailStatus };
+      }
       return { success: false, penalty, newBalance: economy.lagcoins };
     }
   } catch (error) {

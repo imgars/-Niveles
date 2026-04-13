@@ -33,6 +33,9 @@ export default {
       if (result.error === 'cooldown') {
         return interaction.reply({ content: `⏳ Debes esperar **${result.remaining} segundos** para intentar robar de nuevo`, flags: 64 });
       }
+      if (result.error === 'jailed') {
+        return interaction.reply({ content: `🚔 Estás en la cárcel. Te quedan **${result.remaining} segundos**. Usa \`/carcel estado\` o \`/carcel salir\`.`, flags: 64 });
+      }
 
       if (result.success) {
         // Log de economía (Ganancia)
@@ -65,6 +68,12 @@ export default {
             { name: '🏦 Tu Nuevo Saldo', value: `${result.newBalance} Lagcoins`, inline: true }
           )
           .setFooter({ text: '¡Pero ten cuidado, el karma existe!' });
+        if (result.jailed) {
+          embed.addFields({
+            name: '🚔 Te arrestaron después',
+            value: `Tiempo: ${Math.ceil((result.jailStatus?.remainingMs || 0) / 1000)}s\nFianza: ${result.jailStatus?.bailRemaining || 0} Lagcoins`
+          });
+        }
 
         return interaction.reply({ embeds: [embed] });
       } else {
@@ -96,6 +105,12 @@ export default {
             { name: '💸 Multa', value: `-${result.fine} Lagcoins`, inline: true }
           )
           .setFooter({ text: 'La policía te multó por intento de robo' });
+        if (result.jailed) {
+          embed.addFields({
+            name: '⛓️ Además quedaste en la cárcel',
+            value: `Tiempo: ${Math.ceil((result.jailStatus?.remainingMs || 0) / 1000)}s\nFianza: ${result.jailStatus?.bailRemaining || 0} Lagcoins`
+          });
+        }
 
         return interaction.reply({ embeds: [embed] });
       }

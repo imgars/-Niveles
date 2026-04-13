@@ -30,6 +30,9 @@ export default {
     if (result.error === 'cooldown') {
       return interaction.editReply(`⏳ Debes esperar **${result.remaining} segundos** para volver a robar`);
     }
+    if (result.error === 'jailed') {
+      return interaction.editReply(`🚔 Estás en la cárcel. Te quedan **${result.remaining} segundos**. Usa \`/carcel estado\` o \`/carcel salir\`.`);
+    }
 
     if (result.error === 'victim_poor') {
       return interaction.editReply('❌ Este usuario no tiene suficientes Lagcoins para robar');
@@ -65,6 +68,12 @@ export default {
         .setDescription(`${interaction.user.username} robó **${result.stolen} Lagcoins** a ${targetUser.username}`)
         .addFields({ name: 'Tu nuevo saldo', value: `💰 ${result.newBalance} Lagcoins` })
         .setFooter({ text: 'Cooldown: 30 segundos' });
+      if (result.jailed) {
+        embed.addFields({
+          name: '🚔 Terminaste en la cárcel',
+          value: `Tiempo: ${Math.ceil((result.jailStatus?.remainingMs || 0) / 1000)}s\nFianza: ${result.jailStatus?.bailRemaining || 0} Lagcoins`
+        });
+      }
 
       return interaction.editReply({ embeds: [embed] });
     } else {
@@ -88,6 +97,12 @@ export default {
         .setDescription(`${targetUser.username} te atrapó intentando robar y te multaron **${result.fine} Lagcoins**`)
         .addFields({ name: 'Tus Lagcoins confiscados', value: `💰 -${result.fine}` })
         .setFooter({ text: 'Cooldown: 30 segundos' });
+      if (result.jailed) {
+        embed.addFields({
+          name: '🚔 Cárcel',
+          value: `Condena: ${Math.ceil((result.jailStatus?.remainingMs || 0) / 1000)}s\nFianza: ${result.jailStatus?.bailRemaining || 0} Lagcoins`
+        });
+      }
 
       return interaction.editReply({ embeds: [embed] });
     }

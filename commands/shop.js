@@ -2,7 +2,6 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { removeUserLagcoins, saveUserEconomy, getUserEconomy } from '../utils/economyDB.js';
 import db from '../utils/database.js';
 import { logActivity, LOG_TYPES } from '../utils/activityLogger.js';
-import { isDeltaruneShopUnlocked } from '../utils/deltaruneEventService.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -56,10 +55,6 @@ export default {
     };
 
     const itemData = items[item];
-    if (item === 'card_deltarune' && !isDeltaruneShopUnlocked()) {
-      return interaction.editReply('❌ La tarjeta **Deltarune** estará disponible en la tienda al finalizar el evento especial.');
-    }
-
     if (!itemData || economy.lagcoins < itemData.price) {
       return interaction.editReply('❌ No tienes suficientes Lagcoins');
     }

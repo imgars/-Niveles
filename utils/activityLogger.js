@@ -44,7 +44,6 @@ export const LOG_TYPES = {
   AUCTION_BID: 'auction_bid',
   TRADE: 'trade',
   INSURANCE_BUY: 'insurance_buy',
-  TAX_PAID: 'tax_paid',
   BANK_HEIST: 'bank_heist',
   CONFIG_CHANGE: 'config_change',
   GAMECARD_GENERATE: 'gamecard_generate'
@@ -65,7 +64,6 @@ const SYSTEM_MAP = {
   [LOG_TYPES.BANK_WITHDRAW]: 'economia',
   [LOG_TYPES.GIFT_SENT]: 'economia',
   [LOG_TYPES.GIFT_RECEIVED]: 'economia',
-  [LOG_TYPES.TAX_PAID]: 'economia',
   [LOG_TYPES.XP_GAIN]: 'niveles',
   [LOG_TYPES.XP_LOSS]: 'niveles',
   [LOG_TYPES.LEVEL_UP]: 'niveles',

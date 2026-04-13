@@ -1557,7 +1557,7 @@ function getLogIcon(type) {
         bank_withdraw: '💵', shop_purchase: '🛒', powerup_activate: '⚡', admin_action: '👑',
         minigame_win: '🏆', minigame_loss: '❌', gift_sent: '🎁', gift_received: '📨',
         marriage: '💍', divorce: '💔', nationality_change: '🌍', bank_heist: '🏴‍☠️',
-        trade: '🤝', streak_gain: '🔥', tax_paid: '📊', config_change: '⚙️'
+        trade: '🤝', streak_gain: '🔥', config_change: '⚙️'
     };
     return icons[type] || '📋';
 }
@@ -1576,7 +1576,7 @@ function getLogDescription(log) {
         gift_sent: 'envio regalo', gift_received: 'recibio regalo',
         marriage: 'matrimonio', divorce: 'divorcio', nationality_change: 'cambio nacionalidad',
         bank_heist: 'atraco al banco', trade: 'intercambio', streak_gain: 'racha',
-        tax_paid: 'pago impuestos', config_change: 'cambio configuracion'
+        config_change: 'cambio configuracion'
     };
     return log.reason || descs[log.type] || log.type;
 }

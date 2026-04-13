@@ -676,7 +676,7 @@ class Database {
       trade: { name: '/trade', category: 'economia', description: 'Intercambiar con otro usuario', usage: '/trade' },
       economy: { name: '/economy', category: 'economia', description: 'Ver resumen economico', usage: '/economy' },
       lbeconomia: { name: '/lbeconomia', category: 'economia', description: 'Leaderboard de economia', usage: '/lbeconomia' },
-      impuestos: { name: '/impuestos', category: 'economia', description: 'Ver impuestos', usage: '/impuestos' },
+      carcel: { name: '/carcel', category: 'economia', description: 'Ver condena y pagar fianza', usage: '/carcel estado|fianza|salir' },
       seguro: { name: '/seguro', category: 'economia', description: 'Gestionar seguros', usage: '/seguro activar/desactivar/estado' },
       rob: { name: '/rob', category: 'economia', description: 'Robar a otro usuario', usage: '/rob <usuario>' },
       robar: { name: '/robar', category: 'economia', description: 'Robar a otro usuario (alias)', usage: '/robar <victima>' },

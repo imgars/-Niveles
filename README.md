@@ -220,7 +220,7 @@ Bot avanzado de Discord con sistema de niveles, economía virtual (Lagcoins), ca
 | `/streak` | Ver tu racha diaria |
 | `/gift` | Regalar ítems, Lagcoins o XP |
 | `/trade` | Intercambiar con otros usuarios |
-| `/tax` | Ver información de impuestos |
+| `/carcel` | Ver condena, tiempo restante y pagar fianza |
 
 ### Casino
 | Comando | Descripción |
@@ -329,7 +329,7 @@ Cuentas de administrador preconfiguradas (Gars y Mazin).
 | **MongoDB / Mongoose** | Base de datos principal |
 | **@napi-rs/canvas** | Generación de imágenes pixel art |
 | **Google Gemini AI** | Generación de tarjetas con IA |
-| **node-cron** | Tareas programadas (impuestos, streaks) |
+| **node-cron** | Tareas programadas (streaks y mantenimientos) |
 | **moment-timezone** | Manejo de zonas horarias (Venezuela) |
 
 ---

@@ -28,6 +28,9 @@ export default {
       if (result.error === 'cooldown') {
         return interaction.editReply(`⏳ Debes esperar **${result.remaining} segundos** para trabajar de nuevo`);
       }
+      if (result.error === 'jailed') {
+        return interaction.editReply(`🚔 Estás en la cárcel. Te quedan **${result.remaining} segundos**. Usa \`/carcel\`.`);
+      }
 
       if (result.error === 'missing_items') {
         const neededItems = result.needed.map(id => JOBS[id]?.name || id).join(', ');

@@ -76,6 +76,7 @@ export default {
           { name: '/depositar <cantidad>', value: 'Depositar en el banco', inline: true },
           { name: '/retirar <cantidad>', value: 'Retirar del banco', inline: true },
           { name: '/robar <usuario>', value: 'Intentar robar a otro usuario', inline: true },
+          { name: '/carcel', value: 'Ver condena, tiempo y pagar fianza', inline: true },
           { name: '/trade <usuario>', value: 'Intercambiar Lagcoins', inline: true },
           { name: '/lbeconomia', value: 'Leaderboard de economía', inline: true }
         );
