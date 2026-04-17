@@ -14,10 +14,11 @@ export default {
     .setDescription('[Staff] Elimina TODOS los datos de economia y casino de todos los usuarios'),
   
   async execute(interaction) {
+    await interaction.deferReply({ flags: 64 });
+
     if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
-      return interaction.reply({ 
-        content: '❌ No tienes permisos para usar este comando. Solo el staff puede usarlo.', 
-        flags: 64 
+      return interaction.editReply({ 
+        content: '❌ No tienes permisos para usar este comando. Solo el staff puede usarlo.'
       });
     }
     
@@ -49,10 +50,9 @@ export default {
     
     const row = new ActionRowBuilder().addComponents(confirmBtn, cancelBtn);
     
-    const response = await interaction.reply({
+    const response = await interaction.editReply({
       embeds: [warningEmbed],
       components: [row],
-      flags: 64,
       fetchReply: true
     });
     
@@ -64,7 +64,8 @@ export default {
       }
       
       if (i.customId === 'economy_reset_cancel') {
-        await i.update({
+        await i.deferUpdate();
+        await i.editReply({
           embeds: [{
             color: 0x7289DA,
             title: '✅ Cancelado',
@@ -77,6 +78,8 @@ export default {
       }
       
       if (i.customId.startsWith('economy_reset_confirm_')) {
+        await i.deferUpdate();
+
         const economyTop = await getLeaderboard(interaction.guildId, 'lagcoins', 10);
         const topUserIds = economyTop.map(u => u.userId).filter(Boolean);
         const seasonNumber = getNextEconomySeason();
@@ -90,7 +93,7 @@ export default {
           });
         }
 
-        await i.update({
+        await i.editReply({
           embeds: [{
             color: 0xFFFF00,
             title: '⏳ Procesando...',

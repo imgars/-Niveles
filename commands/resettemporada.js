@@ -11,8 +11,10 @@ export default {
     .setDescription('[Staff] Resetea todos los niveles y XP del servidor'),
   
   async execute(interaction) {
+    await interaction.deferReply({ flags: 64 });
+
     if (!isStaff(interaction.member)) {
-      return interaction.reply({ content: '❌ No tienes permisos para usar este comando.', flags: 64 });
+      return interaction.editReply({ content: '❌ No tienes permisos para usar este comando.' });
     }
     
     const warningEmbed = new EmbedBuilder()
@@ -40,10 +42,9 @@ export default {
           .setEmoji('❌')
       );
     
-    const response = await interaction.reply({
+    const response = await interaction.editReply({
       embeds: [warningEmbed],
       components: [row],
-      flags: 64,
       fetchReply: true
     });
     
@@ -55,6 +56,8 @@ export default {
       }
       
       if (i.customId === 'confirm_season_reset') {
+        await i.deferUpdate();
+
         const allUsers = db.getAllUsers(interaction.guild.id);
         const topUsers = allUsers
           .filter(u => (Number(u.totalXp) || 0) > 0)
@@ -73,7 +76,7 @@ export default {
           });
         }
 
-        await i.update({
+        await i.editReply({
           embeds: [{
             color: 0xFFFF00,
             title: '⏳ Procesando...',
@@ -157,7 +160,8 @@ export default {
       }
       
       if (i.customId === 'cancel_season_reset') {
-        await i.update({
+        await i.deferUpdate();
+        await i.editReply({
           embeds: [{
             color: 0x7289DA,
             title: '✅ Cancelado',
