@@ -13,8 +13,8 @@ export default {
         .setChoices(
           { name: '100 XP - 3000 Lagcoins', value: 'xp100' },
           { name: '500 XP - 4500 Lagcoins', value: 'xp500' },
-          { name: '1 Nivel - 7000 Lagcoins', value: 'level1' },
-          { name: '5 Niveles - 25000 Lagcoins', value: 'level5' },
+          { name: '1 Nivel - 10000 Lagcoins', value: 'level1' },
+          { name: '5 Niveles - 32000 Lagcoins', value: 'level5' },
           { name: 'Boost 50% 24h - 16000 Lagcoins', value: 'boost24' },
           { name: 'Boost 100% 48h - 32000 Lagcoins', value: 'boost48' },
           { name: 'Tarjeta Minecraft - 16000 Lagcoins', value: 'card_minecraft' },
@@ -41,8 +41,8 @@ export default {
     const items = {
       xp100: { price: 3000, xp: 100, name: '100 XP' },
       xp500: { price: 4500, xp: 500, name: '500 XP' },
-      level1: { price: 7000, levels: 1, name: '1 Nivel' },
-      level5: { price: 25000, levels: 5, name: '5 Niveles' },
+      level1: { price: 10000, levels: 1, name: '1 Nivel' },
+      level5: { price: 32000, levels: 5, name: '5 Niveles' },
       boost24: { price: 16000, boost: 150, hours: 24, name: 'Boost 50% 24h' },
       boost48: { price: 32000, boost: 200, hours: 48, name: 'Boost 100% 48h' },
       card_minecraft: { price: 16000, card: 'minecraft', name: 'Tarjeta Minecraft' },

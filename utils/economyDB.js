@@ -10,6 +10,49 @@ const INSURANCE_FILE = path.join(DATA_DIR, 'insurance.json');
 const NATIONALITIES_FILE = path.join(DATA_DIR, 'nationalities.json');
 const ADMIN_BOOST_FILE = path.join(DATA_DIR, 'adminboost.json');
 
+function normalizeLagcoinsAmount(amount) {
+  const normalized = Math.floor(Number(amount));
+  return Number.isFinite(normalized) ? normalized : 0;
+}
+
+function isWeekendDoubleLagcoinsActive(date = new Date()) {
+  const day = date.getDay();
+  return day === 5 || day === 6 || day === 0; // Viernes, sábado, domingo
+}
+
+function shouldApplyWeekendDouble(reason = '') {
+  const normalized = String(reason || '').toLowerCase();
+  const excludedTokens = [
+    'transfer',
+    'trade',
+    'gift',
+    'staff',
+    'shop',
+    'purchase',
+    'buy',
+    'travel',
+    'deposit',
+    'withdraw',
+    'remove',
+    'set',
+    'penalty',
+    'fine',
+    'loss'
+  ];
+  return !excludedTokens.some(token => normalized.includes(token));
+}
+
+function applyWeekendDouble(amount, reason = '') {
+  const normalizedAmount = normalizeLagcoinsAmount(amount);
+  if (normalizedAmount <= 0) {
+    return { amount: normalizedAmount, multiplier: 1, active: false };
+  }
+  if (!isWeekendDoubleLagcoinsActive() || !shouldApplyWeekendDouble(reason)) {
+    return { amount: normalizedAmount, multiplier: 1, active: false };
+  }
+  return { amount: normalizedAmount * 2, multiplier: 2, active: true };
+}
+
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
@@ -333,13 +376,22 @@ export async function payUserJailBail(guildId, userId, amount, instant = false) 
 }
 
 export async function addUserLagcoins(guildId, userId, amount, reason = 'work') {
+  const normalizedAmount = normalizeLagcoinsAmount(amount);
+  if (normalizedAmount === 0) return await getUserEconomy(guildId, userId);
+  const weekendResult = applyWeekendDouble(normalizedAmount, reason);
+  const finalAmount = weekendResult.amount;
   try {
     const mongoConnected = isMongoConnected();
     
     if (mongoConnected) {
-      const result = await addLagcoins(guildId, userId, amount, reason);
+      const result = await addLagcoins(guildId, userId, finalAmount, reason);
       if (result) {
-        return result.toObject ? result.toObject() : result;
+        const plainResult = result.toObject ? result.toObject() : result;
+        const economyData = loadEconomyFile();
+        const key = `${guildId}-${userId}`;
+        economyData[key] = plainResult;
+        saveEconomyFile(economyData);
+        return plainResult;
       }
     }
     
@@ -350,11 +402,11 @@ export async function addUserLagcoins(guildId, userId, amount, reason = 'work') 
       economyData[key] = createNewEconomy(guildId, userId);
     }
     
-    economyData[key].lagcoins = Math.max(0, (economyData[key].lagcoins || 0) + amount);
+    economyData[key].lagcoins = Math.max(0, (economyData[key].lagcoins || 0) + finalAmount);
     if (!economyData[key].transactions) economyData[key].transactions = [];
     economyData[key].transactions.push({
       type: reason,
-      amount,
+      amount: finalAmount,
       date: new Date().toISOString()
     });
     
@@ -368,7 +420,7 @@ export async function addUserLagcoins(guildId, userId, amount, reason = 'work') 
     if (!economyData[key]) {
       economyData[key] = createNewEconomy(guildId, userId);
     }
-    economyData[key].lagcoins = Math.max(0, (economyData[key].lagcoins || 0) + amount);
+    economyData[key].lagcoins = Math.max(0, (economyData[key].lagcoins || 0) + finalAmount);
     saveEconomyFile(economyData);
     return economyData[key];
   }
@@ -376,24 +428,33 @@ export async function addUserLagcoins(guildId, userId, amount, reason = 'work') 
 
 export async function removeUserLagcoins(guildId, userId, amount, reason = 'spend') {
   try {
+    const normalizedAmount = normalizeLagcoinsAmount(amount);
+    if (normalizedAmount <= 0) return null;
     const mongoConnected = isMongoConnected();
     
     if (mongoConnected) {
-      const result = await removeLagcoins(guildId, userId, amount, reason);
-      if (result) return result.toObject ? result.toObject() : result;
+      const result = await removeLagcoins(guildId, userId, normalizedAmount, reason);
+      if (result) {
+        const plainResult = result.toObject ? result.toObject() : result;
+        const economyData = loadEconomyFile();
+        const key = `${guildId}-${userId}`;
+        economyData[key] = plainResult;
+        saveEconomyFile(economyData);
+        return plainResult;
+      }
     }
     
     const economyData = loadEconomyFile();
     const key = `${guildId}-${userId}`;
     
     if (!economyData[key]) return null;
-    if (economyData[key].lagcoins < amount) return null;
+    if (economyData[key].lagcoins < normalizedAmount) return null;
     
-    economyData[key].lagcoins -= amount;
+    economyData[key].lagcoins -= normalizedAmount;
     if (!economyData[key].transactions) economyData[key].transactions = [];
     economyData[key].transactions.push({
       type: reason,
-      amount: -amount,
+      amount: -normalizedAmount,
       date: new Date().toISOString()
     });
     
@@ -407,11 +468,21 @@ export async function removeUserLagcoins(guildId, userId, amount, reason = 'spen
 
 export async function transferUserLagcoins(guildId, fromUserId, toUserId, amount) {
   try {
+    const normalizedAmount = normalizeLagcoinsAmount(amount);
+    if (normalizedAmount <= 0) return null;
     const mongoConnected = isMongoConnected();
     
     if (mongoConnected) {
-      const result = await transferLagcoins(guildId, fromUserId, toUserId, amount);
-      if (result) return result;
+      const result = await transferLagcoins(guildId, fromUserId, toUserId, normalizedAmount);
+      if (result) {
+        const economyData = loadEconomyFile();
+        const fromKey = `${guildId}-${fromUserId}`;
+        const toKey = `${guildId}-${toUserId}`;
+        economyData[fromKey] = result.from?.toObject ? result.from.toObject() : result.from;
+        economyData[toKey] = result.to?.toObject ? result.to.toObject() : result.to;
+        saveEconomyFile(economyData);
+        return result;
+      }
     }
     
     const economyData = loadEconomyFile();
@@ -419,26 +490,26 @@ export async function transferUserLagcoins(guildId, fromUserId, toUserId, amount
     const toKey = `${guildId}-${toUserId}`;
     
     if (!economyData[fromKey]) return null;
-    if (economyData[fromKey].lagcoins < amount) return null;
+    if (economyData[fromKey].lagcoins < normalizedAmount) return null;
     
     if (!economyData[toKey]) {
       economyData[toKey] = createNewEconomy(guildId, toUserId);
     }
     
-    economyData[fromKey].lagcoins -= amount;
+    economyData[fromKey].lagcoins -= normalizedAmount;
     economyData[fromKey].transactions = economyData[fromKey].transactions || [];
     economyData[fromKey].transactions.push({
       type: 'transfer',
-      amount: -amount,
+      amount: -normalizedAmount,
       to: toUserId,
       date: new Date().toISOString()
     });
     
-    economyData[toKey].lagcoins += amount;
+    economyData[toKey].lagcoins += normalizedAmount;
     economyData[toKey].transactions = economyData[toKey].transactions || [];
     economyData[toKey].transactions.push({
       type: 'transfer',
-      amount,
+      amount: normalizedAmount,
       from: fromUserId,
       date: new Date().toISOString()
     });
@@ -1033,7 +1104,9 @@ export async function getDailyReward(guildId, userId) {
       multiplier += adminBoost.percentage;
     }
     
-    const reward = Math.floor((baseReward + bonusReward + streakBonus) * multiplier);
+    const baseTotal = Math.floor((baseReward + bonusReward + streakBonus) * multiplier);
+    const weekendResult = applyWeekendDouble(baseTotal, 'daily');
+    const reward = weekendResult.amount;
     
     economy.lastDailyReward = today;
     economy.dailyStreak = streak;
@@ -1049,7 +1122,7 @@ export async function getDailyReward(guildId, userId) {
     });
     
     await saveUserEconomy(guildId, userId, economy);
-    return { reward, streak, streakBonus, multiplier };
+    return { reward, streak, streakBonus, multiplier: weekendResult.multiplier * multiplier, weekendDouble: weekendResult.active };
   } catch (error) {
     console.error('Error in getDailyReward:', error);
     throw error;
@@ -1080,7 +1153,10 @@ export async function playCasino(guildId, userId, bet) {
     const multiplier = 1.1; // Nerf: x1.4 -> x1.1
     const finalThreshold = (won && Math.random() < 0.7) ? 101 : threshold;
     const finalWon = roll > finalThreshold;
-    const winnings = finalWon ? Math.floor(bet * multiplier) - bet : -bet;
+    let winnings = finalWon ? Math.floor(bet * multiplier) - bet : -bet;
+    if (winnings > 0) {
+      winnings = applyWeekendDouble(winnings, 'casino').amount;
+    }
     
     economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
     if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
@@ -1204,6 +1280,9 @@ export async function playSlots(guildId, userId, bet) {
       winnings = -bet;
     }
     
+    if (winnings > 0) {
+      winnings = applyWeekendDouble(winnings, 'slots').amount;
+    }
     economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
     if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
     economy.casinoStats.plays++;
@@ -1284,6 +1363,9 @@ export async function playCoinflip(guildId, userId, bet, choice) {
       winnings = -bet;
     }
     
+    if (winnings > 0) {
+      winnings = applyWeekendDouble(winnings, 'coinflip').amount;
+    }
     economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
     if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
     economy.casinoStats.plays++;
@@ -1390,6 +1472,9 @@ export async function playDice(guildId, userId, bet, guess) {
       winnings = -bet;
     }
     
+    if (winnings > 0) {
+      winnings = applyWeekendDouble(winnings, 'dice').amount;
+    }
     economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
     if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
     economy.casinoStats.plays++;
@@ -1497,6 +1582,9 @@ export async function playBlackjack(guildId, userId, bet) {
       winnings = -bet;
     }
     
+    if (winnings > 0) {
+      winnings = applyWeekendDouble(winnings, 'blackjack').amount;
+    }
     economy.lagcoins = Math.max(0, (economy.lagcoins || 0) + winnings);
     if (!economy.casinoStats) economy.casinoStats = { plays: 0, wins: 0, totalWon: 0, totalLost: 0 };
     economy.casinoStats.plays++;
@@ -1604,6 +1692,8 @@ export async function robUser(guildId, robberUserId, victimUserId) {
       stolen = Math.floor(stolen * (1 + robBonus * 0.5));
     }
     
+    const weekendStolen = applyWeekendDouble(stolen, 'rob_user');
+    stolen = weekendStolen.amount;
     robber.lagcoins = (robber.lagcoins || 0) + stolen;
     robber.totalEarned = (robber.totalEarned || 0) + stolen;
     victim.lagcoins = Math.max(0, victim.lagcoins - stolen);
@@ -1873,7 +1963,9 @@ export async function doWork(guildId, userId, jobId = 'basico') {
       bonus = Math.floor(bonus * (1 + workBonus));
     }
     
-    const total = earnings + bonus;
+    const baseTotal = earnings + bonus;
+    const weekendResult = applyWeekendDouble(baseTotal, 'work');
+    const total = weekendResult.amount;
     
     economy.lagcoins = (economy.lagcoins || 0) + total;
     economy.totalEarned = (economy.totalEarned || 0) + total;
@@ -1892,7 +1984,7 @@ export async function doWork(guildId, userId, jobId = 'basico') {
     });
     
     await saveUserEconomy(guildId, userId, economy);
-    return { job, earnings, bonus, total, newBalance: economy.lagcoins, workBonus, nationality };
+    return { job, earnings, bonus, total, newBalance: economy.lagcoins, workBonus, nationality, weekendDouble: weekendResult.active };
   } catch (error) {
     console.error('Error in doWork:', error);
     throw error;
@@ -1941,6 +2033,7 @@ export async function robBank(guildId, userId) {
       if (robBonus > 0) {
         stolen = Math.floor(stolen * (1 + robBonus));
       }
+      stolen = applyWeekendDouble(stolen, 'bank_heist').amount;
       
       economy.lagcoins = (economy.lagcoins || 0) + stolen;
       economy.totalEarned = (economy.totalEarned || 0) + stolen;

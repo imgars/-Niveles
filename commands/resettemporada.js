@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import db from '../utils/database.js';
 import { isStaff } from '../utils/helpers.js';
 import { isMongoConnected } from '../utils/mongoSync.js';
+import { getNextLevelsSeason, createAndAssignTopSeasonRole } from '../utils/seasonRoleService.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -54,6 +55,24 @@ export default {
       }
       
       if (i.customId === 'confirm_season_reset') {
+        const allUsers = db.getAllUsers(interaction.guild.id);
+        const topUsers = allUsers
+          .filter(u => (Number(u.totalXp) || 0) > 0)
+          .sort((a, b) => (Number(b.totalXp) || 0) - (Number(a.totalXp) || 0))
+          .slice(0, 10);
+        const topUserIds = topUsers.map(u => u.userId);
+        const seasonNumber = getNextLevelsSeason();
+
+        let seasonRoleResult = null;
+        if (topUserIds.length > 0) {
+          seasonRoleResult = await createAndAssignTopSeasonRole({
+            guild: interaction.guild,
+            seasonNumber,
+            systemType: 'levels',
+            topUserIds
+          });
+        }
+
         await i.update({
           embeds: [{
             color: 0xFFFF00,
@@ -102,10 +121,16 @@ export default {
         const successEmbed = new EmbedBuilder()
           .setColor('#00FF00')
           .setTitle('✅ Temporada Reseteada')
-          .setDescription('Todos los niveles y XP han sido reseteados exitosamente.')
+          .setDescription(`Todos los niveles y XP han sido reseteados exitosamente.\n\n**Nueva temporada:** ${seasonNumber}`)
           .addFields(
             { name: '📊 Datos Eliminados', value: `MongoDB: ${mongoDeleted} usuarios\nLocal: ${localDeleted || 'todos'} usuarios`, inline: true },
-            { name: '👤 Ejecutado por', value: `<@${interaction.user.id}>`, inline: true }
+            { name: '👤 Ejecutado por', value: `<@${interaction.user.id}>`, inline: true },
+            {
+              name: '👑 Rol de Top Globales',
+              value: seasonRoleResult
+                ? `${seasonRoleResult.role} asignado a **${seasonRoleResult.assigned.length}** usuarios top`
+                : 'No se creó rol porque no había top 10 válido en esta temporada.'
+            }
           )
           .setFooter({ text: 'Nueva temporada iniciada!' })
           .setTimestamp();

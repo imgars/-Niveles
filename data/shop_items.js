@@ -6,10 +6,10 @@ export const SHOP_ITEMS = {
     { id: 'xp2500', name: '2500 XP', emoji: '💫', price: 800, xp: 2500, description: 'Mega impulso de experiencia' }
   ],
   niveles: [
-    { id: 'level1', name: '1 Nivel', emoji: '📈', price: 300, levels: 1, description: 'Sube un nivel instantaneamente' },
-    { id: 'level3', name: '3 Niveles', emoji: '📊', price: 800, levels: 3, description: 'Sube 3 niveles instantaneamente' },
-    { id: 'level5', name: '5 Niveles', emoji: '🚀', price: 1200, levels: 5, description: 'Sube 5 niveles instantaneamente' },
-    { id: 'level10', name: '10 Niveles', emoji: '🏆', price: 2200, levels: 10, description: 'Sube 10 niveles instantaneamente' }
+    { id: 'level1', name: '1 Nivel', emoji: '📈', price: 450, levels: 1, description: 'Sube un nivel instantaneamente' },
+    { id: 'level3', name: '3 Niveles', emoji: '📊', price: 1200, levels: 3, description: 'Sube 3 niveles instantaneamente' },
+    { id: 'level5', name: '5 Niveles', emoji: '🚀', price: 1800, levels: 5, description: 'Sube 5 niveles instantaneamente' },
+    { id: 'level10', name: '10 Niveles', emoji: '🏆', price: 3300, levels: 10, description: 'Sube 10 niveles instantaneamente' }
   ],
   boosts: [
     { id: 'boost25_12h', name: 'Boost 25% 12h', emoji: '🔥', price: 250, boost: 0.25, hours: 12, description: '+25% XP durante 12 horas' },

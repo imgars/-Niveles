@@ -1,8 +1,10 @@
 import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 import mongoose from 'mongoose';
 import { isMongoConnected } from '../utils/mongoSync.js';
+import { getLeaderboard } from '../utils/economyDB.js';
 import fs from 'fs';
 import path from 'path';
+import { getNextEconomySeason, createAndAssignTopSeasonRole } from '../utils/seasonRoleService.js';
 
 const STAFF_ROLE_ID = '1212891335929897030';
 
@@ -75,6 +77,19 @@ export default {
       }
       
       if (i.customId.startsWith('economy_reset_confirm_')) {
+        const economyTop = await getLeaderboard(interaction.guildId, 'lagcoins', 10);
+        const topUserIds = economyTop.map(u => u.userId).filter(Boolean);
+        const seasonNumber = getNextEconomySeason();
+        let seasonRoleResult = null;
+        if (topUserIds.length > 0) {
+          seasonRoleResult = await createAndAssignTopSeasonRole({
+            guild: interaction.guild,
+            seasonNumber,
+            systemType: 'economy',
+            topUserIds
+          });
+        }
+
         await i.update({
           embeds: [{
             color: 0xFFFF00,
@@ -159,10 +174,16 @@ export default {
         const successEmbed = new EmbedBuilder()
           .setColor('#00FF00')
           .setTitle('✅ Reset Completado')
-          .setDescription('Todos los datos de economia han sido eliminados exitosamente.')
+          .setDescription(`Todos los datos de economia han sido eliminados exitosamente.\n\n**Nueva temporada de economía:** ${seasonNumber}`)
           .addFields(
             { name: '📊 Registros Eliminados', value: `MongoDB: ${deletedMongo}\nLocal: ${deletedLocal}`, inline: true },
-            { name: '👤 Ejecutado por', value: `<@${interaction.user.id}>`, inline: true }
+            { name: '👤 Ejecutado por', value: `<@${interaction.user.id}>`, inline: true },
+            {
+              name: '👑 Rol de Top Globales',
+              value: seasonRoleResult
+                ? `${seasonRoleResult.role} asignado a **${seasonRoleResult.assigned.length}** usuarios top`
+                : 'No se creó rol porque no había top 10 válido en esta temporada.'
+            }
           )
           .setFooter({ text: 'Nueva temporada de economia iniciada' })
           .setTimestamp();

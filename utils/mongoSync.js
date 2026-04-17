@@ -544,14 +544,16 @@ export async function getEconomy(guildId, userId) {
 export async function addLagcoins(guildId, userId, amount, reason = 'work') {
   if (!isConnected) return null;
   try {
+    const normalizedAmount = Math.floor(Number(amount));
+    if (!Number.isFinite(normalizedAmount) || normalizedAmount === 0) return null;
     const economy = await Economy.findOneAndUpdate(
       { guildId, userId },
       { 
-        $inc: { lagcoins: amount, totalEarned: amount },
+        $inc: { lagcoins: normalizedAmount, totalEarned: normalizedAmount },
         $push: { 
           transactions: { 
             type: String(reason), 
-            amount: Number(amount), 
+            amount: Number(normalizedAmount), 
             date: new Date() 
           } 
         }
@@ -568,14 +570,16 @@ export async function addLagcoins(guildId, userId, amount, reason = 'work') {
 export async function removeLagcoins(guildId, userId, amount, reason = 'spend') {
   if (!isConnected) return null;
   try {
+    const normalizedAmount = Math.floor(Number(amount));
+    if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) return null;
     const economy = await Economy.findOneAndUpdate(
-      { guildId, userId, lagcoins: { $gte: amount } },
+      { guildId, userId, lagcoins: { $gte: normalizedAmount } },
       { 
-        $inc: { lagcoins: -amount, totalSpent: amount },
+        $inc: { lagcoins: -normalizedAmount, totalSpent: normalizedAmount },
         $push: { 
           transactions: { 
             type: String(reason), 
-            amount: -amount, 
+            amount: -normalizedAmount, 
             date: new Date() 
           } 
         }
@@ -591,45 +595,87 @@ export async function removeLagcoins(guildId, userId, amount, reason = 'spend') 
 
 export async function transferLagcoins(guildId, fromUserId, toUserId, amount) {
   if (!isConnected) return null;
+  const normalizedAmount = Math.floor(Number(amount));
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) return null;
+  if (!guildId || !fromUserId || !toUserId || fromUserId === toUserId) return null;
+
+  const session = await mongoose.startSession();
   try {
-    const from = await Economy.findOneAndUpdate(
-      { guildId, userId: fromUserId, lagcoins: { $gte: amount } },
-      { 
-        $inc: { lagcoins: -amount },
-        $push: { 
-          transactions: { 
-            type: 'transfer', 
-            amount: -amount, 
-            to: toUserId, 
-            date: new Date() 
-          } 
-        }
-      },
-      { new: true }
-    );
+    let from;
+    let to;
 
-    if (!from) return null;
+    await session.withTransaction(async () => {
+      from = await Economy.findOneAndUpdate(
+        { guildId, userId: fromUserId, lagcoins: { $gte: normalizedAmount } },
+        {
+          $inc: { lagcoins: -normalizedAmount },
+          $push: {
+            transactions: {
+              type: 'transfer',
+              amount: -normalizedAmount,
+              to: toUserId,
+              date: new Date()
+            }
+          }
+        },
+        { new: true, session }
+      );
 
-    const to = await Economy.findOneAndUpdate(
-      { guildId, userId: toUserId },
-      { 
-        $inc: { lagcoins: amount },
-        $push: { 
-          transactions: { 
-            type: 'transfer', 
-            amount: amount, 
-            from: fromUserId, 
-            date: new Date() 
-          } 
-        }
-      },
-      { upsert: true, new: true }
-    );
+      if (!from) {
+        throw new Error('INSUFFICIENT_FUNDS');
+      }
 
+      to = await Economy.findOneAndUpdate(
+        { guildId, userId: toUserId },
+        {
+          $inc: { lagcoins: normalizedAmount },
+          $push: {
+            transactions: {
+              type: 'transfer',
+              amount: normalizedAmount,
+              from: fromUserId,
+              date: new Date()
+            }
+          }
+        },
+        { upsert: true, new: true, session }
+      );
+    });
+
+    if (!from || !to) return null;
     return { from, to };
   } catch (error) {
+    if (error?.message === 'INSUFFICIENT_FUNDS') return null;
+    if (String(error?.message || '').includes('Transaction numbers are only allowed')) {
+      try {
+        const from = await Economy.findOneAndUpdate(
+          { guildId, userId: fromUserId, lagcoins: { $gte: normalizedAmount } },
+          {
+            $inc: { lagcoins: -normalizedAmount },
+            $push: { transactions: { type: 'transfer', amount: -normalizedAmount, to: toUserId, date: new Date() } }
+          },
+          { new: true }
+        );
+        if (!from) return null;
+
+        const to = await Economy.findOneAndUpdate(
+          { guildId, userId: toUserId },
+          {
+            $inc: { lagcoins: normalizedAmount },
+            $push: { transactions: { type: 'transfer', amount: normalizedAmount, from: fromUserId, date: new Date() } }
+          },
+          { upsert: true, new: true }
+        );
+        return { from, to };
+      } catch (fallbackError) {
+        console.error('Error transferindo lagcoins (fallback):', fallbackError.message);
+        return null;
+      }
+    }
     console.error('Error transferindo lagcoins:', error.message);
     return null;
+  } finally {
+    await session.endSession();
   }
 }
 
@@ -765,12 +811,14 @@ export async function updateCasinoStats(guildId, userId, won, amount) {
 export async function depositToBank(guildId, userId, amount) {
   if (!isConnected) return null;
   try {
+    const normalizedAmount = Math.floor(Number(amount));
+    if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) return null;
     const economy = await Economy.findOne({ guildId, userId });
-    if (!economy || economy.lagcoins < amount) return null;
+    if (!economy || economy.lagcoins < normalizedAmount) return null;
 
-    economy.lagcoins -= amount;
-    economy.bankBalance = (economy.bankBalance || 0) + amount;
-    economy.transactions.push({ type: 'deposit', amount: Number(-amount), description: 'Depósito al banco', date: new Date() });
+    economy.lagcoins -= normalizedAmount;
+    economy.bankBalance = (economy.bankBalance || 0) + normalizedAmount;
+    economy.transactions.push({ type: 'deposit', amount: Number(-normalizedAmount), description: 'Depósito al banco', date: new Date() });
     await economy.save();
     return economy;
   } catch (error) {
@@ -783,12 +831,14 @@ export async function depositToBank(guildId, userId, amount) {
 export async function withdrawFromBank(guildId, userId, amount) {
   if (!isConnected) return null;
   try {
+    const normalizedAmount = Math.floor(Number(amount));
+    if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) return null;
     const economy = await Economy.findOne({ guildId, userId });
-    if (!economy || (economy.bankBalance || 0) < amount) return null;
+    if (!economy || (economy.bankBalance || 0) < normalizedAmount) return null;
 
-    economy.bankBalance -= amount;
-    economy.lagcoins = (economy.lagcoins || 0) + amount;
-    economy.transactions.push({ type: 'withdraw', amount: Number(amount), description: 'Retiro del banco', date: new Date() });
+    economy.bankBalance -= normalizedAmount;
+    economy.lagcoins = (economy.lagcoins || 0) + normalizedAmount;
+    economy.transactions.push({ type: 'withdraw', amount: Number(normalizedAmount), description: 'Retiro del banco', date: new Date() });
     await economy.save();
     return economy;
   } catch (error) {

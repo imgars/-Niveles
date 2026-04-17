@@ -21,6 +21,56 @@ import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const INACTIVITY_NOTIFICATION_CHANNEL_ID = '1441276918916710501';
+const WEEKEND_X2_NOTICE_FILE = path.join('./data', 'weekend_x2_notice.json');
+
+function isWeekendX2Active() {
+  const day = new Date().getDay();
+  return day === 5 || day === 6 || day === 0;
+}
+
+function loadWeekendNoticeState() {
+  try {
+    if (fs.existsSync(WEEKEND_X2_NOTICE_FILE)) {
+      return JSON.parse(fs.readFileSync(WEEKEND_X2_NOTICE_FILE, 'utf8'));
+    }
+  } catch (error) {
+    console.error('Error leyendo estado de anuncio x2:', error);
+  }
+  return {};
+}
+
+function saveWeekendNoticeState(state) {
+  try {
+    fs.writeFileSync(WEEKEND_X2_NOTICE_FILE, JSON.stringify(state, null, 2));
+  } catch (error) {
+    console.error('Error guardando estado de anuncio x2:', error);
+  }
+}
+
+async function sendWeekendX2NoticeToGuild(guild) {
+  if (!isWeekendX2Active()) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const state = loadWeekendNoticeState();
+  const key = `${guild.id}-${today}`;
+  if (state[key]) return;
+
+  const channel = guild.channels.cache.get(INACTIVITY_NOTIFICATION_CHANNEL_ID);
+  if (!channel) return;
+
+  const embed = new EmbedBuilder()
+    .setColor(0xFFD700)
+    .setTitle('🌟 Evento x2 Lagcoins Activo')
+    .setDescription('Desde hoy hasta el domingo, **todas las ganancias de Lagcoins** se duplican automáticamente.')
+    .addFields({ name: '📌 Vigencia', value: 'Viernes, sábado y domingo' })
+    .setFooter({ text: 'Aprovecha el boost de fin de semana' })
+    .setTimestamp();
+
+  await channel.send({ embeds: [embed] });
+  state[key] = true;
+  saveWeekendNoticeState(state);
+}
 
 // Conectar a MongoDB en startup
 const mongoConnected = await connectMongoDB();
@@ -1231,7 +1281,7 @@ client.once('ready', async () => {
   cron.schedule('0 */6 * * *', async () => {
     console.log('🔍 Verificando usuarios inactivos...');
     const inactiveRoleId = '1455315291532693789';
-    const notificationChannelId = '1441276918916710501';
+    const notificationChannelId = INACTIVITY_NOTIFICATION_CHANNEL_ID;
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
     const now = Date.now();
 
@@ -1286,6 +1336,24 @@ client.once('ready', async () => {
       }
     }
   });
+
+  cron.schedule('5 0 * * *', async () => {
+    try {
+      if (!isWeekendX2Active()) return;
+      for (const guild of client.guilds.cache.values()) {
+        await sendWeekendX2NoticeToGuild(guild);
+      }
+    } catch (error) {
+      console.error('Error enviando anuncio x2 de fin de semana:', error);
+    }
+  }, {
+    timezone: 'America/Caracas'
+  });
+
+  // Intento inmediato al iniciar, para no esperar al cron si el bot reinicia en fin de semana.
+  for (const guild of client.guilds.cache.values()) {
+    sendWeekendX2NoticeToGuild(guild).catch(() => {});
+  }
 });
 
 client.on('messageCreate', async (message) => {
