@@ -1,7 +1,40 @@
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 
 const MAX_LOGS = 1000;
 const activityLogs = [];
+const LOGS_FILE = path.join('./data', 'activity_logs.json');
+
+function loadLogsFromFile() {
+  try {
+    if (!fs.existsSync(LOGS_FILE)) return;
+    const raw = JSON.parse(fs.readFileSync(LOGS_FILE, 'utf8'));
+    if (!Array.isArray(raw) || raw.length === 0) return;
+    activityLogs.length = 0;
+    for (const log of raw.slice(0, MAX_LOGS)) {
+      activityLogs.push({
+        ...log,
+        timestamp: log.timestamp ? new Date(log.timestamp).toISOString() : new Date().toISOString()
+      });
+    }
+    console.log(`✅ Cargados ${activityLogs.length} logs de actividad desde archivo local`);
+  } catch (error) {
+    console.error('Error cargando logs locales:', error.message);
+  }
+}
+
+function saveLogsToFile() {
+  try {
+    const dir = path.dirname(LOGS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(LOGS_FILE, JSON.stringify(activityLogs.slice(0, MAX_LOGS), null, 2));
+  } catch (error) {
+    console.error('Error guardando logs locales:', error.message);
+  }
+}
+
+loadLogsFromFile();
 
 export const LOG_TYPES = {
   XP_GAIN: 'xp_gain',
@@ -184,13 +217,18 @@ export function logFromInteraction(interaction, data = {}) {
   });
 }
 
+function generateLogId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
 export function logActivity(data) {
   const logType = data.type || 'unknown';
   const detectedSystem = SYSTEM_MAP[logType] || 'general';
+  const now = new Date();
 
   const log = {
-    logId: Date.now() + Math.random().toString(36).substr(2, 9),
-    timestamp: new Date().toISOString(),
+    logId: generateLogId(),
+    timestamp: now.toISOString(),
     type: logType,
     system: data.system || detectedSystem,
     userId: data.userId || null,
@@ -219,11 +257,22 @@ export function logActivity(data) {
   }
 
   if (isMongoReady()) {
-    const doc = new ActivityLog(log);
-    doc.save().catch(err => {
+    const mongoDoc = {
+      ...log,
+      timestamp: now,
+      commandOptions: log.commandOptions || {},
+      details: log.details || {}
+    };
+    ActivityLog.findOneAndUpdate(
+      { logId: log.logId },
+      { $set: mongoDoc },
+      { upsert: true, new: true }
+    ).catch(err => {
       console.error('Error guardando log en MongoDB:', err.message);
     });
   }
+
+  saveLogsToFile();
 
   if (discordLogHandler) {
     discordLogHandler(log).catch(err => {

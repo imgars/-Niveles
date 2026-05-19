@@ -109,25 +109,35 @@ export function initDiscordLogger(client) {
   discordClient = client;
 }
 
+async function resolveLogChannel(log) {
+  const channelId = CONFIG.ACTIVITY_LOG_CHANNEL_ID;
+  if (!channelId || !discordClient) return null;
+
+  if (log.guildId) {
+    const guild = discordClient.guilds.cache.get(log.guildId)
+      || await discordClient.guilds.fetch(log.guildId).catch(() => null);
+    const fromGuild = guild?.channels?.cache?.get(channelId);
+    if (fromGuild?.isTextBased()) return fromGuild;
+  }
+
+  for (const guild of discordClient.guilds.cache.values()) {
+    const ch = guild.channels.cache.get(channelId);
+    if (ch?.isTextBased()) return ch;
+  }
+
+  const fetched = await discordClient.channels.fetch(channelId).catch(() => null);
+  return fetched?.isTextBased() ? fetched : null;
+}
+
 export async function sendActivityToDiscord(log) {
   if (!discordClient || SKIP_TYPES.has(log.type)) return;
 
   try {
-    const channelId = CONFIG.ACTIVITY_LOG_CHANNEL_ID;
-    let channel = null;
-
-    for (const guild of discordClient.guilds.cache.values()) {
-      const ch = guild.channels.cache.get(channelId);
-      if (ch) {
-        channel = ch;
-        break;
-      }
-    }
-
+    const channel = await resolveLogChannel(log);
     if (!channel) {
-      channel = await discordClient.channels.fetch(channelId).catch(() => null);
+      console.warn(`Canal de auditoría ${CONFIG.ACTIVITY_LOG_CHANNEL_ID} no encontrado o sin permisos`);
+      return;
     }
-    if (!channel?.isTextBased()) return;
 
     const meta = TYPE_META[log.type] || { emoji: '📋', color: 0x5865F2, label: log.type };
     const sysEmoji = SYSTEM_EMOJI[log.system] || '📋';

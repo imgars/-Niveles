@@ -6,6 +6,12 @@ import { generateRankCard } from './utils/cardGenerator.js';
 import { initializeNightBoost, getNightBoostMultiplier } from './utils/timeBoost.js';
 import { isStaff } from './utils/helpers.js';
 import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, getAllStreaksFromMongo, getUserMissions, updateMissionProgress, getEconomy, addLagcoins, saveGuildSettings, loadAllGuildSettings } from './utils/mongoSync.js';
+import {
+  setupConfessionChannel,
+  handleConfessionReaction,
+  handleConfessionButton,
+  handleConfessionModalSubmit
+} from './utils/confessionService.js';
 import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFromMongo, getLogsFromMongo, getAlerts, exportLogs, getSystemsList, SYSTEMS, setDiscordLogHandler } from './utils/activityLogger.js';
 import { initDiscordLogger, sendActivityToDiscord } from './utils/discordLogger.js';
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
@@ -131,11 +137,14 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessageReactions
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.DirectMessages
   ]
 });
 
 client.commands = new Collection();
+
+setDiscordLogHandler(sendActivityToDiscord);
 
 const VALENTINE_EXCLUSIVE_USERNAMES = new Set([
   'choybix_15_41092',
@@ -1194,6 +1203,8 @@ client.once('ready', async () => {
   initDiscordLogger(client);
   setDiscordLogHandler(sendActivityToDiscord);
   console.log(`📋 Logs de actividad → canal ${CONFIG.ACTIVITY_LOG_CHANNEL_ID}`);
+
+  await setupConfessionChannel(client);
   
   client.user.setActivity('/info para ver mas información sobre el bot', { type: 0 });
   
@@ -1865,9 +1876,23 @@ async function enforceJailRestriction(interaction) {
   return true;
 }
 
+// Confesiones anónimas (botón y modal, también en MD)
+client.on('interactionCreate', async (interaction) => {
+  try {
+    if (interaction.isModalSubmit() && await handleConfessionModalSubmit(interaction, client)) return;
+    if (interaction.isButton() && await handleConfessionButton(interaction)) return;
+  } catch (error) {
+    console.error('Error en confesión:', error);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ content: '❌ Error al procesar la confesión.', flags: 64 }).catch(() => {});
+    }
+  }
+});
+
 // Manejador de botones
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isButton()) return;
+  if (interaction.customId === 'confession_start') return;
   if (await enforceJailRestriction(interaction)) return;
   
   try {
@@ -2567,6 +2592,12 @@ process.on('uncaughtException', (error) => {
 
 client.on('messageReactionAdd', async (reaction, user) => {
   if (user.bot) return;
+
+  try {
+    if (await handleConfessionReaction(reaction, user, client)) return;
+  } catch (error) {
+    console.error('Error en reacción de confesión:', error);
+  }
   
   if (reaction.partial) {
     try {
@@ -3420,9 +3451,10 @@ app.get('/api/admin/logs', verifyAdminToken, async (req, res) => {
     };
     
     let result;
-    if (source === 'mongo') {
+    if (source === 'mongo' || isMongoConnected()) {
       result = await getLogsFromMongo(options);
-    } else {
+    }
+    if (!result?.logs?.length) {
       result = getLogs(options);
     }
     
