@@ -6,7 +6,8 @@ import { generateRankCard } from './utils/cardGenerator.js';
 import { initializeNightBoost, getNightBoostMultiplier } from './utils/timeBoost.js';
 import { isStaff } from './utils/helpers.js';
 import { connectMongoDB, saveUserToMongo, saveBoostsToMongo, isMongoConnected, getAllStreaksFromMongo, getUserMissions, updateMissionProgress, getEconomy, addLagcoins, saveGuildSettings, loadAllGuildSettings } from './utils/mongoSync.js';
-import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFromMongo, getLogsFromMongo, getAlerts, exportLogs, getSystemsList, SYSTEMS } from './utils/activityLogger.js';
+import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFromMongo, getLogsFromMongo, getAlerts, exportLogs, getSystemsList, SYSTEMS, setDiscordLogHandler } from './utils/activityLogger.js';
+import { initDiscordLogger, sendActivityToDiscord } from './utils/discordLogger.js';
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
 import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
 import { REACTION_MESSAGES } from './data/reactionGifs.js';
@@ -943,6 +944,19 @@ app.post('/api/rankcard/purchase', async (req, res) => {
     userData.rankcard_custom = validation.sanitized;
     db.saveUser(guildId, userId, userData);
 
+    logActivity({
+      type: LOG_TYPES.RANKCARD_UNLOCK,
+      userId,
+      username: member.user.username,
+      guildId,
+      guildName: guild.name,
+      amount: -totalCost,
+      balanceAfter: result.lagcoins,
+      importance: 'medium',
+      reason: 'Compró/guardó rankcard personalizada',
+      details: { totalCost, source: 'web_editor' }
+    });
+
     res.json({
       success: true,
       newBalance: result.lagcoins,
@@ -1177,6 +1191,10 @@ if (failedCount > 0) {
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   
+  initDiscordLogger(client);
+  setDiscordLogHandler(sendActivityToDiscord);
+  console.log(`📋 Logs de actividad → canal ${CONFIG.ACTIVITY_LOG_CHANNEL_ID}`);
+  
   client.user.setActivity('/info para ver mas información sobre el bot', { type: 0 });
   
   initializeNightBoost();
@@ -1305,7 +1323,16 @@ client.once('ready', async () => {
             userData.inactivityMessages = 0;
             db.saveUser(guild.id, userData.userId, userData);
 
-            await sendAuditLog(client, { guild, user: member.user, channelId: notificationChannelId }, 'Usuario Inactivo', `El usuario ha sido marcado como inactivo por pasar más de 7 días sin mensajes.`);
+            logActivity({
+              type: LOG_TYPES.INACTIVITY,
+              userId: userData.userId,
+              username: member.user.username,
+              guildId: guild.id,
+              guildName: guild.name,
+              importance: 'high',
+              reason: 'Marcado inactivo por más de 7 días sin mensajes',
+              details: { channelId: notificationChannelId }
+            });
 
             if (!member.roles.cache.has(inactiveRoleId)) {
               await member.roles.add(inactiveRoleId).catch(console.error);
@@ -1374,7 +1401,16 @@ client.on('messageCreate', async (message) => {
     
     db.saveUser(message.guild.id, message.author.id, userData);
 
-    await sendAuditLog(client, message, 'AFK Activado', `**Motivo:** ${reason}`);
+    logActivity({
+      type: LOG_TYPES.AFK_SET,
+      userId: message.author.id,
+      username: message.author.username,
+      guildId: message.guild.id,
+      guildName: message.guild.name,
+      importance: 'low',
+      reason,
+      details: { channelId: message.channelId }
+    });
 
     // Cambiar nombre a [AFK]
     if (message.member && message.member.manageable) {
@@ -1478,7 +1514,15 @@ client.on('messageCreate', async (message) => {
     
     // Evitar respuestas dobles si el usuario también activó un comando
     try {
-      await sendAuditLog(client, message, 'AFK Quitado', `El usuario volvió a estar activo.`);
+      logActivity({
+        type: LOG_TYPES.AFK_REMOVE,
+        userId: message.author.id,
+        username: message.author.username,
+        guildId: message.guild.id,
+        guildName: message.guild.name,
+        importance: 'low',
+        details: { channelId: message.channelId }
+      });
       await message.reply({ content: `👋 ¡Bienvenido de nuevo <@${message.author.id}>! He quitado tu estado AFK.`, ephemeral: false }).then(msg => {
         setTimeout(() => msg.delete().catch(() => {}), 5000);
       });
@@ -1564,6 +1608,17 @@ client.on('messageCreate', async (message) => {
       
       // Recompensa: Boost de niveles temporal (ej. 50% por 24h)
       db.addBoost('user', message.author.id, 150, 24 * 60 * 60 * 1000, 'Recompensa por recuperar actividad');
+
+      logActivity({
+        type: LOG_TYPES.INACTIVITY_RECOVERY,
+        userId: message.author.id,
+        username: message.author.username,
+        guildId: message.guild.id,
+        guildName: message.guild.name,
+        importance: 'medium',
+        reason: 'Completó 50 mensajes y recuperó actividad',
+        details: { boostPercent: 50, boostDurationHours: 24 }
+      });
       
       const recoveryChannel = message.guild.channels.cache.get('1441276918916710501');
       if (recoveryChannel) {
@@ -1608,7 +1663,7 @@ client.on('messageCreate', async (message) => {
   db.setCooldown('xp', message.author.id, xpCooldown);
   
   if (userData.level > oldLevel) {
-    await handleLevelUp(message, member, userData, oldLevel);
+    await handleLevelUp(message, member, userData, oldLevel, xpGain);
   }
   
   // Sistema de Rachas (usando nuevo streakService)
@@ -1647,19 +1702,39 @@ client.on('messageCreate', async (message) => {
       
       // Helper function to send mission completion notification
       const sendMissionNotification = (result) => {
-        if (result && result.completed && missionChannel) {
+        if (result && result.completed) {
           const xpReward = result.reward?.xp || 0;
           const multiplier = result.reward?.multiplier || 0;
           const levelsReward = result.reward?.levels || 0;
+
+          logActivity({
+            type: LOG_TYPES.MISSION_COMPLETE,
+            userId: message.author.id,
+            username: message.author.username,
+            guildId: message.guild.id,
+            guildName: message.guild.name,
+            importance: 'medium',
+            reason: `Completó misión: ${result.title}`,
+            details: {
+              missionTitle: result.title,
+              xpReward,
+              multiplier,
+              levelsReward,
+              channelId: message.channelId
+            },
+            amount: xpReward
+          });
           
-          let rewardText = '';
-          if (xpReward > 0) rewardText += `+${xpReward} XP`;
-          if (multiplier > 0) rewardText += (rewardText ? ', ' : '') + `+${Math.round(multiplier * 100)}% boost`;
-          if (levelsReward > 0) rewardText += (rewardText ? ', ' : '') + `+${levelsReward} nivel${levelsReward > 1 ? 'es' : ''}`;
-          
-          missionChannel.send({
-            content: `🏆 ¡Misión Completada!\n<@${message.author.id}> completó **${result.title}** y ganó ${rewardText}`
-          }).catch(err => console.error('Error sending mission complete:', err));
+          if (missionChannel) {
+            let rewardText = '';
+            if (xpReward > 0) rewardText += `+${xpReward} XP`;
+            if (multiplier > 0) rewardText += (rewardText ? ', ' : '') + `+${Math.round(multiplier * 100)}% boost`;
+            if (levelsReward > 0) rewardText += (rewardText ? ', ' : '') + `+${levelsReward} nivel${levelsReward > 1 ? 'es' : ''}`;
+            
+            missionChannel.send({
+              content: `🏆 ¡Misión Completada!\n<@${message.author.id}> completó **${result.title}** y ganó ${rewardText}`
+            }).catch(err => console.error('Error sending mission complete:', err));
+          }
         }
       };
       
@@ -1706,9 +1781,8 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-async function handleLevelUp(message, member, userData, oldLevel) {
+async function handleLevelUp(message, member, userData, oldLevel, xpGain = 0) {
   const levelUpChannel = message.guild.channels.cache.get(CONFIG.LEVEL_UP_CHANNEL_ID);
-  if (!levelUpChannel) return;
   
   for (let level = oldLevel + 1; level <= userData.level; level++) {
     if (CONFIG.LEVEL_ROLES[level]) {
@@ -1718,12 +1792,44 @@ async function handleLevelUp(message, member, userData, oldLevel) {
         if (role && !member.roles.cache.has(roleId)) {
           await member.roles.add(roleId);
           console.log(`✅ Rol agregado al nivel ${level} para ${member.user.tag}`);
+          logActivity({
+            type: LOG_TYPES.ROLE_GAIN,
+            userId: member.user.id,
+            username: member.user.username,
+            guildId: message.guild.id,
+            guildName: message.guild.name,
+            levelAfter: level,
+            importance: 'medium',
+            reason: `Rol de nivel ${level}`,
+            details: { roleId, roleName: role.name, channelId: message.channelId }
+          });
         }
       } catch (error) {
         console.error(`Error adding role for level ${level}:`, error);
       }
     }
   }
+
+  logActivity({
+    type: LOG_TYPES.LEVEL_UP,
+    userId: member.user.id,
+    username: member.user.username,
+    guildId: message.guild.id,
+    guildName: message.guild.name,
+    levelBefore: oldLevel,
+    levelAfter: userData.level,
+    xpAfter: userData.totalXp,
+    amount: userData.level - oldLevel,
+    importance: 'high',
+    reason: `Subió del nivel ${oldLevel} al ${userData.level}`,
+    details: {
+      xpGainedThisMessage: xpGain,
+      channelId: message.channelId,
+      levelsGained: userData.level - oldLevel
+    }
+  });
+
+  if (!levelUpChannel) return;
   
   try {
     const progress = getXPProgress(userData.totalXp, userData.level);
@@ -2300,8 +2406,19 @@ client.on('interactionCreate', async (interaction) => {
       
       userData.selectedCardTheme = selected;
       db.saveUser(interaction.guildId, interaction.user.id, userData);
-      
+
       const themeName = THEME_NAMES[selected] || selected;
+      logActivity({
+        type: LOG_TYPES.THEME_CHANGE,
+        userId: interaction.user.id,
+        username: interaction.user.username,
+        guildId: interaction.guildId,
+        guildName: interaction.guild?.name,
+        importance: 'low',
+        reason: `Cambió tema de rankcard a ${themeName}`,
+        details: { theme: selected, themeName, channelId: interaction.channelId }
+      });
+      
       return interaction.reply({ content: `✅ Tema actualizado a **${themeName}**. Usa \`/level\` para ver tu nueva tarjeta`, flags: 64 });
     } catch (error) {
       console.error('Error seleccionando tema de tarjeta:', error);
@@ -2369,6 +2486,26 @@ client.on('interactionCreate', async (interaction) => {
         embed.addFields({ name: '⚡ Efecto Activado', value: `${item.description}\nDuración: ${durationMin} minutos` });
       }
 
+      logActivity({
+        type: LOG_TYPES.SHOP_PURCHASE,
+        userId: interaction.user.id,
+        username: interaction.user.username,
+        guildId: interaction.guildId,
+        guildName: interaction.guild?.name,
+        command: 'tienda',
+        amount: -item.price,
+        balanceAfter: result.economy.lagcoins,
+        importance: 'medium',
+        reason: `Compró ${item.name}`,
+        details: {
+          itemId,
+          itemName: item.name,
+          itemCategory: item.category,
+          itemEmoji: item.emoji,
+          channelId: interaction.channelId
+        }
+      });
+
       return interaction.reply({ embeds: [embed] });
     } catch (error) {
       console.error('Error comprando item:', error);
@@ -2388,74 +2525,6 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-// Auditoría
-const AUDIT_CHANNEL_ID = '1438720716378996757';
-
-async function sendEconomyLog(client, interaction, type, amount, details = '') {
-  try {
-    const guild = interaction.guild;
-    if (!guild) return;
-    
-    const channel = guild.channels.cache.get(AUDIT_CHANNEL_ID);
-    if (!channel) return;
-
-    const user = interaction.user || interaction.author;
-    const isGain = amount >= 0;
-    const color = isGain ? 0x00FF00 : 0xFF0000;
-    const emoji = isGain ? '📈' : '📉';
-
-    const embed = new EmbedBuilder()
-      .setColor(color)
-      .setTitle(`${emoji} TRANSACCIÓN: ${type}`)
-      .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL() })
-      .addFields(
-        { name: 'Usuario', value: `<@${user.id}>`, inline: true },
-        { name: 'Cantidad', value: `**${amount.toLocaleString()} Lagcoins**`, inline: true },
-        { name: 'Canal', value: `<#${interaction.channelId || interaction.channel.id}>`, inline: true }
-      )
-      .setTimestamp();
-
-    if (details) {
-      embed.addFields({ name: 'Descripción', value: details });
-    }
-
-    await channel.send({ embeds: [embed] });
-  } catch (error) {
-    console.error('Error enviando log de economía:', error);
-  }
-}
-
-async function sendAuditLog(client, interaction, actionType, details = '') {
-  try {
-    const guild = interaction.guild;
-    if (!guild) return;
-    
-    const channel = guild.channels.cache.get(AUDIT_CHANNEL_ID);
-    if (!channel) return;
-
-    const user = interaction.user || interaction.author;
-    const embed = new EmbedBuilder()
-      .setColor(0x5865F2)
-      .setTitle(`LOG: ${actionType}`)
-      .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL() })
-      .addFields(
-        { name: 'Usuario', value: `<@${user.id}> (${user.id})`, inline: true },
-        { name: 'Canal', value: `<#${interaction.channelId || interaction.channel.id}>`, inline: true }
-      )
-      .setTimestamp();
-
-    if (details) {
-      embed.addFields({ name: 'Detalles', value: details });
-    }
-
-    await channel.send({ embeds: [embed] });
-  } catch (error) {
-    console.error('Error enviando log de auditoría:', error);
-  }
-}
-
-export { sendAuditLog, sendEconomyLog };
-
 // Manejador de comandos
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -2467,32 +2536,6 @@ client.on('interactionCreate', async (interaction) => {
   if (!db.isStaffCommandEnabled(interaction.commandName)) {
     return interaction.reply({ content: '❌ Este comando esta desactivado por un administrador desde el panel.', flags: 64 });
   }
-
-  // Log de auditoría para comandos slash (en segundo plano para no bloquear el comando)
-  const options = interaction.options.data.map(opt => `${opt.name}: ${opt.value}`).join(', ') || 'Sin opciones';
-  sendAuditLog(client, interaction, 'Comando Slash Usado', `**Comando:** /${interaction.commandName}\n**Opciones:** ${options}`).catch(console.error);
-
-  const commandOptions = {};
-  interaction.options.data.forEach(opt => {
-    if (opt.type === 1) {
-      commandOptions.subcommand = opt.name;
-      opt.options?.forEach(subOpt => { commandOptions[subOpt.name] = subOpt.value; });
-    } else {
-      commandOptions[opt.name] = opt.value;
-    }
-  });
-
-  logActivity({
-    type: LOG_TYPES.COMMAND_USE,
-    userId: interaction.user.id,
-    username: interaction.user.username,
-    guildId: interaction.guildId,
-    guildName: interaction.guild?.name,
-    command: interaction.commandName,
-    commandOptions,
-    importance: 'low',
-    result: 'success'
-  });
 
   try {
     await command.execute(interaction);
@@ -2571,7 +2614,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
   db.setCooldown('xp', user.id, CONFIG.XP_COOLDOWN);
   
   if (userData.level > oldLevel) {
-    await handleLevelUp(message, member, userData, oldLevel);
+    await handleLevelUp(message, member, userData, oldLevel, xpGain);
   }
 });
 
@@ -2816,7 +2859,14 @@ app.post('/api/admin/auth', express.json(), (req, res) => {
   sessionTokens.set(token, { expiry, username });
 
   db.addLoginRecord(username, ADMIN_ROLES[username] || 'Admin', req.ip || req.connection?.remoteAddress);
-  db.logAdminAction(username, 'login', { role: ADMIN_ROLES[username] || 'Admin' });
+  logActivity({
+    type: LOG_TYPES.ADMIN_ACTION,
+    userId: STAFF_DISCORD_IDS[username] || null,
+    username,
+    importance: 'medium',
+    reason: 'Login en panel admin',
+    details: { role: ADMIN_ROLES[username] || 'Admin', ip: req.ip || 'unknown' }
+  });
   
   res.json({
     token,
@@ -3330,12 +3380,12 @@ app.post('/api/admin/config', verifyAdminToken, express.json(), (req, res) => {
     }
     
     if (updated) {
-      logActivity(LOG_TYPES.CONFIG_CHANGE, {
-        category,
-        field,
-        oldValue,
-        newValue: value,
-        changedBy: req.adminUsername
+      logActivity({
+        type: LOG_TYPES.CONFIG_CHANGE,
+        username: req.adminUsername || 'Admin',
+        importance: 'high',
+        reason: `Config cambiada: ${category}.${field}`,
+        details: { category, field, oldValue, newValue: value, changedBy: req.adminUsername }
       });
       
       res.json({ 
@@ -3626,8 +3676,6 @@ app.post('/api/admin/user/:guildId/:userId/modify', verifyAdminToken, express.js
         await saveUserToMongo(guildId, userId, user);
       }
 
-      db.logAdminAction(adminName, `modify_xp_${action}`, { userId, oldValue, newValue, reason });
-      
       logActivity({
         type: newValue > oldValue ? LOG_TYPES.XP_GAIN : LOG_TYPES.XP_LOSS,
         userId,
@@ -3636,7 +3684,9 @@ app.post('/api/admin/user/:guildId/:userId/modify', verifyAdminToken, express.js
         guildName: guild?.name,
         amount: newValue - oldValue,
         reason: `Admin ${adminName}: ${action} XP - ${reason || 'Sin motivo'}`,
-        details: { action, oldValue, newValue, admin: adminName }
+        details: { action, oldValue, newValue, admin: adminName },
+        importance: 'high',
+        system: 'admin'
       });
       
       result = { success: true, field: 'totalXp', oldValue, newValue, newLevel: user.level };
@@ -3671,8 +3721,6 @@ app.post('/api/admin/user/:guildId/:userId/modify', verifyAdminToken, express.js
         await saveUserToMongo(user.guildId, user.userId, user);
       }
 
-      db.logAdminAction(adminName, `modify_level_${action}`, { userId, oldLevel, newLevel, reason });
-      
       logActivity({
         type: newLevel > oldLevel ? LOG_TYPES.LEVEL_UP : LOG_TYPES.LEVEL_DOWN,
         userId,
@@ -3681,7 +3729,9 @@ app.post('/api/admin/user/:guildId/:userId/modify', verifyAdminToken, express.js
         guildName: guild?.name,
         amount: newLevel - oldLevel,
         reason: `Admin ${adminName}: ${action} nivel - ${reason || 'Sin motivo'}`,
-        details: { action, oldLevel, newLevel, admin: adminName }
+        details: { action, oldLevel, newLevel, admin: adminName },
+        importance: 'high',
+        system: 'admin'
       });
       
       result = { success: true, field: 'level', oldValue: oldLevel, newValue: newLevel };
@@ -3748,24 +3798,6 @@ app.get('/api/admin/analytics/commands', verifyAdminToken, (req, res) => {
     res.json({ commands: stats });
   } catch (error) {
     console.error('Error en analytics commands:', error);
-    res.status(500).json({ message: 'Error del servidor' });
-  }
-});
-
-// ===== AUDIT LOG =====
-app.get('/api/admin/audit', verifyAdminToken, (req, res) => {
-  try {
-    const { page = 1, limit = 50, action, adminName, since } = req.query;
-    const result = db.getAuditLog({
-      page: parseInt(page),
-      limit: parseInt(limit),
-      action: action || null,
-      adminName: adminName || null,
-      since: since ? parseInt(since) : null
-    });
-    res.json(result);
-  } catch (error) {
-    console.error('Error en audit log:', error);
     res.status(500).json({ message: 'Error del servidor' });
   }
 });
@@ -3837,11 +3869,13 @@ app.post('/api/admin/users/bulk', verifyAdminToken, express.json(), async (req, 
       }
     }
 
-    db.logAdminAction(adminName, `bulk_${action}`, {
-      count: successCount,
-      value,
-      reason: reason || 'Sin motivo',
-      errors: errors.length
+    logActivity({
+      type: LOG_TYPES.ADMIN_ACTION,
+      username: adminName,
+      importance: 'high',
+      system: 'admin',
+      reason: `Acción masiva: ${action}`,
+      details: { count: successCount, value, reason: reason || 'Sin motivo', errors: errors.length }
     });
 
     res.json({ success: true, successCount, errors, total: userIds.length });
@@ -3945,11 +3979,29 @@ app.post('/api/admin/user/:guildId/:userId/xpban', verifyAdminToken, express.jso
     if (ban) {
       const durationMs = durationMinutes > 0 ? parseInt(durationMinutes) * 60000 : null;
       db.banUser(userId, durationMs);
-      db.logAdminAction(adminName, 'xpban_user', { userId, guildId, durationMinutes, reason });
+      logActivity({
+        type: LOG_TYPES.ADMIN_ACTION,
+        userId,
+        username: adminName,
+        guildId,
+        importance: 'high',
+        system: 'admin',
+        reason: 'XP ban aplicado',
+        details: { durationMinutes, reason }
+      });
       res.json({ success: true, banned: true });
     } else {
       db.unbanUser(userId);
-      db.logAdminAction(adminName, 'xpunban_user', { userId, guildId, reason });
+      logActivity({
+        type: LOG_TYPES.ADMIN_ACTION,
+        userId,
+        username: adminName,
+        guildId,
+        importance: 'high',
+        system: 'admin',
+        reason: 'XP ban removido',
+        details: { reason }
+      });
       res.json({ success: true, banned: false });
     }
   } catch (error) {
@@ -4016,7 +4068,15 @@ app.post('/api/admin/user/:guildId/:userId/reset-cooldowns', verifyAdminToken, e
     const adminName = session?.username || 'Admin';
 
     const reset = db.resetUserCooldowns(userId);
-    db.logAdminAction(adminName, 'reset_cooldowns', { userId });
+    logActivity({
+      type: LOG_TYPES.ADMIN_ACTION,
+      userId,
+      username: adminName,
+      importance: 'medium',
+      system: 'admin',
+      reason: 'Cooldowns reseteados',
+      details: { reset }
+    });
     res.json({ success: true, reset });
   } catch (error) {
     res.status(500).json({ message: 'Error del servidor' });
@@ -4058,13 +4118,14 @@ app.post('/api/admin/systems/advanced', verifyAdminToken, express.json(), (req, 
       adminName
     });
 
-    db.logAdminAction(adminName, `system_${enabled !== undefined ? (enabled ? 'enable' : 'disable') : 'config'}`, {
-      system,
+    logActivity({
+      type: LOG_TYPES.CONFIG_CHANGE,
+      username: adminName,
       guildId: resolvedGuildId,
-      enabled,
-      reason,
-      scheduledReactivation,
-      channelOverride
+      importance: 'high',
+      system: 'admin',
+      reason: `Sistema ${system}: ${enabled !== undefined ? (enabled ? 'activado' : 'desactivado') : 'configurado'}`,
+      details: { system, enabled, reason, scheduledReactivation, channelOverride }
     });
 
     const updated = db.getSystemsAdvanced(resolvedGuildId);
@@ -4093,7 +4154,14 @@ app.post('/api/admin/staff-commands/toggle', verifyAdminToken, express.json(), (
 
     const adminName = req.adminUser?.username || 'Admin';
     db.setStaffCommand(command, { enabled, adminName });
-    db.logAdminAction(adminName, enabled ? 'staff_command_enabled' : 'staff_command_disabled', { command });
+    logActivity({
+      type: LOG_TYPES.ADMIN_ACTION,
+      username: adminName,
+      importance: 'medium',
+      system: 'admin',
+      reason: `Comando staff ${enabled ? 'activado' : 'desactivado'}: /${command}`,
+      details: { command, enabled }
+    });
 
     const commands = db.getStaffCommands();
     res.json({ success: true, commands });
@@ -4110,7 +4178,14 @@ app.put('/api/admin/staff-commands/update', verifyAdminToken, express.json(), (r
 
     const adminName = req.adminUser?.username || 'Admin';
     db.setStaffCommand(command, { description, adminName });
-    db.logAdminAction(adminName, 'staff_command_updated', { command, description });
+    logActivity({
+      type: LOG_TYPES.ADMIN_ACTION,
+      username: adminName,
+      importance: 'low',
+      system: 'admin',
+      reason: `Comando staff actualizado: /${command}`,
+      details: { command, description }
+    });
 
     const commands = db.getStaffCommands();
     res.json({ success: true, commands });
@@ -4239,7 +4314,14 @@ app.post('/api/admin/boosts/create', verifyAdminToken, express.json(), (req, res
       description || `Boost creado por ${adminName}`
     );
 
-    db.logAdminAction(adminName, 'create_boost', { type, target, multiplier, durationHours, description });
+    logActivity({
+      type: LOG_TYPES.BOOST_GAIN,
+      username: adminName,
+      importance: 'medium',
+      system: 'admin',
+      reason: `Boost creado por admin`,
+      details: { type, target, multiplier, durationHours, description, boostId: boost?.id }
+    });
 
     res.json({ success: true, boost });
   } catch (error) {
@@ -4257,7 +4339,14 @@ app.delete('/api/admin/boosts/:id', verifyAdminToken, (req, res) => {
 
     const removed = db.removeBoostById(req.params.id);
     if (removed) {
-      db.logAdminAction(adminName, 'delete_boost', { boostId: req.params.id });
+      logActivity({
+        type: LOG_TYPES.ADMIN_ACTION,
+        username: adminName,
+        importance: 'medium',
+        system: 'admin',
+        reason: 'Boost eliminado',
+        details: { boostId: req.params.id }
+      });
     }
     res.json({ success: removed });
   } catch (error) {

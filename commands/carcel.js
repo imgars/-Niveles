@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getUserJailStatus, payUserJailBail } from '../utils/economyDB.js';
+import { logFromInteraction, LOG_TYPES } from '../utils/activityLogger.js';
 
 function formatRemaining(ms) {
   const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
@@ -59,6 +60,14 @@ export default {
       if (result.error) {
         return interaction.reply({ content: '❌ No se pudo procesar el pago de fianza.', flags: 64 });
       }
+      logFromInteraction(interaction, {
+        type: LOG_TYPES.JAIL,
+        amount: -result.paid,
+        balanceAfter: result.newBalance,
+        importance: 'medium',
+        reason: result.released ? 'Pagó fianza y salió de la cárcel' : 'Pagó fianza parcial',
+        details: { subcommand: 'fianza', paid: result.paid, remainingBail: result.remainingBail, released: result.released }
+      });
       return interaction.reply({
         content: result.released
           ? `✅ Pagaste ${result.paid} Lagcoins y saliste de la cárcel.`
@@ -77,6 +86,14 @@ export default {
     if (instant.error) {
       return interaction.reply({ content: '❌ No se pudo procesar la salida instantánea.', flags: 64 });
     }
+    logFromInteraction(interaction, {
+      type: LOG_TYPES.JAIL,
+      amount: -instant.paid,
+      balanceAfter: instant.newBalance,
+      importance: 'medium',
+      reason: 'Salió de la cárcel pagando fianza completa',
+      details: { subcommand: 'salir', paid: instant.paid }
+    });
     return interaction.reply({ content: `✅ Pagaste ${instant.paid} Lagcoins y quedaste libre.`, flags: 64 });
   }
 };

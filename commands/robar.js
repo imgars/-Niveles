@@ -38,12 +38,6 @@ export default {
       }
 
       if (result.success) {
-        // Log de economía (Ganancia)
-        try {
-          const { sendEconomyLog } = await import('../index.js');
-          await sendEconomyLog(interaction.client, interaction, 'Robo Exitoso', result.stolen, `Le robó a <@${victim.id}>\nVíctima: ${victim.tag}`);
-        } catch (e) {}
-
         logActivity({
           type: LOG_TYPES.THEFT_SUCCESS,
           userId: interaction.user.id,
@@ -56,7 +50,20 @@ export default {
           balanceAfter: result.newBalance,
           importance: result.stolen > 5000 ? 'high' : 'medium',
           result: 'success',
-          details: { victima: victim.username, robado: result.stolen }
+          details: { victima: victim.username, victimaId: victim.id, robado: result.stolen, channelId: interaction.channelId }
+        });
+
+        logActivity({
+          type: LOG_TYPES.THEFT_VICTIM,
+          userId: victim.id,
+          username: victim.username,
+          guildId: interaction.guildId,
+          guildName: interaction.guild?.name,
+          command: 'robar',
+          amount: -result.stolen,
+          importance: 'medium',
+          result: 'failure',
+          details: { ladron: interaction.user.username, ladronId: interaction.user.id, robado: result.stolen }
         });
 
         const embed = new EmbedBuilder()
@@ -77,12 +84,6 @@ export default {
 
         return interaction.reply({ embeds: [embed] });
       } else {
-        // Log de economía (Pérdida por multa)
-        try {
-          const { sendEconomyLog } = await import('../index.js');
-          await sendEconomyLog(interaction.client, interaction, 'Robo Fallido (Multa)', -result.fine, `Intentó robar a <@${victim.id}> y fue atrapado.`);
-        } catch (e) {}
-
         logActivity({
           type: LOG_TYPES.THEFT_FAIL,
           userId: interaction.user.id,

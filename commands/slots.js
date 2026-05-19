@@ -51,14 +51,6 @@ export default {
         description = 'Mejor suerte la próxima vez';
       }
 
-      // Log de economía
-      try {
-        const { sendEconomyLog } = await import('../index.js');
-        const amount = result.won ? result.winnings : -bet;
-        const logType = result.jackpot ? 'Slots (JACKPOT)' : (result.won ? 'Slots (Ganancia)' : 'Slots (Pérdida)');
-        await sendEconomyLog(interaction.client, interaction, logType, amount, `Apuesta: ${bet}\nMultiplicador: x${result.multiplier}`);
-      } catch (e) {}
-
       logActivity({
         type: result.won ? LOG_TYPES.CASINO_WIN : LOG_TYPES.CASINO_LOSS,
         userId: interaction.user.id,

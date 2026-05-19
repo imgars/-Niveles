@@ -3,6 +3,7 @@ import db from '../utils/database.js';
 import { addLevels, removeLevels, calculateLevel } from '../utils/xpSystem.js';
 import { formatDuration } from '../utils/helpers.js';
 import { addUserLagcoins } from '../utils/economyDB.js';
+import { logFromInteraction, LOG_TYPES } from '../utils/activityLogger.js';
 
 const triviaQuestions = [
   { question: '¿Cuál es la capital de Venezuela?', options: ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto'], correct: 0 },
@@ -355,6 +356,14 @@ async function playTrivia(interaction) {
         if (i.customId === 'trivia_reward_boost') {
           db.addBoost('user', interaction.user.id, 120, 12 * 60 * 60 * 1000, 'Boost de trivia 20% por 12h');
           await addUserLagcoins(interaction.guild.id, interaction.user.id, 300, 'trivia_boost');
+          logFromInteraction(interaction, {
+            type: LOG_TYPES.MINIGAME_WIN,
+            command: 'minigame',
+            amount: 300,
+            importance: 'medium',
+            reason: 'Trivia perfecta — recompensa boost + lagcoins',
+            details: { minigame: 'trivia', reward: 'boost_20%_12h' }
+          });
           await i.update({
             embeds: [{
               color: 0x43B581,
@@ -369,6 +378,15 @@ async function playTrivia(interaction) {
           userData.level = calculateLevel(userData.totalXp);
           db.saveUser(interaction.guild.id, interaction.user.id, userData);
           await addUserLagcoins(interaction.guild.id, interaction.user.id, 400, 'trivia_levels');
+          logFromInteraction(interaction, {
+            type: LOG_TYPES.MINIGAME_WIN,
+            command: 'minigame',
+            amount: 400,
+            levelAfter: userData.level,
+            importance: 'medium',
+            reason: 'Trivia perfecta — recompensa niveles + lagcoins',
+            details: { minigame: 'trivia', reward: '1.5_levels' }
+          });
           
           await i.update({
             embeds: [{
@@ -575,6 +593,15 @@ async function startRPSGame(interaction, player1, player2, hasReward) {
       await addUserLagcoins(interaction.guild.id, winner.id, 500, 'rps_win');
       db.setCooldown('minigame_rps', player1.id, 12 * 60 * 60 * 1000);
       db.setCooldown('minigame_rps', player2.id, 12 * 60 * 60 * 1000);
+      logFromInteraction(interaction, {
+        type: LOG_TYPES.MINIGAME_WIN,
+        userId: winner.id,
+        command: 'minigame',
+        amount: 500,
+        importance: 'medium',
+        reason: 'Victoria en Piedra/Papel/Tijeras',
+        details: { minigame: 'rps', winnerId: winner.id, loserId: winner.id === player1.id ? player2.id : player1.id, score: `${p1Wins}-${p2Wins}` }
+      });
     }
     
     await gameMessage.edit({
@@ -757,6 +784,24 @@ async function startRouletteGame(interaction, player1, player2, hasReward) {
       
       await addUserLagcoins(interaction.guild.id, winner.id, 800, 'roulette_win');
       await addUserLagcoins(interaction.guild.id, loser.id, -lagcoinPenalty, 'roulette_loss');
+      logFromInteraction(interaction, {
+        type: LOG_TYPES.MINIGAME_WIN,
+        userId: winner.id,
+        command: 'minigame',
+        amount: 800,
+        importance: 'high',
+        reason: 'Victoria en Ruleta Rusa',
+        details: { minigame: 'roulette', loserId: loser.id, wasTimeout }
+      });
+      logFromInteraction(interaction, {
+        type: LOG_TYPES.MINIGAME_LOSS,
+        userId: loser.id,
+        command: 'minigame',
+        amount: -lagcoinPenalty,
+        importance: 'medium',
+        reason: 'Derrota en Ruleta Rusa',
+        details: { minigame: 'roulette', winnerId: winner.id, levelPenalty, wasTimeout }
+      });
       
       db.setCooldown('minigame_roulette', player1.id, 24 * 60 * 60 * 1000);
       db.setCooldown('minigame_roulette', player2.id, 24 * 60 * 60 * 1000);
@@ -902,6 +947,14 @@ async function playSoloHangman(interaction) {
     if (roundsWon === 3) {
       db.addBoost('user', interaction.user.id, 125, 24 * 60 * 60 * 1000, 'Victoria Hangman +25% por 24h');
       await addUserLagcoins(interaction.guild.id, interaction.user.id, 600, 'hangman_perfect');
+      logFromInteraction(interaction, {
+        type: LOG_TYPES.MINIGAME_WIN,
+        command: 'minigame',
+        amount: 600,
+        importance: 'medium',
+        reason: 'Ahorcado perfecto 3/3',
+        details: { minigame: 'hangman', roundsWon }
+      });
       reward = '🎉 ¡Ganaste 3/3 rondas! **+25% boost por 24 horas**\n💰 +600 Lagcoins';
       rewardGiven = true;
     } else {

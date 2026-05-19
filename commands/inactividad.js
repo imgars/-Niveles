@@ -66,13 +66,18 @@ export default {
 
       await interaction.reply({ embeds: [embed] });
       
-      // Intentar log de auditoría
-      try {
-        const { sendAuditLog } = await import('../index.js');
-        if (typeof sendAuditLog === 'function') {
-           await sendAuditLog(interaction.client, interaction, 'Inactividad Manual (SET)', `Staff: <@${interaction.user.id}>\nUsuario: <@${targetUser.id}>`);
-        }
-      } catch (e) {}
+      const { logActivity, LOG_TYPES } = await import('../utils/activityLogger.js');
+      logActivity({
+        type: LOG_TYPES.INACTIVITY,
+        userId: targetUser.id,
+        username: targetUser.username,
+        guildId: interaction.guild.id,
+        guildName: interaction.guild.name,
+        command: 'inactividad',
+        importance: 'high',
+        reason: 'Marcado inactivo manualmente por staff',
+        details: { staffId: interaction.user.id, staffName: interaction.user.username, channelId: interaction.channelId }
+      });
 
     } else if (subcommand === 'remove') {
       if (!userData.isInactive) {
@@ -104,13 +109,18 @@ export default {
 
       await interaction.reply({ embeds: [embed] });
 
-      // Intentar log de auditoría
-      try {
-        const { sendAuditLog } = await import('../index.js');
-        if (typeof sendAuditLog === 'function') {
-           await sendAuditLog(interaction.client, interaction, 'Inactividad Manual (REMOVE)', `Staff: <@${interaction.user.id}>\nUsuario: <@${targetUser.id}>`);
-        }
-      } catch (e) {}
+      const { logActivity, LOG_TYPES } = await import('../utils/activityLogger.js');
+      logActivity({
+        type: LOG_TYPES.INACTIVITY_RECOVERY,
+        userId: targetUser.id,
+        username: targetUser.username,
+        guildId: interaction.guild.id,
+        guildName: interaction.guild.name,
+        command: 'inactividad',
+        importance: 'medium',
+        reason: 'Inactividad quitada manualmente por staff',
+        details: { staffId: interaction.user.id, staffName: interaction.user.username, channelId: interaction.channelId }
+      });
     }
   },
 };

@@ -39,7 +39,6 @@
                 <div class="nav-group-label">Administracion</div>
                 <a href="#usuarios" class="nav-link" data-page="usuarios"><span>👥</span> Gestion Usuarios</a>
                 <a href="#estadisticas" class="nav-link" data-page="estadisticas"><span>📉</span> Estadisticas</a>
-                <a href="#audit-log" class="nav-link" data-page="audit-log"><span>📋</span> Audit Log</a>
                 <a href="#logs" class="nav-link" data-page="logs"><span>🗒️</span> Logs en Vivo</a>
                 <a href="#configuracion" class="nav-link" data-page="configuracion"><span>⚙️</span> Configuracion</a>
                 <a href="#personalizacion" class="nav-link" data-page="personalizacion"><span>🎨</span> Personalizar</a>
@@ -811,39 +810,6 @@
                     </div>
                 </div>
 
-                <!-- ===== AUDIT LOG ===== -->
-                <div id="audit-log-page" class="page">
-                    <div class="section-content">
-                        <div class="page-header-actions">
-                            <h3>Audit Log - Acciones de Administradores</h3>
-                            <div class="export-btns">
-                                <button class="btn-secondary" onclick="exportAuditLog()">Exportar CSV</button>
-                                <button class="btn-secondary" onclick="loadAuditLog()">Actualizar</button>
-                            </div>
-                        </div>
-                        <div class="audit-filters">
-                            <input type="text" id="auditFilterAction" placeholder="Filtrar por accion..." class="filter-input">
-                            <input type="text" id="auditFilterAdmin" placeholder="Filtrar por admin..." class="filter-input">
-                            <button class="btn-primary" onclick="loadAuditLog(1)">Buscar</button>
-                        </div>
-                        <div class="audit-table-wrapper">
-                            <table class="audit-table" id="auditTable">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Admin</th>
-                                        <th>Accion</th>
-                                        <th>Detalles</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="auditTableBody">
-                                    <tr><td colspan="4" class="loading-text">Cargando...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="pagination" id="auditPagination"></div>
-                    </div>
-                </div>
 
                 <!-- ===== LOGS ===== -->
                 <div id="logs-page" class="page">

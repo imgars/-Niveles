@@ -91,7 +91,6 @@ const PAGE_TITLES = {
     'sistemas-avanzados': 'Control Avanzado de Sistemas',
     'staff-commands': 'Comandos de Staff',
     estadisticas: 'Estadisticas',
-    'audit-log': 'Audit Log',
     logs: 'Logs en Tiempo Real',
     usuarios: 'Gestion de Usuarios',
     configuracion: 'Configuracion',
@@ -723,76 +722,6 @@ async function exportData(type, format) {
     } catch (error) { showNotification('Error exportando', 'error'); }
 }
 
-// ===== AUDIT LOG =====
-let currentAuditPage = 1;
-
-async function loadAuditLog(page) {
-    if (page) currentAuditPage = page;
-    const action = document.getElementById('auditFilterAction')?.value || '';
-    const adminName = document.getElementById('auditFilterAdmin')?.value || '';
-    try {
-        const data = await fetchAPI(`/api/admin/audit?page=${currentAuditPage}&limit=50&action=${action}&adminName=${adminName}`);
-        const tbody = document.getElementById('auditTableBody');
-        if (!data.logs?.length) {
-            tbody.innerHTML = '<tr><td colspan="4" class="empty-text">No hay registros</td></tr>';
-        } else {
-            tbody.innerHTML = data.logs.map(log => `
-                <tr class="audit-row audit-action-${log.action.split('_')[0]}">
-                    <td>${new Date(log.timestamp).toLocaleString('es-ES')}</td>
-                    <td><span class="admin-name-badge">${escHtml(log.adminName || 'Sistema')}</span></td>
-                    <td><span class="audit-action-badge">${log.action}</span></td>
-                    <td class="audit-details">${formatAuditDetails(log.details)}</td>
-                </tr>`).join('');
-        }
-        renderAuditPagination(data);
-    } catch (error) { console.error('Error audit:', error); }
-}
-
-function formatAuditDetails(details) {
-    if (!details) return '-';
-    const parts = [];
-    for (const [k, v] of Object.entries(details)) {
-        if (v !== null && v !== undefined && v !== '') parts.push(`<span class="detail-kv"><b>${k}:</b> ${escHtml(String(v))}</span>`);
-    }
-    return parts.join(' ') || '-';
-}
-
-function renderAuditPagination(data) {
-    const div = document.getElementById('auditPagination');
-    if (!div || data.totalPages <= 1) { if (div) div.innerHTML = ''; return; }
-    div.innerHTML = `
-        <button ${data.page <= 1 ? 'disabled' : ''} onclick="loadAuditLog(${data.page - 1})">←</button>
-        <span>Pagina ${data.page} de ${data.totalPages} (${data.total} registros)</span>
-        <button ${data.page >= data.totalPages ? 'disabled' : ''} onclick="loadAuditLog(${data.page + 1})">→</button>`;
-}
-
-async function exportAuditLog() {
-    try {
-        const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/audit?limit=2000', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await response.json();
-        const logs = data.logs || [];
-        if (!logs.length) { showNotification('No hay registros para exportar', 'error'); return; }
-        const headers = ['timestamp', 'adminName', 'action', 'details'];
-        const csvRows = [headers.join(',')];
-        for (const log of logs) {
-            csvRows.push([
-                new Date(log.timestamp).toISOString(),
-                log.adminName || '',
-                log.action,
-                JSON.stringify(log.details || {}).replace(/"/g, '""')
-            ].map(v => `"${v}"`).join(','));
-        }
-        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `audit_log_${Date.now()}.csv`;
-        document.body.appendChild(a); a.click();
-        document.body.removeChild(a); URL.revokeObjectURL(url);
-    } catch (error) { showNotification('Error exportando audit log', 'error'); }
-}
 
 // ===== LOGS =====
 let currentLogsPage = 1;
@@ -1503,7 +1432,6 @@ function loadPageData(page) {
         case 'sistemas-avanzados': loadAdvancedSystems(); break;
         case 'staff-commands': loadStaffCommands(); break;
         case 'estadisticas': loadStatisticsData(); break;
-        case 'audit-log': loadAuditLog(1); break;
         case 'logs': loadLogsData(1); break;
         case 'usuarios': initUserManagement(); break;
         case 'configuracion': loadConfigData(); break;
@@ -1557,7 +1485,10 @@ function getLogIcon(type) {
         bank_withdraw: '💵', shop_purchase: '🛒', powerup_activate: '⚡', admin_action: '👑',
         minigame_win: '🏆', minigame_loss: '❌', gift_sent: '🎁', gift_received: '📨',
         marriage: '💍', divorce: '💔', nationality_change: '🌍', bank_heist: '🏴‍☠️',
-        trade: '🤝', streak_gain: '🔥', config_change: '⚙️'
+        trade: '🤝', streak_gain: '🔥', streak_loss: '💔', config_change: '⚙️',
+        afk_set: '💤', afk_remove: '👋', inactivity: '⚠️', inactivity_recovery: '🎉',
+        jail: '🚔', boost_gain: '🚀', theme_change: '🎴', rankcard_unlock: '🎨',
+        role_gain: '🎖️'
     };
     return icons[type] || '📋';
 }
@@ -1576,7 +1507,11 @@ function getLogDescription(log) {
         gift_sent: 'envio regalo', gift_received: 'recibio regalo',
         marriage: 'matrimonio', divorce: 'divorcio', nationality_change: 'cambio nacionalidad',
         bank_heist: 'atraco al banco', trade: 'intercambio', streak_gain: 'racha',
-        config_change: 'cambio configuracion'
+        streak_loss: 'perdio racha', config_change: 'cambio configuracion',
+        afk_set: 'activo AFK', afk_remove: 'quito AFK', inactivity: 'marcado inactivo',
+        inactivity_recovery: 'recupero actividad', jail: 'accion carcel', boost_gain: 'obtuvo boost',
+        theme_change: 'cambio tema rankcard', rankcard_unlock: 'rankcard personalizada',
+        role_gain: 'rol de nivel'
     };
     return log.reason || descs[log.type] || log.type;
 }

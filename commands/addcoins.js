@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { staffAddCoins } from '../utils/economyDB.js';
 import { isStaff } from '../utils/helpers.js';
+import { logFromInteraction, LOG_TYPES } from '../utils/activityLogger.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -40,6 +41,18 @@ export default {
       if (!result) {
         return interaction.editReply({ content: '❌ Error al añadir Lagcoins' });
       }
+
+      logFromInteraction(interaction, {
+        type: LOG_TYPES.ADMIN_ACTION,
+        userId: targetUser.id,
+        username: targetUser.username,
+        amount,
+        balanceAfter: result.lagcoins,
+        importance: 'high',
+        system: 'admin',
+        reason: `Staff añadió lagcoins: ${reason}`,
+        details: { staffId: interaction.user.id, staffName: interaction.user.username, targetId: targetUser.id }
+      });
 
       const embed = new EmbedBuilder()
         .setColor('#00FF00')

@@ -7,7 +7,6 @@ const BOOSTS_FILE = path.join(DATA_DIR, 'boosts.json');
 const COOLDOWNS_FILE = path.join(DATA_DIR, 'cooldowns.json');
 const BANS_FILE = path.join(DATA_DIR, 'bans.json');
 const SYSTEMS_FILE = path.join(DATA_DIR, 'systems.json');
-const AUDIT_FILE = path.join(DATA_DIR, 'audit.json');
 const ALERTS_FILE = path.join(DATA_DIR, 'alerts.json');
 const SYSTEMS_ADVANCED_FILE = path.join(DATA_DIR, 'systems_advanced.json');
 const STAFF_COMMANDS_FILE = path.join(DATA_DIR, 'staff_commands.json');
@@ -26,7 +25,6 @@ class Database {
     this.cooldowns = this.loadFile(COOLDOWNS_FILE, { xp: {}, minigames: {} });
     this.bans = this.loadFile(BANS_FILE, { users: {}, channels: [] });
     this.systems = this.loadFile(SYSTEMS_FILE, {});
-    this.audit = this.loadFile(AUDIT_FILE, []);
     this.alerts = this.loadFile(ALERTS_FILE, []);
     this.systemsAdvanced = this.loadFile(SYSTEMS_ADVANCED_FILE, {});
     this.staffCommands = this.loadFile(STAFF_COMMANDS_FILE, {});
@@ -768,38 +766,6 @@ class Database {
 
   getLoginHistory(limit = 20) {
     return this.loginHistory.slice(0, limit);
-  }
-
-  logAdminAction(adminName, action, details = {}) {
-    const entry = {
-      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
-      adminName,
-      action,
-      details
-    };
-
-    this.audit.unshift(entry);
-    if (this.audit.length > 2000) this.audit = this.audit.slice(0, 2000);
-    this.saveFile(AUDIT_FILE, this.audit);
-    return entry;
-  }
-
-  getAuditLog({ page = 1, limit = 50, action = null, adminName = null, since = null } = {}) {
-    let logs = [...this.audit];
-
-    if (action) logs = logs.filter(l => l.action === action || l.action.includes(action));
-    if (adminName) logs = logs.filter(l => l.adminName?.toLowerCase().includes(adminName.toLowerCase()));
-    if (since) logs = logs.filter(l => l.timestamp >= since);
-
-    const total = logs.length;
-    const start = (page - 1) * limit;
-    return {
-      logs: logs.slice(start, start + limit),
-      total,
-      page,
-      totalPages: Math.ceil(total / limit)
-    };
   }
 
   generateAlert(type, message, severity = 'info', details = {}) {

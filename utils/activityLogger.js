@@ -46,8 +46,21 @@ export const LOG_TYPES = {
   INSURANCE_BUY: 'insurance_buy',
   BANK_HEIST: 'bank_heist',
   CONFIG_CHANGE: 'config_change',
-  GAMECARD_GENERATE: 'gamecard_generate'
+  GAMECARD_GENERATE: 'gamecard_generate',
+  AFK_SET: 'afk_set',
+  AFK_REMOVE: 'afk_remove',
+  INACTIVITY: 'inactivity',
+  INACTIVITY_RECOVERY: 'inactivity_recovery',
+  JAIL: 'jail',
+  BOOST_GAIN: 'boost_gain',
+  THEME_CHANGE: 'theme_change'
 };
+
+let discordLogHandler = null;
+
+export function setDiscordLogHandler(handler) {
+  discordLogHandler = handler;
+}
 
 export const SYSTEMS = [
   'economia', 'niveles', 'casino', 'minijuegos', 'misiones',
@@ -98,7 +111,14 @@ const SYSTEM_MAP = {
   [LOG_TYPES.GAMECARD_GENERATE]: 'general',
   [LOG_TYPES.AUCTION_CREATE]: 'economia',
   [LOG_TYPES.AUCTION_BID]: 'economia',
-  [LOG_TYPES.TRADE]: 'economia'
+  [LOG_TYPES.TRADE]: 'economia',
+  [LOG_TYPES.AFK_SET]: 'general',
+  [LOG_TYPES.AFK_REMOVE]: 'general',
+  [LOG_TYPES.INACTIVITY]: 'general',
+  [LOG_TYPES.INACTIVITY_RECOVERY]: 'niveles',
+  [LOG_TYPES.JAIL]: 'seguridad',
+  [LOG_TYPES.BOOST_GAIN]: 'niveles',
+  [LOG_TYPES.THEME_CHANGE]: 'general'
 };
 
 const activityLogSchema = new mongoose.Schema({
@@ -134,6 +154,34 @@ try {
 
 function isMongoReady() {
   return mongoose.connection.readyState === 1;
+}
+
+export function logFromInteraction(interaction, data = {}) {
+  const commandOptions = {};
+  if (interaction?.options?.data) {
+    interaction.options.data.forEach(opt => {
+      if (opt.type === 1) {
+        commandOptions.subcommand = opt.name;
+        opt.options?.forEach(subOpt => { commandOptions[subOpt.name] = subOpt.value; });
+      } else {
+        commandOptions[opt.name] = opt.value;
+      }
+    });
+  }
+
+  return logActivity({
+    userId: interaction.user?.id,
+    username: interaction.user?.username,
+    guildId: interaction.guildId,
+    guildName: interaction.guild?.name,
+    command: interaction.commandName,
+    commandOptions,
+    details: {
+      channelId: interaction.channelId,
+      ...(data.details || {})
+    },
+    ...data
+  });
 }
 
 export function logActivity(data) {
@@ -174,6 +222,12 @@ export function logActivity(data) {
     const doc = new ActivityLog(log);
     doc.save().catch(err => {
       console.error('Error guardando log en MongoDB:', err.message);
+    });
+  }
+
+  if (discordLogHandler) {
+    discordLogHandler(log).catch(err => {
+      console.error('Error enviando log a Discord:', err.message);
     });
   }
 

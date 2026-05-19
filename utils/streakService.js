@@ -285,6 +285,23 @@ async function notifyBrokenStreaks(client, brokenStreaks) {
         if (!channel) continue;
         
         for (const streak of streaks) {
+          try {
+            const { logActivity, LOG_TYPES } = await import('./activityLogger.js');
+            logActivity({
+              type: LOG_TYPES.STREAK_LOSS,
+              userId: streak.user1Id,
+              guildId,
+              guildName: guild.name,
+              importance: 'medium',
+              reason: 'Racha expirada por inactividad',
+              details: {
+                user2Id: streak.user2Id,
+                streakCount: streak.streakCount,
+                daysMissed: streak.daysMissed
+              }
+            });
+          } catch {}
+
           const embed = {
             color: 0xFF4444,
             title: '💔 Racha Rota',

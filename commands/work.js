@@ -125,14 +125,6 @@ export default {
           return;
         }
 
-        // Log de economía
-        try {
-          const { sendEconomyLog } = await import('../index.js');
-          await sendEconomyLog(interaction.client, interaction, 'Trabajo', result.total, `Trabajó como **${result.job.name}**\nGanancia: ${result.earnings}\nBonus: ${result.bonus || 0}`);
-        } catch (e) {
-          console.error('Error enviando log de economía en work:', e);
-        }
-
         logActivity({
           type: LOG_TYPES.WORK,
           userId: interaction.user.id,
