@@ -16,6 +16,7 @@ import { logActivity, getLogs, getUserLogs, getLogStats, LOG_TYPES, loadLogsFrom
 import { initDiscordLogger, sendActivityToDiscord } from './utils/discordLogger.js';
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
 import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
+import { registerBuckshot } from './utils/buckshotRoulette.js';
 import { REACTION_MESSAGES } from './data/reactionGifs.js';
 import express from 'express';
 import cookieParser from 'cookie-parser';
@@ -1197,6 +1198,8 @@ if (failedCount > 0) {
   console.log(`⚠️ Comandos fallidos: ${failedCount}`);
 }
 
+registerBuckshot(client);
+
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   
@@ -1912,8 +1915,8 @@ client.on('interactionCreate', async (interaction) => {
             .setDescription('Juega contra otro usuario')
             .setValue('rps'),
           new StringSelectMenuOptionBuilder()
-            .setLabel('🔫 Ruleta Rusa')
-            .setDescription('¡Riesgoso! Juega contra otro usuario')
+            .setLabel('🔫 Buckshot Roulette')
+            .setDescription('¡Riesgoso! Apuesta Lagcoins en mesa de 2-4')
             .setValue('roulette'),
           new StringSelectMenuOptionBuilder()
             .setLabel('🎮 Ahorcado Solo')
@@ -2261,12 +2264,12 @@ client.on('interactionCreate', async (interaction) => {
     } else if (selected === 'roulette') {
       const embed = new EmbedBuilder()
         .setColor(0xE74C3C)
-        .setTitle('🔫 Ruleta Rusa')
-        .setDescription('⚠️ **Alto riesgo!** El perdedor pierde niveles!')
+        .setTitle('🔫 Buckshot Roulette')
+        .setDescription('⚠️ **Alto riesgo!** Escopeta con cartuchos reales y de fogueo, ítems y apuestas en Lagcoins (mín. 500).')
         .addFields(
-          { name: '✅ Ganador', value: '+2.5 niveles', inline: true },
-          { name: '❌ Perdedor', value: '-3 niveles', inline: true },
-          { name: '📝 Como jugar', value: '`/minigame roulette @usuario`', inline: false }
+          { name: '✅ Ganador', value: 'Pozo + bonos aleatorios + racha', inline: true },
+          { name: '❌ Perdedor', value: 'Apuesta + impuesto (50–1000)', inline: true },
+          { name: '📝 Como jugar', value: 'Busca el panel de **Buckshot Roulette** (`!Roulette`, lo envía el staff) y pulsa **Crear mesa**', inline: false }
         );
       return interaction.reply({ embeds: [embed], ephemeral: true });
     } else if (selected === 'ahorcado_solo') {
@@ -2363,7 +2366,7 @@ client.on('interactionCreate', async (interaction) => {
           .addFields(
             { name: '/minigame trivia', value: 'Responde 5 preguntas - gana boost o niveles', inline: false },
             { name: '/minigame rps @usuario', value: 'Piedra, Papel o Tijeras (mejor de 5)', inline: false },
-            { name: '/minigame roulette @usuario', value: '⚠️ Ruleta Rusa - riesgoso!', inline: false },
+            { name: 'Buckshot Roulette', value: '🔫 Panel `!Roulette` del staff - apuestas de Lagcoins!', inline: false },
             { name: '/minigame hangman', value: 'Ahorcado en solitario (3 rondas)', inline: false },
             { name: '/minigame ahorcados @usuario', value: 'Ahorcado multijugador', inline: false }
           )
