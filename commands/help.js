@@ -107,7 +107,7 @@ export default {
         .addFields(
           { name: '/minigame trivia', value: 'Responde 5 preguntas - gana boost o niveles', inline: false },
           { name: '/minigame rps @usuario', value: 'Piedra, Papel o Tijeras (mejor de 5)', inline: false },
-          { name: '/minigame roulette @usuario', value: '⚠️ Ruleta Rusa - riesgoso!', inline: false },
+          { name: 'Buckshot Roulette', value: '🔫 Panel `!Roulette` del staff - apuestas de Lagcoins!', inline: false },
           { name: '/minigame hangman', value: 'Ahorcado en solitario (3 rondas)', inline: false },
           { name: '/minigame ahorcados @usuario', value: 'Ahorcado multijugador', inline: false }
         )
@@ -155,7 +155,7 @@ export default {
         { name: '📊 Niveles', value: '`/level` `/leaderboard` `/boost`', inline: true },
         { name: '💰 Economía', value: '`/balance` `/trabajar` `/tienda`', inline: true },
         { name: '🎰 Casino', value: '`/slots` `/blackjack` `/dice`', inline: true },
-        { name: '🎮 Minijuegos', value: '`/minigame` trivia, rps, roulette', inline: true },
+        { name: '🎮 Minijuegos', value: '`/minigame` trivia, rps, ahorcado + 🔫 Buckshot Roulette', inline: true },
         { name: '🎯 Misiones', value: '`/mision` `/streak`', inline: true },
         { name: '💕 Reacciones', value: '`/react` `!hug` `!slap` `!ship`', inline: true },
         { name: 'ℹ️ Info', value: '`/info` `/help`', inline: true }
