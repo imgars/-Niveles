@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   ModalBuilder,
@@ -34,6 +35,9 @@ const MAX_ITEMS = 8;
 const TURN_MS = 60 * 1000;
 const LOBBY_MS = 5 * 60 * 1000;
 const CLOSE_DELAY_MS = 30 * 1000;
+const EVENT_TTL = 8 * 1000; // los mensajes de acciones se borran solos
+const ROUND_TTL = 14 * 1000; // carga de escopeta / reparto de ítems
+const AUDIT_CHANNEL_ID = CONFIG.ACTIVITY_LOG_CHANNEL_ID; // canal de logs/auditoría
 const ANIM_MS = 1000;
 const RESULTS_CHANNEL_ID = CONFIG.MISSION_COMPLETE_CHANNEL_ID; // 1441276918916710501
 
@@ -157,10 +161,16 @@ async function logBuckshot(data) {
 // ----------------------------------------------------------------------------
 //  MOTOR DEL JUEGO (lógica pura, sin Discord) — exportado para pruebas
 // ----------------------------------------------------------------------------
-function addLog(g, text) {
-  g.log.push(text);
-  if (g.log.length > 40) g.log.shift();
+// Registro que solo va al archivo de auditoría (secretos, orden real, etc.)
+function note(g, text) {
+  if (g.transcript.length < 5000) g.transcript.push({ t: Date.now(), text });
 }
+// Registro público: se envía como mensaje normal al canal (y queda en la auditoría)
+function addLog(g, text, ttl = EVENT_TTL) {
+  g.pending.push({ text, ttl });
+  note(g, text);
+}
+const heartsBar = (hp, max) => '❤️'.repeat(Math.max(0, hp)) + '🖤'.repeat(Math.max(0, max - Math.max(0, hp)));
 const alivePlayers = g => g.players.filter(p => p.hp > 0);
 
 export function newGameState(players, bet) {
@@ -184,7 +194,8 @@ export function newGameState(players, bet) {
     round: 0,
     turnIdx: 0,
     sawed: false,
-    log: [],
+    pending: [],
+    transcript: [],
     ended: false,
     winnerId: null
   };
@@ -201,7 +212,8 @@ export function reloadShotgun(g) {
   g.used = [];
   g.sawed = false;
 
-  addLog(g, `🔁 **Ronda ${g.round}** — la escopeta se carga con **${live} 🔴 reales** y **${total - live} ⚪ de fogueo** (mezclados).`);
+  addLog(g, `🔁 **Ronda ${g.round}** — la escopeta se carga con **${live} 🔴 reales** y **${total - live} ⚪ de fogueo** (mezclados).`, ROUND_TTL);
+  note(g, `[SECRETO] Orden real de los cartuchos: ${g.shells.map(x => (x === 'live' ? 'REAL' : 'FOGUEO')).join(' > ')}`);
   const dealt = [];
   for (const p of alivePlayers(g)) {
     const n = rand(2, 3);
@@ -213,7 +225,7 @@ export function reloadShotgun(g) {
     }
     dealt.push(`${p.name} ${got.length ? got.join('') : '—'}`);
   }
-  addLog(g, `🎁 Ítems repartidos: ${dealt.join(' · ')}`);
+  addLog(g, `🎁 Ítems repartidos: ${dealt.join(' · ')}`, ROUND_TTL);
 }
 
 export function shoot(g, shooterIdx, targetIdx) {
@@ -230,6 +242,7 @@ export function shoot(g, shooterIdx, targetIdx) {
     const dmg = wasSawed ? 2 : 1;
     t.hp = Math.max(0, t.hp - dmg);
     addLog(g, `💥 **${s.name}** ${self ? 'se disparó a sí mismo' : `le disparó a **${t.name}**`}: ¡**REAL** 🔴! −${dmg} ❤️${wasSawed ? ' (🪚 daño doble)' : ''}`);
+    addLog(g, `💔 **${t.name}**: ${heartsBar(t.hp, g.maxHp)} (${t.hp}/${g.maxHp})`);
     if (t.hp <= 0) addLog(g, `💀 **${t.name}** ha sido eliminado de la mesa.`);
   } else {
     addLog(g, `💨 **${s.name}** ${self ? 'se disparó a sí mismo' : `le disparó a **${t.name}**`}: era de **FOGUEO** ⚪.${self ? ' ¡Juega otra vez!' : ''}`);
@@ -259,6 +272,7 @@ export function advanceTurn(g, keep) {
       continue;
     }
     g.turnIdx = idx;
+    note(g, `▶️ Turno de ${p.name}`);
     return;
   }
 }
@@ -275,13 +289,14 @@ export function useItemEngine(g, idx, itemId, targetIdx) {
       const cur = g.shells[0];
       secret = `🔍 El cartucho actual es **${cur === 'live' ? 'REAL 🔴' : 'FOGUEO ⚪'}**. Guarda el secreto.`;
       addLog(g, `🔍 **${p.name}** usó la **Lupa** y miró la recámara en secreto.`);
+      note(g, `[SECRETO] ${p.name} vio con la Lupa: cartucho actual = ${cur === 'live' ? 'REAL' : 'FOGUEO'}`);
       msg = 'Usaste la Lupa.';
       break;
     }
     case 'cigarro': {
       if (p.hp >= g.maxHp) return { ok: false, msg: 'Ya tienes la vida completa.' };
       p.hp++;
-      addLog(g, `🚬 **${p.name}** fumó un **Cigarro** y recuperó 1 ❤️.`);
+      addLog(g, `🚬 **${p.name}** fumó un **Cigarro** y recuperó 1 ❤️ → ${heartsBar(p.hp, g.maxHp)} (${p.hp}/${g.maxHp})`);
       msg = 'Recuperaste 1 ❤️.';
       break;
     }
@@ -311,6 +326,7 @@ export function useItemEngine(g, idx, itemId, targetIdx) {
     case 'inversor': {
       g.shells[0] = g.shells[0] === 'live' ? 'blank' : 'live';
       addLog(g, `🔄 **${p.name}** usó el **Inversor**: el cartucho actual cambió de polaridad.`);
+      note(g, `[SECRETO] Tras el Inversor, el cartucho actual ahora es ${g.shells[0] === 'live' ? 'REAL' : 'FOGUEO'}`);
       msg = 'Invertiste el cartucho actual (no sabes en qué quedó… a menos que tengas Lupa).';
       break;
     }
@@ -362,6 +378,7 @@ const lobbies = new Map(); // lobbyId -> lobby
 const games = new Map(); // channelId -> game
 const busyUsers = new Map(); // userId -> lobbyId
 const animated = new Set(); // objetos { busy, render(color, tick) }
+const mainTargets = new Map(); // messageId -> objeto animado del panel principal
 
 function startTicker() {
   setInterval(() => {
@@ -394,14 +411,19 @@ function mainEmbed(color, t = 0) {
       `💰 Apuesta mínima: **${fmt(MIN_BET)} Lagcoins**\n` +
       '🔒 Cada partida se juega en un **canal privado** que se cierra al terminar.\n\n' +
       `${marquee(t + 3)}`,
-    footer: { text: 'Gana el último en pie · Pulsa ℹ️ Información para ver reglas y probabilidades' }
+    footer: { text: 'Gana el último en pie · Abre el menú EMPEZAR PARTIDA para jugar o ver las reglas' }
   };
 }
 function mainRow() {
   return new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('br_create').setLabel('Crear mesa').setEmoji('🎲').setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId('br_info').setLabel('Información').setEmoji('ℹ️').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('br_stats').setLabel('Mi racha').setEmoji('🔥').setStyle(ButtonStyle.Secondary)
+    new StringSelectMenuBuilder()
+      .setCustomId('br_menu')
+      .setPlaceholder('🔫 EMPEZAR PARTIDA')
+      .addOptions([
+        { label: 'Crear sala', value: 'create', emoji: '🎲', description: `Abre una mesa y apuesta (mínimo ${MIN_BET} Lagcoins)` },
+        { label: 'Información', value: 'info', emoji: 'ℹ️', description: 'Reglas, probabilidades y recompensas' },
+        { label: 'Mi racha', value: 'stats', emoji: '🔥', description: 'Tus victorias y tu bono de racha' }
+      ])
   );
 }
 
@@ -500,6 +522,10 @@ function lobbyComponents(lobby) {
     )
   ];
 }
+function lobbyNote(lobby, text) {
+  if (!lobby.events) lobby.events = [];
+  lobby.events.push({ t: Date.now(), text });
+}
 async function refreshLobby(lobby) {
   if (!lobby.message) return;
   try {
@@ -531,6 +557,49 @@ async function refundAll(lobby, reasonText) {
   clearEscrow(lobby.id);
 }
 
+// Borra los mensajes temporales de la mesa (invitaciones, "mesa llena") y opcionalmente el de la mesa
+async function deleteLobbyMessages(lobby, includeMain = true) {
+  const msgs = [...(lobby.temp || [])];
+  lobby.temp = [];
+  if (includeMain && lobby.message) msgs.push(lobby.message);
+  for (const m of msgs) await m.delete().catch(() => {});
+}
+
+// Cambia el panel principal viejo por uno nuevo al final de la partida
+async function replaceMainPanel(lobby) {
+  if (!lobby.mainMessageId) return;
+  const idx = state.mains.findIndex(m => m.messageId === lobby.mainMessageId);
+  if (idx < 0) return; // ya fue reemplazado por otra partida o lo borraron
+  const [old] = state.mains.splice(idx, 1);
+  saveState();
+  const target = mainTargets.get(old.messageId);
+  if (target) {
+    animated.delete(target);
+    mainTargets.delete(old.messageId);
+  }
+  const channel = lobby.channel;
+  try {
+    const oldMsg = await channel.messages.fetch(old.messageId);
+    try {
+      await oldMsg.delete();
+    } catch {
+      // Sin permiso para borrar: lo dejamos inutilizable
+      await oldMsg.edit({
+        embeds: [{ color: 0x2F3136, title: '🔫 Panel anterior', description: 'Este panel ya no está activo. Usa el panel más reciente de este canal.' }],
+        components: []
+      }).catch(() => {});
+    }
+  } catch {}
+  try {
+    const sent = await channel.send({ embeds: [mainEmbed(currentColor(), tick)], components: [mainRow()] });
+    state.mains.push({ guildId: lobby.guildId, channelId: channel.id, messageId: sent.id });
+    saveState();
+    attachMainAnimation(sent);
+  } catch (e) {
+    console.error('[Buckshot] No pude enviar el panel nuevo:', e.message);
+  }
+}
+
 async function cancelLobby(lobby, reasonText) {
   if (lobby.closed || lobby.started) return;
   clearTimeout(lobby.timer);
@@ -538,6 +607,7 @@ async function cancelLobby(lobby, reasonText) {
   await refundAll(lobby, `${reasonText}\n💸 Las apuestas fueron **devueltas**.`);
   lobbies.delete(lobby.id);
   await refreshLobby(lobby);
+  setTimeout(() => deleteLobbyMessages(lobby, true), 10000);
 }
 
 // ----------------------------------------------------------------------------
@@ -556,16 +626,13 @@ function gameEmbed(game, color, t = 0) {
     `**Recámara:** ${g.shells.length ? '🟫'.repeat(g.shells.length) : '—'} *(${g.shells.length} restantes)*\n` +
     `**Ya disparados:** ${usedStrip}`;
   if (g.sawed) desc += '\n🪚 **¡Escopeta recortada!** El próximo disparo real hace **doble daño**.';
-  if (game.banner) desc += `\n\n${game.banner}`;
-  else if (!g.ended) desc += `\n\n▶️ Turno de <@${cur.id}> — se agota <t:${Math.floor(game.deadline / 1000)}:R>`;
+  if (!g.ended) desc += `\n\n▶️ Turno de <@${cur.id}> — se agota <t:${Math.floor(game.deadline / 1000)}:R>`;
 
   const fields = g.players.map((p, i) => ({
     name: `${i === g.turnIdx && !g.ended && p.hp > 0 ? '▶️ ' : ''}${p.name}`.slice(0, 256),
     value: `${heartsOf(p, g.maxHp)}${p.cuffed ? ' ⛓️' : ''}\n🎒 ${itemsOf(p)}`.slice(0, 1024),
     inline: true
   }));
-  const recent = g.log.slice(-6).join('\n');
-  if (recent) fields.push({ name: '📜 Últimos sucesos', value: recent.slice(0, 1024) });
 
   return {
     color,
@@ -639,7 +706,24 @@ async function onTurnTimeout(game, token) {
   }
 }
 
+// Mensaje normal (sin embed) que se borra solo pasados unos segundos
+async function say(game, text, ttl = EVENT_TTL) {
+  try {
+    const m = await game.channel.send({ content: text, allowedMentions: { parse: [] } });
+    setTimeout(() => m.delete().catch(() => {}), ttl);
+    return m;
+  } catch {
+    return null;
+  }
+}
+// Envía, en orden, todo lo que el motor dejó pendiente (disparos, ítems, vidas, rondas…)
+async function flushPending(game) {
+  const items = game.s.pending.splice(0);
+  for (const it of items) await say(game, it.text, it.ttl);
+}
+
 async function afterAction(game) {
+  await flushPending(game);
   if (game.s.ended) {
     clearTimeout(game.timer);
     await pushGame(game);
@@ -658,12 +742,12 @@ async function runShot(game, shooterIdx, targetIdx) {
     const s = g.players[shooterIdx];
     const t = g.players[targetIdx];
     s.timeouts = 0;
-    game.banner = shooterIdx === targetIdx
+    const aimText = shooterIdx === targetIdx
       ? `🎯 **${s.name}** se apunta la escopeta a la cabeza…`
       : `🔫 **${s.name}** apunta la escopeta hacia **${t.name}**…`;
-    await pushGame(game);
+    note(g, aimText);
+    await say(game, aimText, 5000);
     await sleep(1500);
-    game.banner = null;
     const { keep } = shoot(g, shooterIdx, targetIdx);
     advanceTurn(g, keep);
     await afterAction(game);
@@ -712,6 +796,61 @@ async function sendResultsChannel(guild, embed) {
   }
 }
 
+async function sendAuditLog(game, status, resultLines = []) {
+  try {
+    const ch = await client.channels.fetch(AUDIT_CHANNEL_ID).catch(() => null);
+    if (!ch?.isTextBased()) {
+      console.warn('[Buckshot] Canal de auditoría no disponible');
+      return;
+    }
+    const g = game.s;
+    const lobby = game.lobby;
+    const clean = t => String(t).replace(/\*\*/g, '').replace(/<@!?(\d+)>/g, '@$1');
+    const rel = ms => {
+      const sec = Math.max(0, Math.round((ms - game.startedAt) / 1000));
+      return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    };
+    const L = [];
+    L.push('==================================================');
+    L.push(' BUCKSHOT ROULETTE — REGISTRO DE PARTIDA');
+    L.push('==================================================');
+    L.push(`Estado: ${status}`);
+    L.push(`Mesa: #${lobby.id}`);
+    L.push(`Servidor: ${game.channel.guild?.name || game.guildId} (${game.guildId})`);
+    L.push(`Canal de la partida: #${game.channel.name || game.channel.id} (${game.channel.id})`);
+    L.push(`Inicio: ${new Date(game.startedAt).toISOString()}`);
+    L.push(`Fin: ${new Date().toISOString()}`);
+    L.push(`Apuesta por jugador: ${g.bet} Lagcoins · Pozo: ${g.pot} Lagcoins`);
+    L.push(`Vida inicial: ${g.maxHp} · Rondas jugadas: ${g.round}`);
+    L.push('');
+    L.push('JUGADORES (orden de turnos)');
+    g.players.forEach((p, i) => L.push(`  ${i + 1}. ${p.name} (${p.id})${p.id === lobby.hostId ? ' [anfitrión]' : ''}`));
+    L.push('');
+    L.push('SALA (antes de empezar)');
+    (lobby.events || []).forEach(e => L.push(`  [${new Date(e.t).toISOString()}] ${clean(e.text)}`));
+    L.push('');
+    L.push('CRONOLOGÍA DE LA PARTIDA [mm:ss desde el inicio]');
+    g.transcript.forEach(e => L.push(`  [${rel(e.t)}] ${clean(e.text)}`));
+    L.push('');
+    L.push('ESTADO FINAL');
+    g.players.forEach(p => L.push(`  ${p.name}: ${p.hp} vida(s) · ítems sin usar: ${p.items.length ? p.items.map(i => ITEMS[i].name).join(', ') : 'ninguno'}`));
+    if (resultLines.length) {
+      L.push('');
+      L.push('RESULTADO ECONÓMICO');
+      resultLines.forEach(r => L.push(`  ${clean(r)}`));
+    }
+    const buf = Buffer.from(L.join('\n'), 'utf8');
+    const winner = g.players.find(p => p.id === g.winnerId);
+    await ch.send({
+      content: `📄 **Buckshot Roulette** · Mesa #${lobby.id} · ${status}${winner ? ` · Ganador: **${winner.name}** (<@${winner.id}>)` : ''}\n👥 ${g.players.map(p => p.name).join(', ')}`,
+      files: [new AttachmentBuilder(buf, { name: `buckshot-mesa-${lobby.id}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.txt` })],
+      allowedMentions: { parse: [] }
+    });
+  } catch (e) {
+    console.error('[Buckshot] No pude enviar el registro de auditoría:', e.message);
+  }
+}
+
 async function finishGame(game) {
   if (game.finished) return;
   game.finished = true;
@@ -726,6 +865,14 @@ async function finishGame(game) {
   const winStats = winner ? getStats(guildId, winner.id) : null;
   const streakBefore = winStats ? winStats.streak : 0;
   const pay = computePayouts(g, streakBefore);
+  const auditResult = [];
+  if (winner) {
+    auditResult.push(`Ganador: ${winner.name} (${winner.id}) — racha previa: ${streakBefore}`);
+    auditResult.push(`Pozo apostado: ${pay.pot}`);
+    auditResult.push(`Bonos por jugador (${g.players.length}): ${pay.playerBonuses.join(' + ')} = ${pay.playerBonusTotal}`);
+    auditResult.push(`Bono de racha: ${pay.streakBonus}${streakBefore > 0 ? ` (rango 0–${500 * streakBefore})` : ' (sin racha previa)'}`);
+    auditResult.push(`Premio total pagado: ${pay.total}`);
+  }
 
   if (winner) await payOut(guildId, winner.id, pay.total, 'buckshot_transfer_win').catch(e => console.error('[Buckshot] pago:', e.message));
 
@@ -748,6 +895,7 @@ async function finishGame(game) {
     st.streak = 0;
     st.totalLost += g.bet + tax;
     loserLines.push(`💔 <@${l.id}> — perdió **${fmt(g.bet)}** apostados + **${fmt(tax)}** de impuesto`);
+    auditResult.push(`Perdedor: ${l.name} (${l.id}) — apuesta ${g.bet} + impuesto ${tax} = -${g.bet + tax}`);
     logBuckshot({
       win: false,
       userId: l.id,
@@ -808,6 +956,7 @@ async function finishGame(game) {
     });
   } catch {}
   await sendResultsChannel(game.channel.guild, resultEmbed);
+  await sendAuditLog(game, 'FINALIZADA', auditResult);
 
   // Limpieza
   for (const p of g.players) busyUsers.delete(p.id);
@@ -819,7 +968,10 @@ async function finishGame(game) {
     ? `🏆 Ganó <@${winner.id}> y se llevó **${fmt(pay.total)}** Lagcoins.`
     : 'La partida finalizó.';
   lobbies.delete(game.lobby.id);
-  await refreshLobby(game.lobby);
+
+  // Fuera del historial del canal principal: mesa + invitaciones, y panel nuevo
+  await deleteLobbyMessages(game.lobby, true);
+  await replaceMainPanel(game.lobby);
 
   try {
     for (const p of g.players) {
@@ -842,7 +994,10 @@ async function abortGame(game, reason) {
   try {
     await game.channel.send(`⚠️ **Partida cancelada:** ${reason}\n💸 Las apuestas fueron devueltas. El canal se cerrará pronto.`);
   } catch {}
+  note(game.s, `⚠️ PARTIDA CANCELADA: ${reason} (apuestas devueltas)`);
+  await sendAuditLog(game, `CANCELADA (${reason})`, ['Todas las apuestas fueron devueltas.']);
   await refreshLobby(game.lobby);
+  setTimeout(() => deleteLobbyMessages(game.lobby, true), 10000);
   setTimeout(() => game.channel.delete('Buckshot Roulette: partida cancelada').catch(() => {}), 10000);
 }
 
@@ -895,6 +1050,9 @@ async function launchGame(lobby) {
 
   const s = newGameState(lobby.players.map(id => ({ id, name: lobby.names[id] || `Jugador` })), lobby.bet);
   reloadShotgun(s);
+  note(s, `🎬 Comienza la partida: ${s.players.map(x => `${x.name} (${s.maxHp} vidas)`).join(', ')} · apuesta ${lobby.bet} c/u`);
+  note(s, `▶️ Turno de ${s.players[s.turnIdx].name}`);
+  lobbyNote(lobby, `Partida iniciada con ${lobby.players.length} jugadores`);
   const game = {
     s,
     lobby,
@@ -902,7 +1060,6 @@ async function launchGame(lobby) {
     channel: gch,
     statusMsg: null,
     processing: false,
-    banner: null,
     deadline: Date.now() + TURN_MS,
     token: 0,
     timer: null,
@@ -937,8 +1094,10 @@ async function launchGame(lobby) {
   };
   animated.add(game.anim);
   armTimer(game);
+  await flushPending(game); // carga de la escopeta y reparto de ítems de la ronda 1
   await pushGame(game);
   await refreshLobby(lobby);
+  setTimeout(() => deleteLobbyMessages(lobby, false), 5000); // invitaciones ya no hacen falta
 }
 
 // ----------------------------------------------------------------------------
@@ -966,6 +1125,29 @@ async function precheckPlayer(interaction, { silent = false } = {}) {
   return true;
 }
 
+async function showInfo(interaction) {
+  return interaction.reply({ embeds: [infoEmbed()], flags: 64 });
+}
+
+async function showStats(interaction) {
+  const st = getStats(interaction.guild.id, interaction.user.id);
+  const next = 500 * (st.streak + 1);
+  return interaction.reply({
+    flags: 64,
+    embeds: [{
+      color: currentColor(),
+      title: '🔥 Tu racha en Buckshot Roulette',
+      description:
+        `🏆 Victorias: **${st.wins}** · 💀 Derrotas: **${st.losses}**\n` +
+        `🔥 Racha actual: **${st.streak}** (mejor: **${st.bestStreak}**)\n` +
+        `🎁 Bono de racha si ganas ahora: **0–${fmt(500 * st.streak)}** Lagcoins` +
+        `${st.streak === 0 ? ' *(gana una partida para activarlo)*' : ''}\n` +
+        `💰 Ganado en total: **${fmt(st.totalWon)}** · Perdido: **${fmt(st.totalLost)}**\n` +
+        `➡️ Con una victoria más tu tope subirá a **${fmt(next)}**.`
+    }]
+  });
+}
+
 async function handleCreateButton(interaction) {
   if (!(await precheckPlayer(interaction))) return;
   const bal = await getBalance(interaction.guild.id, interaction.user.id);
@@ -973,7 +1155,7 @@ async function handleCreateButton(interaction) {
     return interaction.reply({ content: `❌ Necesitas al menos **${fmt(MIN_BET)} Lagcoins** en tu cartera para sentarte (tienes ${fmt(bal)}).`, flags: 64 });
   }
   const modal = new ModalBuilder()
-    .setCustomId('br_modal_create')
+    .setCustomId(`br_modal_create_${interaction.message?.id || ''}`)
     .setTitle('🎲 Crear mesa de Buckshot Roulette')
     .addComponents(
       new ActionRowBuilder().addComponents(
@@ -1013,6 +1195,9 @@ async function handleCreateModal(interaction) {
     players: [interaction.user.id],
     names: { [interaction.user.id]: interaction.member?.displayName || interaction.user.username },
     invited: new Set(),
+    temp: [],
+    events: [],
+    mainMessageId: interaction.customId.split('_')[3] || null,
     message: null,
     started: false,
     closed: false,
@@ -1021,6 +1206,7 @@ async function handleCreateModal(interaction) {
     anim: null
   };
   busyUsers.set(interaction.user.id, lobby.id);
+  lobbyNote(lobby, `${lobby.names[interaction.user.id]} (${interaction.user.id}) creó la mesa con apuesta de ${bet}`);
 
   try {
     lobby.message = await interaction.channel.send({
@@ -1076,11 +1262,12 @@ async function handleInvite(interaction) {
     return interaction.reply({ content: '❌ Elige usuarios válidos (no bots, ni tú, ni jugadores que ya estén sentados).', flags: 64 });
   }
   users.forEach(u => lobby.invited.add(u.id));
+  lobbyNote(lobby, `Invitados por el anfitrión: ${users.map(u => `${u.username} (${u.id})`).join(', ')}`);
   const link = lobby.message?.url;
   const row = link
     ? [new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Ir a la mesa').setStyle(ButtonStyle.Link).setURL(link))]
     : [];
-  await lobby.channel.send({
+  const inviteMsg = await lobby.channel.send({
     content: users.map(u => `<@${u.id}>`).join(' '),
     embeds: [{
       color: currentColor(),
@@ -1088,7 +1275,8 @@ async function handleInvite(interaction) {
       description: `<@${lobby.hostId}> te invitó a su mesa.\n💰 Apuesta: **${fmt(lobby.bet)} Lagcoins** · Pulsa **Unirse a la mesa** antes de que expire.`
     }],
     components: row
-  }).catch(() => {});
+  }).catch(() => null);
+  if (inviteMsg) lobby.temp.push(inviteMsg);
 
   // Aviso por MD (si el usuario los tiene abiertos)
   for (const u of users) {
@@ -1131,6 +1319,7 @@ async function handleLobbyButton(interaction) {
       return interaction.reply({ content: '❌ No se pudo retener tu apuesta.', flags: 64 });
     }
     lobby.players.push(uid);
+    lobbyNote(lobby, `${interaction.member?.displayName || interaction.user.username} (${uid}) se unió y apostó ${lobby.bet}`);
     lobby.names[uid] = interaction.member?.displayName || interaction.user.username;
     lobby.invited.delete(uid);
     busyUsers.set(uid, lobby.id);
@@ -1138,7 +1327,8 @@ async function handleLobbyButton(interaction) {
 
     await interaction.update({ embeds: [lobbyEmbed(lobby, currentColor(), tick)], components: lobbyComponents(lobby) });
     if (lobby.players.length >= MAX_PLAYERS) {
-      await lobby.channel.send(`🪑 **¡Mesa llena!** Empezando la partida de <@${lobby.hostId}>…`).catch(() => {});
+      const fullMsg = await lobby.channel.send(`🪑 **¡Mesa llena!** Empezando la partida de <@${lobby.hostId}>…`).catch(() => null);
+      if (fullMsg) lobby.temp.push(fullMsg);
       await launchGame(lobby);
     }
     return;
@@ -1150,6 +1340,7 @@ async function handleLobbyButton(interaction) {
       return interaction.reply({ content: '❌ Eres el anfitrión: usa **Cancelar mesa** para cerrarla.', flags: 64 });
     }
     lobby.players = lobby.players.filter(id => id !== uid);
+    lobbyNote(lobby, `${lobby.names[uid] || uid} (${uid}) salió de la mesa y recuperó su apuesta`);
     busyUsers.delete(uid);
     await payOut(lobby.guildId, uid, lobby.bet, 'buckshot_transfer_refund');
     saveEscrow(lobby);
@@ -1251,6 +1442,7 @@ async function applyItem(interaction, game, itemId, targetId) {
       return await interaction.update({ content: `❌ ${res.msg}`, components: [] });
     }
     await interaction.update({ content: res.secret || `✅ ${res.msg}`, components: [] });
+    await flushPending(game);
     await pushGame(game);
   } finally {
     game.processing = false;
@@ -1298,25 +1490,8 @@ async function onInteraction(interaction) {
     // El manejador global de index.js ya responde a usuarios encarcelados en botones/selects
     if (await isJailed(interaction.guild.id, interaction.user.id)) return;
     if (id === 'br_create') return handleCreateButton(interaction);
-    if (id === 'br_info') return interaction.reply({ embeds: [infoEmbed()], flags: 64 });
-    if (id === 'br_stats') {
-      const st = getStats(interaction.guild.id, interaction.user.id);
-      const next = 500 * (st.streak + 1);
-      return interaction.reply({
-        flags: 64,
-        embeds: [{
-          color: currentColor(),
-          title: '🔥 Tu racha en Buckshot Roulette',
-          description:
-            `🏆 Victorias: **${st.wins}** · 💀 Derrotas: **${st.losses}**\n` +
-            `🔥 Racha actual: **${st.streak}** (mejor: **${st.bestStreak}**)\n` +
-            `🎁 Bono de racha si ganas ahora: **0–${fmt(500 * st.streak)}** Lagcoins` +
-            `${st.streak === 0 ? ' *(gana una partida para activarlo)*' : ''}\n` +
-            `💰 Ganado en total: **${fmt(st.totalWon)}** · Perdido: **${fmt(st.totalLost)}**\n` +
-            `➡️ Con una victoria más tu tope subirá a **${fmt(next)}**.`
-        }]
-      });
-    }
+    if (id === 'br_info') return showInfo(interaction); // compatibilidad con paneles viejos
+    if (id === 'br_stats') return showStats(interaction);
     if (id === 'br_self') return handleSelfShot(interaction);
     if (id === 'br_opp') return handleOpponentShot(interaction);
     if (id === 'br_items') return handleItemsButton(interaction);
@@ -1324,12 +1499,19 @@ async function onInteraction(interaction) {
     return;
   }
 
-  if (interaction.isModalSubmit() && id === 'br_modal_create') {
+  if (interaction.isModalSubmit() && id.startsWith('br_modal_create')) {
     return handleCreateModal(interaction);
   }
 
   if (interaction.isStringSelectMenu()) {
     if (await isJailed(interaction.guild.id, interaction.user.id)) return;
+    if (id === 'br_menu') {
+      const choice = interaction.values[0];
+      if (choice === 'create') return handleCreateButton(interaction);
+      if (choice === 'info') return showInfo(interaction);
+      if (choice === 'stats') return showStats(interaction);
+      return;
+    }
     if (id === 'br_target_shoot') return handleTargetShot(interaction);
     if (id === 'br_item') return handleItemSelect(interaction);
     if (id.startsWith('br_itemtarget_')) return handleItemTarget(interaction);
@@ -1376,6 +1558,8 @@ async function recoverOnStart() {
     if (!msg) continue;
     valid.push(m);
     attachMainAnimation(msg);
+    // Actualiza paneles viejos (con botones) al nuevo menú desplegable
+    msg.edit({ embeds: [mainEmbed(currentColor(), tick)], components: [mainRow()] }).catch(() => {});
   }
   state.mains = valid;
   saveState();
@@ -1391,6 +1575,7 @@ function attachMainAnimation(message) {
       } catch (e) {
         if (e?.code === 10008 || e?.code === 10003) {
           animated.delete(target);
+          mainTargets.delete(message.id);
           state.mains = state.mains.filter(m => m.messageId !== message.id);
           saveState();
         }
@@ -1398,6 +1583,7 @@ function attachMainAnimation(message) {
     }
   };
   animated.add(target);
+  mainTargets.set(message.id, target);
 }
 
 // ----------------------------------------------------------------------------
