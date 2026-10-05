@@ -35,6 +35,7 @@ const MAX_ITEMS = 8;
 const TURN_MS = 60 * 1000;
 const LOBBY_MS = 5 * 60 * 1000;
 const CLOSE_DELAY_MS = 30 * 1000;
+const SOLO_COOLDOWN_MS = 30 * 60 * 1000; // cooldown del modo contra el bot
 const EVENT_TTL = 8 * 1000; // los mensajes de acciones se borran solos
 const ROUND_TTL = 14 * 1000; // carga de escopeta / reparto de ítems
 const AUDIT_CHANNEL_ID = CONFIG.ACTIVITY_LOG_CHANNEL_ID; // canal de logs/auditoría
@@ -107,6 +108,7 @@ function writeJson(file, data) {
 const state = readJson(STATE_FILE, { mains: [], escrows: {} });
 if (!Array.isArray(state.mains)) state.mains = [];
 if (!state.escrows || typeof state.escrows !== 'object') state.escrows = {};
+if (!state.soloCooldowns || typeof state.soloCooldowns !== 'object') state.soloCooldowns = {};
 const saveState = () => writeJson(STATE_FILE, state);
 
 const stats = readJson(STATS_FILE, {});
@@ -182,7 +184,8 @@ export function newGameState(players, bet) {
       hp: maxHp,
       items: [],
       cuffed: false,
-      timeouts: 0
+      timeouts: 0,
+      isBot: !!p.isBot
     })),
     maxHp,
     bet,
@@ -194,6 +197,7 @@ export function newGameState(players, bet) {
     round: 0,
     turnIdx: 0,
     sawed: false,
+    inverted: false,
     pending: [],
     transcript: [],
     ended: false,
@@ -211,6 +215,7 @@ export function reloadShotgun(g) {
   g.shells = shuffle([...Array(live).fill('live'), ...Array(total - live).fill('blank')]);
   g.used = [];
   g.sawed = false;
+  g.inverted = false;
 
   addLog(g, `🔁 **Ronda ${g.round}** — la escopeta se carga con **${live} 🔴 reales** y **${total - live} ⚪ de fogueo** (mezclados).`, ROUND_TTL);
   note(g, `[SECRETO] Orden real de los cartuchos: ${g.shells.map(x => (x === 'live' ? 'REAL' : 'FOGUEO')).join(' > ')}`);
@@ -325,6 +330,7 @@ export function useItemEngine(g, idx, itemId, targetIdx) {
     }
     case 'inversor': {
       g.shells[0] = g.shells[0] === 'live' ? 'blank' : 'live';
+      g.inverted = true; // los conteos públicos de la ronda ya no son del todo fiables
       addLog(g, `🔄 **${p.name}** usó el **Inversor**: el cartucho actual cambió de polaridad.`);
       note(g, `[SECRETO] Tras el Inversor, el cartucho actual ahora es ${g.shells[0] === 'live' ? 'REAL' : 'FOGUEO'}`);
       msg = 'Invertiste el cartucho actual (no sabes en qué quedó… a menos que tengas Lupa).';
@@ -407,7 +413,8 @@ function mainEmbed(color, t = 0) {
     description:
       `${marquee(t)}\n\n` +
       '**La ruleta rusa definitiva.** Una escopeta, cartuchos **reales** 🔴 y de **fogueo** ⚪ mezclados al azar… y 6 ítems para sobrevivir.\n\n' +
-      '🎲 Pulsa **Crear mesa** para apostar y retar a hasta **3 jugadores** más.\n' +
+      '🎲 Abre el menú y elige **Crear sala** para apostar y retar a hasta **3 jugadores** más.\n' +
+      '🤖 ¿Sin rivales? Elige **Jugar contra el bot** (cooldown de 30 min, sin bonos).\n' +
       `💰 Apuesta mínima: **${fmt(MIN_BET)} Lagcoins**\n` +
       '🔒 Cada partida se juega en un **canal privado** que se cierra al terminar.\n\n' +
       `${marquee(t + 3)}`,
@@ -421,6 +428,7 @@ function mainRow() {
       .setPlaceholder('🔫 EMPEZAR PARTIDA')
       .addOptions([
         { label: 'Crear sala', value: 'create', emoji: '🎲', description: `Abre una mesa y apuesta (mínimo ${MIN_BET} Lagcoins)` },
+        { label: 'Jugar contra el bot', value: 'bot', emoji: '🤖', description: 'Sin esperar jugadores · cooldown 30 min · sin bonos' },
         { label: 'Información', value: 'info', emoji: 'ℹ️', description: 'Reglas, probabilidades y recompensas' },
         { label: 'Mi racha', value: 'stats', emoji: '🔥', description: 'Tus victorias y tu bono de racha' }
       ])
@@ -462,6 +470,15 @@ function infoEmbed() {
           '• **Ganador:** recibe **todo el pozo** + un **bono aleatorio de 0 a 1.000 por cada jugador** de la mesa (ej. 621)\n' +
           '• 🔥 **Racha:** cada victoria seguida sube el tope del bono extra: 1ª racha **0–500**, luego **0–1.000**, **0–1.500**, **0–2.000**…\n' +
           '• **Perdedores:** pierden lo apostado + un **impuesto aleatorio de 50 a 1.000** Lagcoins (y su racha vuelve a 0)'
+      },
+      {
+        name: '🤖 Modo contra el bot',
+        value:
+          '• No necesitas más jugadores: eliges tu apuesta (mín. 500) y juegas 1 contra 1 en un canal privado.\n' +
+          '• El bot usa **todos los ítems** y reglas, pero solo con información legítima (no ve la recámara).\n' +
+          '• Si ganas recibes **el doble de tu apuesta**; si pierdes, pierdes lo apostado.\n' +
+          '• **Sin bonos aleatorios, sin racha y sin impuesto.**\n' +
+          '• **Cooldown de 30 minutos** entre partidas contra el bot.'
       },
       {
         name: '⏱️ Reglas extra',
@@ -626,7 +643,11 @@ function gameEmbed(game, color, t = 0) {
     `**Recámara:** ${g.shells.length ? '🟫'.repeat(g.shells.length) : '—'} *(${g.shells.length} restantes)*\n` +
     `**Ya disparados:** ${usedStrip}`;
   if (g.sawed) desc += '\n🪚 **¡Escopeta recortada!** El próximo disparo real hace **doble daño**.';
-  if (!g.ended) desc += `\n\n▶️ Turno de <@${cur.id}> — se agota <t:${Math.floor(game.deadline / 1000)}:R>`;
+  if (!g.ended) {
+    desc += cur.isBot
+      ? '\n\n🤖 **Turno del bot** — está pensando…'
+      : `\n\n▶️ Turno de <@${cur.id}> — se agota <t:${Math.floor(game.deadline / 1000)}:R>`;
+  }
 
   const fields = g.players.map((p, i) => ({
     name: `${i === g.turnIdx && !g.ended && p.hp > 0 ? '▶️ ' : ''}${p.name}`.slice(0, 256),
@@ -639,7 +660,11 @@ function gameEmbed(game, color, t = 0) {
     title: `🔫 BUCKSHOT ROULETTE — Ronda ${g.round}`,
     description: desc,
     fields,
-    footer: { text: `Apuesta: ${fmt(g.bet)} c/u · Pozo: ${fmt(g.pot)} Lagcoins` }
+    footer: {
+      text: game.lobby?.solo
+        ? `🤖 Modo contra el bot · Apuesta: ${fmt(g.bet)} · Premio si ganas: ${fmt(g.pot)} (sin bonos ni racha)`
+        : `Apuesta: ${fmt(g.bet)} c/u · Pozo: ${fmt(g.pot)} Lagcoins`
+    }
   };
 }
 function gameComponents(game) {
@@ -648,9 +673,9 @@ function gameComponents(game) {
   const cur = g.players[g.turnIdx];
   return [
     new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('br_self').setLabel('Dispararme').setEmoji('🎯').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId('br_opp').setLabel('Disparar a un rival').setEmoji('🔫').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('br_items').setLabel('Usar ítem').setEmoji('🎒').setStyle(ButtonStyle.Secondary).setDisabled(cur.items.length === 0)
+      new ButtonBuilder().setCustomId('br_self').setLabel('Dispararme').setEmoji('🎯').setStyle(ButtonStyle.Danger).setDisabled(!!cur.isBot),
+      new ButtonBuilder().setCustomId('br_opp').setLabel('Disparar a un rival').setEmoji('🔫').setStyle(ButtonStyle.Primary).setDisabled(!!cur.isBot),
+      new ButtonBuilder().setCustomId('br_items').setLabel('Usar ítem').setEmoji('🎒').setStyle(ButtonStyle.Secondary).setDisabled(cur.items.length === 0 || !!cur.isBot)
     )
   ];
 }
@@ -689,6 +714,10 @@ function pushGame(game) {
 // ----------------------------------------------------------------------------
 function armTimer(game) {
   clearTimeout(game.timer);
+  if (game.s.players[game.s.turnIdx]?.isBot) {
+    game.token++; // el bot juega solo, sin cuenta atrás
+    return;
+  }
   game.deadline = Date.now() + TURN_MS;
   const token = ++game.token;
   game.timer = setTimeout(() => onTurnTimeout(game, token), TURN_MS);
@@ -732,6 +761,131 @@ async function afterAction(game) {
   }
   armTimer(game);
   await pushGame(game);
+  scheduleBot(game);
+}
+
+// ----------------------------------------------------------------------------
+//  🤖 Rival bot (IA). Solo usa información legítima: los conteos públicos de la
+//  carga, lo que ya se disparó y lo que le revele su propia Lupa.
+// ----------------------------------------------------------------------------
+function botKnowledge(game) {
+  const g = game.s;
+  const k = game.botKnow;
+  if (k && k.round === g.round && k.len === g.shells.length) return k.val;
+  return null;
+}
+
+function liveChance(game) {
+  const g = game.s;
+  const known = botKnowledge(game);
+  if (known) return known === 'live' ? 1 : 0;
+  const total = g.shells.length;
+  if (!total) return 0;
+  const usedLive = g.used.filter(x => x === 'live').length;
+  let p = Math.min(1, Math.max(0, (g.loadLive - usedLive) / total));
+  if (g.inverted) p = Math.min(0.9, Math.max(0.1, p));
+  return p;
+}
+
+function botDecide(game, idx, skip) {
+  const g = game.s;
+  const me = g.players[idx];
+  const has = id => me.items.includes(id) && !skip.has(id);
+  const known = botKnowledge(game);
+  const p = liveChance(game);
+
+  // Rivales ordenados: primero los de menos vida; a igualdad, el que juega antes
+  const opps = [];
+  for (let k = 1; k < g.players.length; k++) {
+    const j = (idx + k) % g.players.length;
+    if (g.players[j].hp > 0) opps.push({ i: j, hp: g.players[j].hp, order: k });
+  }
+  if (!opps.length) return { type: 'shoot', target: idx };
+  opps.sort((a, b) => a.hp - b.hp || a.order - b.order);
+  const target = opps[0].i;
+
+  if (has('cigarro') && me.hp < g.maxHp) return { type: 'item', item: 'cigarro' };
+  if (known === null && p > 0 && p < 1 && has('lupa')) return { type: 'item', item: 'lupa' };
+  if (has('esposas')) {
+    for (let k = 1; k < g.players.length; k++) {
+      const j = (idx + k) % g.players.length;
+      if (g.players[j].hp > 0 && !g.players[j].cuffed) return { type: 'item', item: 'esposas', target: j };
+    }
+  }
+  // Cartucho de fogueo conocido + Inversor = disparo real garantizado
+  if (known === 'blank' && has('inversor')) return { type: 'item', item: 'inversor' };
+  // Con el inventario lleno, suelta una cerveza (si el cartucho no es el real conocido)
+  if (has('cerveza') && me.items.length >= 6 && known !== 'live' && p < 0.7) return { type: 'item', item: 'cerveza' };
+
+  // ¿Apostar por el fogueo (turno extra) o ir contra un rival?
+  const selfSafe = p === 0 || (!g.sawed && p < 0.5 && me.hp - 1 > 0);
+  if (selfSafe) return { type: 'shoot', target: idx };
+
+  if (p >= 0.5 && has('sierra') && !g.sawed && g.players[target].hp >= 2) return { type: 'item', item: 'sierra' };
+  return { type: 'shoot', target };
+}
+
+function scheduleBot(game, delay = 2200) {
+  const g = game.s;
+  if (g.ended || game.finished || game.botPending) return;
+  if (!g.players[g.turnIdx]?.isBot) return;
+  game.botPending = true;
+  setTimeout(() => {
+    runBot(game).catch(e => console.error('[Buckshot] Error del bot:', e));
+  }, delay);
+}
+
+async function runBot(game) {
+  const g = game.s;
+  game.botPending = false;
+  if (g.ended || game.finished) return;
+  const idx = g.turnIdx;
+  if (!g.players[idx]?.isBot) return;
+  if (game.processing) return scheduleBot(game, 700);
+
+  game.processing = true;
+  clearTimeout(game.timer);
+  const skip = new Set();
+  let shot = false;
+  try {
+    for (let n = 0; n < 25 && !g.ended && !game.finished; n++) {
+      const act = botDecide(game, idx, skip);
+      if (act.type === 'shoot') {
+        shot = true;
+        await runShot(game, idx, act.target); // apunta, dispara, avanza el turno y despierta al siguiente
+        break;
+      }
+      const before = botKnowledge(game);
+      const res = useItemEngine(g, idx, act.item, act.target ?? -1);
+      if (!res.ok) {
+        skip.add(act.item);
+        continue;
+      }
+      if (act.item === 'lupa') game.botKnow = { round: g.round, len: g.shells.length, val: g.shells[0] };
+      if (act.item === 'inversor' && before) {
+        game.botKnow = { round: g.round, len: g.shells.length, val: before === 'live' ? 'blank' : 'live' };
+      }
+      await flushPending(game);
+      await pushGame(game);
+      await sleep(1600);
+    }
+    if (!shot && !g.ended && !game.finished && g.turnIdx === idx) {
+      const opp = g.players.findIndex((pl, i) => i !== idx && pl.hp > 0);
+      await runShot(game, idx, opp >= 0 ? opp : idx);
+    }
+  } catch (e) {
+    console.error('[Buckshot] Fallo en el turno del bot:', e);
+    if (!g.ended && !game.finished && g.turnIdx === idx) {
+      try {
+        const opp = g.players.findIndex((pl, i) => i !== idx && pl.hp > 0);
+        await runShot(game, idx, opp >= 0 ? opp : idx);
+      } catch (e2) {
+        await abortGame(game, 'Error interno del bot.').catch(() => {});
+      }
+    }
+  } finally {
+    game.processing = false;
+  }
 }
 
 async function runShot(game, shooterIdx, targetIdx) {
@@ -815,6 +969,7 @@ async function sendAuditLog(game, status, resultLines = []) {
     L.push(' BUCKSHOT ROULETTE — REGISTRO DE PARTIDA');
     L.push('==================================================');
     L.push(`Estado: ${status}`);
+    L.push(`Modo: ${lobby.solo ? 'contra el bot (sin bonos, sin racha)' : 'multijugador'}`);
     L.push(`Mesa: #${lobby.id}`);
     L.push(`Servidor: ${game.channel.guild?.name || game.guildId} (${game.guildId})`);
     L.push(`Canal de la partida: #${game.channel.name || game.channel.id} (${game.channel.id})`);
@@ -824,7 +979,7 @@ async function sendAuditLog(game, status, resultLines = []) {
     L.push(`Vida inicial: ${g.maxHp} · Rondas jugadas: ${g.round}`);
     L.push('');
     L.push('JUGADORES (orden de turnos)');
-    g.players.forEach((p, i) => L.push(`  ${i + 1}. ${p.name} (${p.id})${p.id === lobby.hostId ? ' [anfitrión]' : ''}`));
+    g.players.forEach((p, i) => L.push(`  ${i + 1}. ${p.name} (${p.id})${p.id === lobby.hostId ? ' [anfitrión]' : ''}${p.isBot ? ' [BOT]' : ''}`));
     L.push('');
     L.push('SALA (antes de empezar)');
     (lobby.events || []).forEach(e => L.push(`  [${new Date(e.t).toISOString()}] ${clean(e.text)}`));
@@ -857,6 +1012,8 @@ async function finishGame(game) {
   const g = game.s;
   clearTimeout(game.timer);
   animated.delete(game.anim);
+
+  if (game.lobby.solo) return finishSoloGame(game);
 
   const winner = g.players.find(p => p.id === g.winnerId);
   const losers = g.players.filter(p => p.id !== g.winnerId);
@@ -958,15 +1115,20 @@ async function finishGame(game) {
   await sendResultsChannel(game.channel.guild, resultEmbed);
   await sendAuditLog(game, 'FINALIZADA', auditResult);
 
-  // Limpieza
+  await closeGameChannel(game, winner
+    ? `🏆 Ganó <@${winner.id}> y se llevó **${fmt(pay.total)}** Lagcoins.`
+    : 'La partida finalizó.');
+}
+
+// Limpieza común: libera jugadores, borra mesa/invitaciones, renueva el panel y cierra el canal
+async function closeGameChannel(game, closedText) {
+  const g = game.s;
   for (const p of g.players) busyUsers.delete(p.id);
   games.delete(game.channel.id);
   clearEscrow(game.lobby.id);
 
   game.lobby.closed = true;
-  game.lobby.closedText = winner
-    ? `🏆 Ganó <@${winner.id}> y se llevó **${fmt(pay.total)}** Lagcoins.`
-    : 'La partida finalizó.';
+  game.lobby.closedText = closedText;
   lobbies.delete(game.lobby.id);
 
   // Fuera del historial del canal principal: mesa + invitaciones, y panel nuevo
@@ -974,11 +1136,77 @@ async function finishGame(game) {
   await replaceMainPanel(game.lobby);
 
   try {
-    for (const p of g.players) {
+    for (const p of g.players.filter(x => !x.isBot)) {
       await game.channel.permissionOverwrites.edit(p.id, { SendMessages: false }).catch(() => {});
     }
   } catch {}
   setTimeout(() => game.channel.delete('Buckshot Roulette: partida terminada').catch(() => {}), CLOSE_DELAY_MS);
+}
+
+// Fin de una partida contra el bot: premio = pozo (sin bonos, sin racha, sin impuesto) + cooldown
+async function finishSoloGame(game) {
+  const g = game.s;
+  const guildId = game.guildId;
+  const human = g.players.find(p => !p.isBot);
+  const botP = g.players.find(p => p.isBot);
+  const humanWon = g.winnerId === human.id;
+  const prize = g.bet * 2;
+  const auditResult = [];
+
+  if (humanWon) {
+    await payOut(guildId, human.id, prize, 'buckshot_transfer_win').catch(e => console.error('[Buckshot] pago solo:', e.message));
+    auditResult.push(`Ganador: ${human.name} (${human.id}) venció al bot`);
+    auditResult.push(`Apuesta: ${g.bet} → premio pagado: ${prize} (ganancia neta ${g.bet}; sin bonos ni racha)`);
+  } else {
+    auditResult.push(`Ganador: ${botP.name} (bot)`);
+    auditResult.push(`${human.name} (${human.id}) perdió su apuesta de ${g.bet} (sin impuesto ni racha)`);
+  }
+
+  // Cooldown de 30 min (se cuenta desde que termina la partida)
+  state.soloCooldowns[`${guildId}-${human.id}`] = Date.now() + SOLO_COOLDOWN_MS;
+  saveState();
+
+  logBuckshot({
+    win: humanWon,
+    userId: human.id,
+    guildId,
+    amount: humanWon ? g.bet : -g.bet,
+    importance: humanWon ? 'medium' : 'low',
+    reason: humanWon ? 'Victoria contra el bot en Buckshot Roulette' : 'Derrota contra el bot en Buckshot Roulette',
+    details: { minigame: 'buckshot', mode: 'bot', bet: g.bet, prize: humanWon ? prize : 0 }
+  });
+
+  const duration = Math.max(1, Math.round((Date.now() - game.startedAt) / 1000));
+  const resultEmbed = {
+    color: humanWon ? 0x2ECC71 : 0xE74C3C,
+    title: '🤖 Buckshot Roulette vs Bot — Resultados',
+    description: humanWon
+      ? `🏆 <@${human.id}> *(${human.name})* venció al bot.`
+      : `**${botP.name}** ganó la partida contra <@${human.id}> *(${human.name})*.`,
+    fields: [
+      {
+        name: '💰 Economía',
+        value: humanWon
+          ? `Apostó **${fmt(g.bet)}** → recibe **${fmt(prize)}** Lagcoins (**+${fmt(g.bet)}** netos).`
+          : `Pierde su apuesta de **${fmt(g.bet)}** Lagcoins.`
+      },
+      { name: 'ℹ️ Modo bot', value: 'Sin bonos por jugador, sin bono ni cambios de racha y sin impuesto.' },
+      { name: '📈 Datos de la partida', value: `**${g.round}** ronda${g.round === 1 ? '' : 's'} · **${duration}s**` },
+      { name: '⏳ Próxima partida contra el bot', value: `<t:${Math.floor((Date.now() + SOLO_COOLDOWN_MS) / 1000)}:R>` }
+    ],
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    await game.channel.send({
+      embeds: [resultEmbed],
+      content: `🔒 Este canal se cerrará <t:${Math.floor((Date.now() + CLOSE_DELAY_MS) / 1000)}:R>.`
+    });
+  } catch {}
+  await sendResultsChannel(game.channel.guild, resultEmbed);
+  await sendAuditLog(game, 'FINALIZADA (vs bot)', auditResult);
+
+  await closeGameChannel(game, humanWon ? `🏆 <@${human.id}> venció al bot.` : '🤖 Ganó el bot.');
 }
 
 async function abortGame(game, reason) {
@@ -1035,7 +1263,7 @@ async function launchGame(lobby) {
       name: `ruleta-${slug}-${lobby.id}`,
       type: ChannelType.GuildText,
       parent: lobby.channel.parentId || undefined,
-      topic: `Buckshot Roulette · Apuesta ${fmt(lobby.bet)} Lagcoins · Mesa #${lobby.id}`,
+      topic: `Buckshot Roulette${lobby.solo ? ' (vs bot)' : ''} · Apuesta ${fmt(lobby.bet)} Lagcoins · Mesa #${lobby.id}`,
       permissionOverwrites: overwrites
     });
   } catch (e) {
@@ -1048,7 +1276,9 @@ async function launchGame(lobby) {
   lobby.gameChannelId = gch.id;
   saveEscrow(lobby);
 
-  const s = newGameState(lobby.players.map(id => ({ id, name: lobby.names[id] || `Jugador` })), lobby.bet);
+  const roster = lobby.players.map(id => ({ id, name: lobby.names[id] || `Jugador` }));
+  if (lobby.solo) roster.push({ id: client.user.id, name: `🤖 ${client.user.username}`, isBot: true });
+  const s = newGameState(roster, lobby.bet);
   reloadShotgun(s);
   note(s, `🎬 Comienza la partida: ${s.players.map(x => `${x.name} (${s.maxHp} vidas)`).join(', ')} · apuesta ${lobby.bet} c/u`);
   note(s, `▶️ Turno de ${s.players[s.turnIdx].name}`);
@@ -1075,7 +1305,7 @@ async function launchGame(lobby) {
 
   try {
     game.statusMsg = await gch.send({
-      content: `🔫 ${lobby.players.map(id => `<@${id}>`).join(' ')} — **¡La partida comienza!**`,
+      content: `🔫 ${lobby.players.map(id => `<@${id}>`).join(' ')}${lobby.solo ? ' vs 🤖 **el bot**' : ''} — **¡La partida comienza!**`,
       embeds: [gameEmbed(game, currentColor(), tick)],
       components: gameComponents(game)
     });
@@ -1097,6 +1327,7 @@ async function launchGame(lobby) {
   await flushPending(game); // carga de la escopeta y reparto de ítems de la ronda 1
   await pushGame(game);
   await refreshLobby(lobby);
+  scheduleBot(game, 3000); // por si el bot empieza
   setTimeout(() => deleteLobbyMessages(lobby, false), 5000); // invitaciones ya no hacen falta
 }
 
@@ -1169,6 +1400,112 @@ async function handleCreateButton(interaction) {
       )
     );
   await interaction.showModal(modal);
+}
+
+// ---------- Modo contra el bot ----------
+function soloCooldownLeft(guildId, userId) {
+  const key = `${guildId}-${userId}`;
+  const until = state.soloCooldowns[key] || 0;
+  if (until <= Date.now()) {
+    if (state.soloCooldowns[key]) {
+      delete state.soloCooldowns[key];
+      saveState();
+    }
+    return 0;
+  }
+  return until;
+}
+
+async function handleSoloButton(interaction) {
+  if (!(await precheckPlayer(interaction))) return;
+  const until = soloCooldownLeft(interaction.guild.id, interaction.user.id);
+  if (until) {
+    return interaction.reply({
+      content: `⏳ Ya jugaste contra el bot hace poco. Podrás volver a retarlo <t:${Math.floor(until / 1000)}:R>.`,
+      flags: 64
+    });
+  }
+  const bal = await getBalance(interaction.guild.id, interaction.user.id);
+  if (bal < MIN_BET) {
+    return interaction.reply({ content: `❌ Necesitas al menos **${fmt(MIN_BET)} Lagcoins** para apostar (tienes ${fmt(bal)}).`, flags: 64 });
+  }
+  const modal = new ModalBuilder()
+    .setCustomId(`br_modal_solo_${interaction.message?.id || ''}`)
+    .setTitle('🤖 Buckshot Roulette vs Bot')
+    .addComponents(
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('bet')
+          .setLabel(`Tu apuesta (mínimo ${MIN_BET}) — ganas el doble`)
+          .setStyle(TextInputStyle.Short)
+          .setPlaceholder(String(MIN_BET))
+          .setRequired(true)
+          .setMaxLength(10)
+      )
+    );
+  await interaction.showModal(modal);
+}
+
+async function handleSoloModal(interaction) {
+  if (!(await precheckPlayer(interaction))) return;
+  const guildId = interaction.guild.id;
+  const uid = interaction.user.id;
+  const until = soloCooldownLeft(guildId, uid);
+  if (until) {
+    return interaction.reply({ content: `⏳ Podrás retar al bot <t:${Math.floor(until / 1000)}:R>.`, flags: 64 });
+  }
+  const raw = interaction.fields.getTextInputValue('bet');
+  const bet = parseInt(String(raw).replace(/[^\d]/g, ''), 10);
+  if (!Number.isFinite(bet) || bet < MIN_BET) {
+    return interaction.reply({ content: `❌ La apuesta mínima es de **${fmt(MIN_BET)} Lagcoins**.`, flags: 64 });
+  }
+  const bal = await getBalance(guildId, uid);
+  if (bal < bet) {
+    return interaction.reply({ content: `❌ No tienes suficientes Lagcoins (tienes ${fmt(bal)}).`, flags: 64 });
+  }
+  if (busyUsers.has(uid)) {
+    return interaction.reply({ content: '❌ Ya estás en una mesa o partida de Buckshot Roulette.', flags: 64 });
+  }
+  if (!(await takeBet(guildId, uid, bet))) {
+    return interaction.reply({ content: '❌ No se pudo retener tu apuesta. Inténtalo de nuevo.', flags: 64 });
+  }
+
+  const name = interaction.member?.displayName || interaction.user.username;
+  const lobby = {
+    id: Math.random().toString(36).slice(2, 7),
+    guildId,
+    channel: interaction.channel,
+    hostId: uid,
+    bet,
+    solo: true,
+    players: [uid],
+    names: { [uid]: name },
+    invited: new Set(),
+    temp: [],
+    events: [],
+    mainMessageId: interaction.customId.split('_')[3] || null,
+    message: null,
+    started: false,
+    closed: false,
+    expiresAt: Date.now() + LOBBY_MS,
+    timer: null,
+    anim: null
+  };
+  busyUsers.set(uid, lobby.id);
+  lobbies.set(lobby.id, lobby);
+  lobbyNote(lobby, `${name} (${uid}) creó una partida contra el bot con apuesta de ${bet}`);
+
+  await interaction.deferReply({ flags: 64 });
+  await launchGame(lobby);
+  if (lobby.gameChannelId) {
+    await interaction.editReply({
+      content: `🤖 ¡Partida contra el bot creada! Apostaste **${fmt(bet)}** Lagcoins → <#${lobby.gameChannelId}>`
+    }).catch(() => {});
+  } else {
+    await interaction.editReply({
+      content: '❌ No pude crear el canal de la partida. Tu apuesta fue devuelta y no se aplicó cooldown.'
+    }).catch(() => {});
+  }
 }
 
 async function handleCreateModal(interaction) {
@@ -1502,12 +1839,16 @@ async function onInteraction(interaction) {
   if (interaction.isModalSubmit() && id.startsWith('br_modal_create')) {
     return handleCreateModal(interaction);
   }
+  if (interaction.isModalSubmit() && id.startsWith('br_modal_solo')) {
+    return handleSoloModal(interaction);
+  }
 
   if (interaction.isStringSelectMenu()) {
     if (await isJailed(interaction.guild.id, interaction.user.id)) return;
     if (id === 'br_menu') {
       const choice = interaction.values[0];
       if (choice === 'create') return handleCreateButton(interaction);
+      if (choice === 'bot') return handleSoloButton(interaction);
       if (choice === 'info') return showInfo(interaction);
       if (choice === 'stats') return showStats(interaction);
       return;
@@ -1634,6 +1975,9 @@ export function registerBuckshot(discordClient) {
   else client.once('ready', () => recoverOnStart().catch(e => console.error('[Buckshot] recover:', e)));
 }
 
+export const __internals = { games };
+
 export const __engine = {
-  newGameState, reloadShotgun, shoot, advanceTurn, useItemEngine, forceTimeout, computePayouts
+  newGameState, reloadShotgun, shoot, advanceTurn, useItemEngine, forceTimeout, computePayouts,
+  botDecide, botKnowledge, liveChance
 };
