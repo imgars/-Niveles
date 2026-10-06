@@ -1,23 +1,9 @@
-const CATEGORY_IMAGES = {
-  geografia: 'https://media.tenor.com/0E_VJK1HfO8AAAAC/world-globe.gif',
-  historia: 'https://media.tenor.com/PJ_pQhJ0H8QAAAAC/history-book.gif',
-  ciencia: 'https://media.tenor.com/xKmyrq_5L_QAAAAC/science-scientist.gif',
-  arte: 'https://media.tenor.com/BhJp2SfBNsQAAAAC/art-painting.gif',
-  literatura: 'https://media.tenor.com/qPPZqUhDUMwAAAAC/reading-book.gif',
-  cultura: 'https://media.tenor.com/F1ELZM7sEE0AAAAC/culture-festival.gif',
-  musica: 'https://media.tenor.com/kHxTQb0A4B0AAAAC/music-musical-notes.gif',
-  tecnologia: 'https://media.tenor.com/9TZq5Xa7rTEAAAAC/technology-tech.gif',
-  deportes: 'https://media.tenor.com/1kfBLjy3D3cAAAAC/soccer-goal.gif',
-  animales: 'https://media.tenor.com/3mKT4AFOEHYAAAAC/animals-cute.gif',
-  videojuegos: 'https://media.tenor.com/1nXsVT0BKIAAAAAC/gaming-video-games.gif',
-  cine: 'https://media.tenor.com/KO7G0n_XFWEAAAAC/movie-popcorn.gif',
-  matematicas: 'https://media.tenor.com/AKJT0pHMdT0AAAAC/math-mathematics.gif',
-  lenguaje: 'https://media.tenor.com/C5w2PZDO2OEAAAAC/writing-letter.gif'
-};
-
-export function getCategoryImage(category) {
-  return CATEGORY_IMAGES[category] || 'https://media.tenor.com/LmQYBXiZHnAAAAAC/question-mark.gif';
-}
+// Las imágenes por categoría ahora se generan localmente en utils/triviaImages.js
+// (antes eran enlaces de Tenor que dejaban de cargar).
+// getCategoryImage(category) devuelve { file, url }:
+//   - file: adjunto para enviar en `files: [file]`
+//   - url:  'attachment://...' para usar en embed.image = { url }
+export { getTriviaImage as getCategoryImage } from '../utils/triviaImages.js';
 
 export const TRIVIA_QUESTIONS = [
   { question: 'Cual es la capital de Venezuela?', options: ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto'], correct: 0, category: 'geografia' },
