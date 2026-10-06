@@ -17,6 +17,7 @@ import { initDiscordLogger, sendActivityToDiscord } from './utils/discordLogger.
 import { checkAndBreakExpiredStreaks, acceptStreakRequest, rejectStreakRequest, recordMessage, deleteStreak, getStreakBetween, getAllActiveStreaks, STREAK_BREAK_CHANNEL_ID } from './utils/streakService.js';
 import { buildReactionEmbed, calculateShipPercentage } from './utils/reactionHandler.js';
 import { registerBuckshot } from './utils/buckshotRoulette.js';
+import { registerImpostor } from './utils/impostorGame.js';
 import { REACTION_MESSAGES } from './data/reactionGifs.js';
 import express from 'express';
 import cookieParser from 'cookie-parser';
@@ -1199,6 +1200,7 @@ if (failedCount > 0) {
 }
 
 registerBuckshot(client);
+registerImpostor(client);
 
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
