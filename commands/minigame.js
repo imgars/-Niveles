@@ -3,78 +3,79 @@ import db from '../utils/database.js';
 import { addLevels, removeLevels, calculateLevel } from '../utils/xpSystem.js';
 import { formatDuration } from '../utils/helpers.js';
 import { addUserLagcoins } from '../utils/economyDB.js';
+import { getTriviaImage } from '../utils/triviaImages.js';
 import { logFromInteraction, LOG_TYPES } from '../utils/activityLogger.js';
 
 const triviaQuestions = [
-  { question: '¿Cuál es la capital de Venezuela?', options: ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto'], correct: 0 },
-  { question: '¿En qué año se independizó Venezuela?', options: ['1810', '1811', '1812', '1813'], correct: 1 },
-  { question: '¿Cuál es el río más largo del mundo?', options: ['Nilo', 'Amazonas', 'Yangtsé', 'Misisipi'], correct: 1 },
-  { question: '¿Quién pintó la Mona Lisa?', options: ['Van Gogh', 'Picasso', 'Da Vinci', 'Miguel Ángel'], correct: 2 },
-  { question: '¿Cuántos continentes hay en la Tierra?', options: ['5', '6', '7', '8'], correct: 2 },
-  { question: '¿Cuál es el planeta más grande del sistema solar?', options: ['Saturno', 'Júpiter', 'Neptuno', 'Urano'], correct: 1 },
-  { question: '¿En qué país está la Estatua de la Libertad?', options: ['Francia', 'Canadá', 'Estados Unidos', 'México'], correct: 2 },
-  { question: '¿Cuál es el elemento químico más abundante en la Tierra?', options: ['Oxígeno', 'Silicio', 'Hierro', 'Nitrógeno'], correct: 0 },
-  { question: '¿Cuántos lados tiene un hexágono?', options: ['5', '6', '7', '8'], correct: 1 },
-  { question: '¿Quién escribió Don Quijote?', options: ['Lope de Vega', 'Cervantes', 'Calderón', 'Góngora'], correct: 1 },
-  { question: '¿En qué año se inventó la bombilla?', options: ['1879', '1889', '1869', '1859'], correct: 0 },
-  { question: '¿Cuál es la moneda de Japón?', options: ['Yuan', 'Won', 'Yen', 'Baht'], correct: 2 },
-  { question: '¿Quién fue el primer presidente de Estados Unidos?', options: ['Thomas Jefferson', 'George Washington', 'Benjamin Franklin', 'Abraham Lincoln'], correct: 1 },
-  { question: '¿Cuál es el océano más grande del mundo?', options: ['Atlántico', 'Índico', 'Pacífico', 'Ártico'], correct: 2 },
-  { question: '¿Cuántas provincias tiene España?', options: ['15', '17', '19', '21'], correct: 1 },
-  { question: '¿Qué velocidad alcanza la luz?', options: ['300.000 km/s', '150.000 km/s', '450.000 km/s', '100.000 km/s'], correct: 0 },
-  { question: '¿Cuál es el animal más rápido del mundo?', options: ['Halcón peregrino', 'Guepardo', 'Águila real', 'Gacela'], correct: 0 },
-  { question: '¿En qué año cayó el Muro de Berlín?', options: ['1989', '1988', '1990', '1991'], correct: 0 },
-  { question: '¿Cuál es el idioma más hablado del mundo?', options: ['Español', 'Inglés', 'Chino Mandarín', 'Hindi'], correct: 2 },
-  { question: '¿Cuántas cuerdas tiene una guitarra estándar?', options: ['5', '6', '7', '8'], correct: 1 },
-  { question: '¿Quién pintó la Noche Estrellada?', options: ['Picasso', 'Monet', 'Van Gogh', 'Dalí'], correct: 2 },
-  { question: '¿Cuál es el desierto más grande del mundo?', options: ['Sahara', 'Gobi', 'Antártida', 'Arabia'], correct: 0 },
-  { question: '¿En qué año terminó la Segunda Guerra Mundial?', options: ['1943', '1944', '1945', '1946'], correct: 2 },
-  { question: '¿Cuál es la capital de Francia?', options: ['Marsella', 'París', 'Lyon', 'Toulouse'], correct: 1 },
-  { question: '¿Cuántos huesos tiene el cuerpo humano adulto?', options: ['186', '206', '226', '246'], correct: 1 },
-  { question: '¿Cuál es el metal más precioso?', options: ['Platino', 'Oro', 'Plata', 'Paladio'], correct: 1 },
-  { question: '¿En qué país está la Torre de Pisa?', options: ['Francia', 'Alemania', 'Italia', 'España'], correct: 2 },
-  { question: '¿Cuántas letras tiene el alfabeto español?', options: ['26', '27', '28', '29'], correct: 1 },
-  { question: '¿Quién fue Napoleón Bonaparte?', options: ['Pintor', 'Militar francés', 'Filósofo', 'Científico'], correct: 1 },
-  { question: '¿Cuál es el deporte más popular en el mundo?', options: ['Baloncesto', 'Fútbol', 'Tenis', 'Cricket'], correct: 1 },
-  { question: '¿Cuál es la capital de Argentina?', options: ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza'], correct: 0 },
-  { question: '¿Quién descubrió América?', options: ['Américo Vespucio', 'Cristóbal Colón', 'Fernando de Magallanes', 'Hernán Cortés'], correct: 1 },
-  { question: '¿Cuál es el país más grande del mundo?', options: ['Estados Unidos', 'China', 'Rusia', 'Canadá'], correct: 2 },
-  { question: '¿En qué año llegó el hombre a la Luna?', options: ['1965', '1967', '1969', '1971'], correct: 2 },
-  { question: '¿Cuál es el símbolo químico del agua?', options: ['O2', 'H2O', 'CO2', 'NaCl'], correct: 1 },
-  { question: '¿Quién escribió Romeo y Julieta?', options: ['Dante', 'Shakespeare', 'Molière', 'Goethe'], correct: 1 },
-  { question: '¿Cuál es la montaña más alta del mundo?', options: ['K2', 'Everest', 'Aconcagua', 'Monte Blanco'], correct: 1 },
-  { question: '¿En qué continente está Egipto?', options: ['Asia', 'Europa', 'África', 'Oceanía'], correct: 2 },
-  { question: '¿Cuántos planetas tiene el sistema solar?', options: ['7', '8', '9', '10'], correct: 1 },
-  { question: '¿Cuál es la capital de Colombia?', options: ['Medellín', 'Cali', 'Bogotá', 'Cartagena'], correct: 2 },
-  { question: '¿Quién inventó el teléfono?', options: ['Thomas Edison', 'Alexander Graham Bell', 'Nikola Tesla', 'Samuel Morse'], correct: 1 },
-  { question: '¿Cuál es el animal terrestre más grande?', options: ['Rinoceronte', 'Elefante', 'Hipopótamo', 'Jirafa'], correct: 1 },
-  { question: '¿En qué año comenzó la Primera Guerra Mundial?', options: ['1912', '1914', '1916', '1918'], correct: 1 },
-  { question: '¿Cuál es la capital de México?', options: ['Guadalajara', 'Monterrey', 'Ciudad de México', 'Cancún'], correct: 2 },
-  { question: '¿Quién desarrolló la teoría de la relatividad?', options: ['Newton', 'Einstein', 'Hawking', 'Galileo'], correct: 1 },
-  { question: '¿Cuál es el país más poblado del mundo?', options: ['Estados Unidos', 'India', 'China', 'Indonesia'], correct: 1 },
-  { question: '¿En qué país está el Machu Picchu?', options: ['Bolivia', 'Ecuador', 'Perú', 'Chile'], correct: 2 },
-  { question: '¿Cuál es la capital de Brasil?', options: ['São Paulo', 'Río de Janeiro', 'Brasilia', 'Salvador'], correct: 2 },
-  { question: '¿Quién compuso la Quinta Sinfonía?', options: ['Mozart', 'Beethoven', 'Bach', 'Chopin'], correct: 1 },
-  { question: '¿Cuántos días tiene un año bisiesto?', options: ['364', '365', '366', '367'], correct: 2 },
-  { question: '¿Cuál es el órgano más grande del cuerpo humano?', options: ['Hígado', 'Cerebro', 'Piel', 'Corazón'], correct: 2 },
-  { question: '¿En qué país está la Gran Muralla?', options: ['Japón', 'Corea', 'China', 'Mongolia'], correct: 2 },
-  { question: '¿Cuál es el gas más abundante en la atmósfera?', options: ['Oxígeno', 'Nitrógeno', 'CO2', 'Argón'], correct: 1 },
-  { question: '¿Quién fue el libertador de Venezuela?', options: ['San Martín', 'Bolívar', 'Sucre', 'Miranda'], correct: 1 },
-  { question: '¿Cuál es la capital de Chile?', options: ['Valparaíso', 'Concepción', 'Santiago', 'Viña del Mar'], correct: 2 },
-  { question: '¿En qué año se fundó Google?', options: ['1996', '1998', '2000', '2002'], correct: 1 },
-  { question: '¿Cuál es el planeta más cercano al Sol?', options: ['Venus', 'Mercurio', 'Marte', 'Tierra'], correct: 1 },
-  { question: '¿Quién pintó El Grito?', options: ['Munch', 'Picasso', 'Dalí', 'Van Gogh'], correct: 0 },
-  { question: '¿Cuál es la capital de España?', options: ['Barcelona', 'Sevilla', 'Madrid', 'Valencia'], correct: 2 },
-  { question: '¿Cuántos jugadores hay en un equipo de fútbol?', options: ['9', '10', '11', '12'], correct: 2 },
-  { question: '¿Cuál es la capital de Italia?', options: ['Milán', 'Venecia', 'Roma', 'Florencia'], correct: 2 },
-  { question: '¿Quién creó Facebook?', options: ['Steve Jobs', 'Bill Gates', 'Mark Zuckerberg', 'Elon Musk'], correct: 2 },
-  { question: '¿Cuál es el animal más grande del mundo?', options: ['Elefante', 'Ballena Azul', 'Tiburón Ballena', 'Jirafa'], correct: 1 },
-  { question: '¿En qué país está el Taj Mahal?', options: ['Pakistán', 'India', 'Bangladesh', 'Nepal'], correct: 1 },
-  { question: '¿Cuál es la capital de Alemania?', options: ['Múnich', 'Hamburgo', 'Berlín', 'Frankfurt'], correct: 2 },
-  { question: '¿Cuántas notas musicales hay?', options: ['5', '6', '7', '8'], correct: 2 },
-  { question: '¿Quién escribió Cien años de soledad?', options: ['Borges', 'García Márquez', 'Cortázar', 'Vargas Llosa'], correct: 1 },
-  { question: '¿Cuál es la moneda de Reino Unido?', options: ['Euro', 'Dólar', 'Libra', 'Franco'], correct: 2 },
-  { question: '¿En qué continente está Australia?', options: ['Asia', 'Oceanía', 'América', 'Europa'], correct: 1 }
+  { question: '¿Cuál es la capital de Venezuela?', options: ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto'], correct: 0, category: 'geografia' },
+  { question: '¿En qué año se independizó Venezuela?', options: ['1810', '1811', '1812', '1813'], correct: 1, category: 'historia' },
+  { question: '¿Cuál es el río más largo del mundo?', options: ['Nilo', 'Amazonas', 'Yangtsé', 'Misisipi'], correct: 1, category: 'geografia' },
+  { question: '¿Quién pintó la Mona Lisa?', options: ['Van Gogh', 'Picasso', 'Da Vinci', 'Miguel Ángel'], correct: 2, category: 'arte' },
+  { question: '¿Cuántos continentes hay en la Tierra?', options: ['5', '6', '7', '8'], correct: 2, category: 'geografia' },
+  { question: '¿Cuál es el planeta más grande del sistema solar?', options: ['Saturno', 'Júpiter', 'Neptuno', 'Urano'], correct: 1, category: 'ciencia' },
+  { question: '¿En qué país está la Estatua de la Libertad?', options: ['Francia', 'Canadá', 'Estados Unidos', 'México'], correct: 2, category: 'geografia' },
+  { question: '¿Cuál es el elemento químico más abundante en la Tierra?', options: ['Oxígeno', 'Silicio', 'Hierro', 'Nitrógeno'], correct: 0, category: 'ciencia' },
+  { question: '¿Cuántos lados tiene un hexágono?', options: ['5', '6', '7', '8'], correct: 1, category: 'matematicas' },
+  { question: '¿Quién escribió Don Quijote?', options: ['Lope de Vega', 'Cervantes', 'Calderón', 'Góngora'], correct: 1, category: 'literatura' },
+  { question: '¿En qué año se inventó la bombilla?', options: ['1879', '1889', '1869', '1859'], correct: 0, category: 'historia' },
+  { question: '¿Cuál es la moneda de Japón?', options: ['Yuan', 'Won', 'Yen', 'Baht'], correct: 2, category: 'cultura' },
+  { question: '¿Quién fue el primer presidente de Estados Unidos?', options: ['Thomas Jefferson', 'George Washington', 'Benjamin Franklin', 'Abraham Lincoln'], correct: 1, category: 'historia' },
+  { question: '¿Cuál es el océano más grande del mundo?', options: ['Atlántico', 'Índico', 'Pacífico', 'Ártico'], correct: 2, category: 'geografia' },
+  { question: '¿Cuántas provincias tiene España?', options: ['15', '17', '19', '21'], correct: 1, category: 'geografia' },
+  { question: '¿Qué velocidad alcanza la luz?', options: ['300.000 km/s', '150.000 km/s', '450.000 km/s', '100.000 km/s'], correct: 0, category: 'ciencia' },
+  { question: '¿Cuál es el animal más rápido del mundo?', options: ['Halcón peregrino', 'Guepardo', 'Águila real', 'Gacela'], correct: 0, category: 'animales' },
+  { question: '¿En qué año cayó el Muro de Berlín?', options: ['1989', '1988', '1990', '1991'], correct: 0, category: 'historia' },
+  { question: '¿Cuál es el idioma más hablado del mundo?', options: ['Español', 'Inglés', 'Chino Mandarín', 'Hindi'], correct: 2, category: 'cultura' },
+  { question: '¿Cuántas cuerdas tiene una guitarra estándar?', options: ['5', '6', '7', '8'], correct: 1, category: 'musica' },
+  { question: '¿Quién pintó la Noche Estrellada?', options: ['Picasso', 'Monet', 'Van Gogh', 'Dalí'], correct: 2, category: 'arte' },
+  { question: '¿Cuál es el desierto más grande del mundo?', options: ['Sahara', 'Gobi', 'Antártida', 'Arabia'], correct: 0, category: 'geografia' },
+  { question: '¿En qué año terminó la Segunda Guerra Mundial?', options: ['1943', '1944', '1945', '1946'], correct: 2, category: 'historia' },
+  { question: '¿Cuál es la capital de Francia?', options: ['Marsella', 'París', 'Lyon', 'Toulouse'], correct: 1, category: 'geografia' },
+  { question: '¿Cuántos huesos tiene el cuerpo humano adulto?', options: ['186', '206', '226', '246'], correct: 1, category: 'ciencia' },
+  { question: '¿Cuál es el metal más precioso?', options: ['Platino', 'Oro', 'Plata', 'Paladio'], correct: 1, category: 'ciencia' },
+  { question: '¿En qué país está la Torre de Pisa?', options: ['Francia', 'Alemania', 'Italia', 'España'], correct: 2, category: 'geografia' },
+  { question: '¿Cuántas letras tiene el alfabeto español?', options: ['26', '27', '28', '29'], correct: 1, category: 'lenguaje' },
+  { question: '¿Quién fue Napoleón Bonaparte?', options: ['Pintor', 'Militar francés', 'Filósofo', 'Científico'], correct: 1, category: 'historia' },
+  { question: '¿Cuál es el deporte más popular en el mundo?', options: ['Baloncesto', 'Fútbol', 'Tenis', 'Cricket'], correct: 1, category: 'deportes' },
+  { question: '¿Cuál es la capital de Argentina?', options: ['Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza'], correct: 0, category: 'geografia' },
+  { question: '¿Quién descubrió América?', options: ['Américo Vespucio', 'Cristóbal Colón', 'Fernando de Magallanes', 'Hernán Cortés'], correct: 1, category: 'historia' },
+  { question: '¿Cuál es el país más grande del mundo?', options: ['Estados Unidos', 'China', 'Rusia', 'Canadá'], correct: 2, category: 'geografia' },
+  { question: '¿En qué año llegó el hombre a la Luna?', options: ['1965', '1967', '1969', '1971'], correct: 2, category: 'historia' },
+  { question: '¿Cuál es el símbolo químico del agua?', options: ['O2', 'H2O', 'CO2', 'NaCl'], correct: 1, category: 'ciencia' },
+  { question: '¿Quién escribió Romeo y Julieta?', options: ['Dante', 'Shakespeare', 'Molière', 'Goethe'], correct: 1, category: 'literatura' },
+  { question: '¿Cuál es la montaña más alta del mundo?', options: ['K2', 'Everest', 'Aconcagua', 'Monte Blanco'], correct: 1, category: 'geografia' },
+  { question: '¿En qué continente está Egipto?', options: ['Asia', 'Europa', 'África', 'Oceanía'], correct: 2, category: 'geografia' },
+  { question: '¿Cuántos planetas tiene el sistema solar?', options: ['7', '8', '9', '10'], correct: 1, category: 'ciencia' },
+  { question: '¿Cuál es la capital de Colombia?', options: ['Medellín', 'Cali', 'Bogotá', 'Cartagena'], correct: 2, category: 'geografia' },
+  { question: '¿Quién inventó el teléfono?', options: ['Thomas Edison', 'Alexander Graham Bell', 'Nikola Tesla', 'Samuel Morse'], correct: 1, category: 'historia' },
+  { question: '¿Cuál es el animal terrestre más grande?', options: ['Rinoceronte', 'Elefante', 'Hipopótamo', 'Jirafa'], correct: 1, category: 'animales' },
+  { question: '¿En qué año comenzó la Primera Guerra Mundial?', options: ['1912', '1914', '1916', '1918'], correct: 1, category: 'historia' },
+  { question: '¿Cuál es la capital de México?', options: ['Guadalajara', 'Monterrey', 'Ciudad de México', 'Cancún'], correct: 2, category: 'geografia' },
+  { question: '¿Quién desarrolló la teoría de la relatividad?', options: ['Newton', 'Einstein', 'Hawking', 'Galileo'], correct: 1, category: 'ciencia' },
+  { question: '¿Cuál es el país más poblado del mundo?', options: ['Estados Unidos', 'India', 'China', 'Indonesia'], correct: 1, category: 'geografia' },
+  { question: '¿En qué país está el Machu Picchu?', options: ['Bolivia', 'Ecuador', 'Perú', 'Chile'], correct: 2, category: 'geografia' },
+  { question: '¿Cuál es la capital de Brasil?', options: ['São Paulo', 'Río de Janeiro', 'Brasilia', 'Salvador'], correct: 2, category: 'geografia' },
+  { question: '¿Quién compuso la Quinta Sinfonía?', options: ['Mozart', 'Beethoven', 'Bach', 'Chopin'], correct: 1, category: 'musica' },
+  { question: '¿Cuántos días tiene un año bisiesto?', options: ['364', '365', '366', '367'], correct: 2, category: 'matematicas' },
+  { question: '¿Cuál es el órgano más grande del cuerpo humano?', options: ['Hígado', 'Cerebro', 'Piel', 'Corazón'], correct: 2, category: 'ciencia' },
+  { question: '¿En qué país está la Gran Muralla?', options: ['Japón', 'Corea', 'China', 'Mongolia'], correct: 2, category: 'geografia' },
+  { question: '¿Cuál es el gas más abundante en la atmósfera?', options: ['Oxígeno', 'Nitrógeno', 'CO2', 'Argón'], correct: 1, category: 'ciencia' },
+  { question: '¿Quién fue el libertador de Venezuela?', options: ['San Martín', 'Bolívar', 'Sucre', 'Miranda'], correct: 1, category: 'historia' },
+  { question: '¿Cuál es la capital de Chile?', options: ['Valparaíso', 'Concepción', 'Santiago', 'Viña del Mar'], correct: 2, category: 'geografia' },
+  { question: '¿En qué año se fundó Google?', options: ['1996', '1998', '2000', '2002'], correct: 1, category: 'tecnologia' },
+  { question: '¿Cuál es el planeta más cercano al Sol?', options: ['Venus', 'Mercurio', 'Marte', 'Tierra'], correct: 1, category: 'ciencia' },
+  { question: '¿Quién pintó El Grito?', options: ['Munch', 'Picasso', 'Dalí', 'Van Gogh'], correct: 0, category: 'arte' },
+  { question: '¿Cuál es la capital de España?', options: ['Barcelona', 'Sevilla', 'Madrid', 'Valencia'], correct: 2, category: 'geografia' },
+  { question: '¿Cuántos jugadores hay en un equipo de fútbol?', options: ['9', '10', '11', '12'], correct: 2, category: 'deportes' },
+  { question: '¿Cuál es la capital de Italia?', options: ['Milán', 'Venecia', 'Roma', 'Florencia'], correct: 2, category: 'geografia' },
+  { question: '¿Quién creó Facebook?', options: ['Steve Jobs', 'Bill Gates', 'Mark Zuckerberg', 'Elon Musk'], correct: 2, category: 'tecnologia' },
+  { question: '¿Cuál es el animal más grande del mundo?', options: ['Elefante', 'Ballena Azul', 'Tiburón Ballena', 'Jirafa'], correct: 1, category: 'animales' },
+  { question: '¿En qué país está el Taj Mahal?', options: ['Pakistán', 'India', 'Bangladesh', 'Nepal'], correct: 1, category: 'geografia' },
+  { question: '¿Cuál es la capital de Alemania?', options: ['Múnich', 'Hamburgo', 'Berlín', 'Frankfurt'], correct: 2, category: 'geografia' },
+  { question: '¿Cuántas notas musicales hay?', options: ['5', '6', '7', '8'], correct: 2, category: 'musica' },
+  { question: '¿Quién escribió Cien años de soledad?', options: ['Borges', 'García Márquez', 'Cortázar', 'Vargas Llosa'], correct: 1, category: 'literatura' },
+  { question: '¿Cuál es la moneda de Reino Unido?', options: ['Euro', 'Dólar', 'Libra', 'Franco'], correct: 2, category: 'cultura' },
+  { question: '¿En qué continente está Australia?', options: ['Asia', 'Oceanía', 'América', 'Europa'], correct: 1, category: 'geografia' }
 ];
 
 export default {
@@ -212,26 +213,28 @@ async function playTrivia(interaction) {
       );
     }
     
+    const { file: imageFile, url: imageUrl } = getTriviaImage(q.category);
+    const questionEmbed = {
+      color: 0x7289DA,
+      title: `🎯 Trivia - Pregunta ${currentQuestion + 1}/5`,
+      description: q.question,
+      image: { url: imageUrl },
+      footer: { text: `Respuestas correctas: ${correctAnswers}` }
+    };
+    
     if (!triviaMessage) {
       triviaMessage = await inter.reply({
-        embeds: [{
-          color: 0x7289DA,
-          title: `🎯 Trivia - Pregunta ${currentQuestion + 1}/5`,
-          description: q.question,
-          footer: { text: `Respuestas correctas: ${correctAnswers}` }
-        }],
+        embeds: [questionEmbed],
         components: [row],
+        files: [imageFile],
         fetchReply: true
       });
     } else {
       await triviaMessage.edit({
-        embeds: [{
-          color: 0x7289DA,
-          title: `🎯 Trivia - Pregunta ${currentQuestion + 1}/5`,
-          description: q.question,
-          footer: { text: `Respuestas correctas: ${correctAnswers}` }
-        }],
-        components: [row]
+        embeds: [questionEmbed],
+        components: [row],
+        files: [imageFile],
+        attachments: []
       });
     }
     
@@ -260,7 +263,8 @@ async function playTrivia(interaction) {
           title: correct ? '✅ ¡Correcto!' : '❌ Incorrecto',
           description: `La respuesta correcta era: **${q.options[q.correct]}**`
         }],
-        components: []
+        components: [],
+        attachments: []
       });
       
       setTimeout(() => {
@@ -280,7 +284,8 @@ async function playTrivia(interaction) {
             title: '⏱️ Tiempo Agotado',
             description: 'No respondiste a tiempo.'
           }],
-          components: []
+          components: [],
+          attachments: []
         });
       }
     });
